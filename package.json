@@ -1,0 +1,20 @@
+{
+  "name": "hordes-revival",
+  "version": "0.1.0",
+  "description": "Hordes Revival — browser game multijoueur de survie face aux hordes de zombies",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "tsx src/index.ts"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
