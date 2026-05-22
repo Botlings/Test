@@ -28,12 +28,18 @@ npm test         # lance la suite de tests (vitest)
 npm run demo     # joue une partie de démonstration en console
 ```
 
+## Page d'accueil
+
+La landing page du site est un fichier statique&nbsp;: ouvrez
+`public/index.html` dans un navigateur. Aucune dépendance ni build requis.
+
 ## Structure
 
 ```
 src/domain/   moteur de jeu (modèle de domaine, déterministe, sans I/O)
 src/index.ts  démonstration jouable en console
 tests/        suite de tests du moteur
+public/       page d'accueil statique du site (index.html, styles.css, main.js)
 ```
 
 Voir [ROADMAP.md](./ROADMAP.md) pour l'avancement.

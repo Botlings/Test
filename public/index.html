@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hordes Revival — Survivre à la horde</title>
+    <meta
+      name="description"
+      content="Hordes Revival : browser game multijoueur de survie. Une ville d'humains résiste, jour après jour, aux hordes de zombies."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+    <header class="site-header">
+      <a class="brand" href="#accueil" aria-label="Hordes Revival — accueil">
+        <span class="brand__mark" aria-hidden="true">☣</span>
+        <span class="brand__name">Hordes Revival</span>
+      </a>
+      <nav class="site-nav" aria-label="Navigation principale">
+        <a href="#cycle">Le cycle</a>
+        <a href="#survivre">Survivre</a>
+        <a href="#avancement">Avancement</a>
+      </nav>
+      <button
+        type="button"
+        class="theme-toggle"
+        id="theme-toggle"
+        aria-pressed="false"
+        title="Basculer jour / nuit"
+      >
+        <span class="theme-toggle__icon" aria-hidden="true">☀</span>
+        <span class="theme-toggle__label">Jour</span>
+      </button>
+    </header>
+
+    <main id="contenu">
+      <section class="hero" id="accueil">
+        <div class="hero__inner">
+          <p class="hero__eyebrow">Browser game multijoueur de survie</p>
+          <h1 class="hero__title">
+            La ville tiendra-t-elle<br />une nuit de plus&nbsp;?
+          </h1>
+          <p class="hero__lead">
+            Une poignée d'humains, un désert hostile et une horde qui grossit
+            chaque jour. Fouillez, bâtissez, rationnez l'eau&nbsp;: chaque
+            décision rapproche la ville du salut ou de la chute.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#cycle">Découvrir le jeu</a>
+            <a class="btn btn--ghost" href="#avancement">Suivre l'avancement</a>
+          </div>
+          <p class="hero__notice">
+            🚧 Jeu en développement — le moteur de partie tourne déjà, le client
+            jouable arrive bientôt.
+          </p>
+        </div>
+        <div class="hero__horde" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </section>
+
+      <section class="cycle" id="cycle">
+        <h2 class="section-title">Un jour, une nuit, recommencer</h2>
+        <p class="section-intro">
+          Chaque journée se joue en deux temps. Ce que vous faites avant le
+          coucher du soleil décide de qui sera encore là au matin.
+        </p>
+        <div class="cycle__grid">
+          <article class="phase phase--day">
+            <span class="phase__tag">Phase 1</span>
+            <h3 class="phase__title">☀ Le Jour</h3>
+            <p>
+              Les citoyens s'aventurent dans le désert pour rapporter du bois,
+              du métal et de l'eau, puis dressent les défenses de la ville. Le
+              temps et les points d'action sont comptés.
+            </p>
+          </article>
+          <article class="phase phase--night">
+            <span class="phase__tag">Phase 2</span>
+            <h3 class="phase__title">☾ La Nuit</h3>
+            <p>
+              La horde assaille la ville. Ceux restés dans le désert sont
+              dévorés&nbsp;; si l'attaque déborde la défense, des citoyens
+              abrités périssent aussi. Demain, la horde sera plus forte.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="survive" id="survivre">
+        <h2 class="section-title">Trois fronts, aucun répit</h2>
+        <div class="survive__grid">
+          <article class="card">
+            <span class="card__icon" aria-hidden="true">🜨</span>
+            <h3 class="card__title">Rapporter les ressources</h3>
+            <p>
+              Le désert est la seule source de matériaux. Fouiller paie, mais
+              s'attarder dehors à la tombée de la nuit ne pardonne pas.
+            </p>
+          </article>
+          <article class="card">
+            <span class="card__icon" aria-hidden="true">🛡</span>
+            <h3 class="card__title">Bâtir la défense</h3>
+            <p>
+              Chaque construction repousse la percée d'une nuit. La défense de
+              la ville doit dépasser la puissance de la horde — et celle-ci
+              grimpe sans cesse.
+            </p>
+          </article>
+          <article class="card">
+            <span class="card__icon" aria-hidden="true">💧</span>
+            <h3 class="card__title">Rationner l'eau</h3>
+            <p>
+              Un citoyen privé d'eau perd ses forces. Deux jours de soif sont
+              fatals. La banque d'eau se vide plus vite qu'on ne le croit.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="roadmap" id="avancement">
+        <h2 class="section-title">Où en est le chantier&nbsp;?</h2>
+        <p class="section-intro">
+          Hordes Revival se construit jalon par jalon. Voici l'état réel du
+          développement.
+        </p>
+        <ol class="milestones">
+          <li class="milestone milestone--done">
+            <span class="milestone__status">Terminé</span>
+            <h3>M0 — Fondations</h3>
+            <p>
+              Moteur de jeu déterministe&nbsp;: cycle jour/nuit, citoyens,
+              banque de ressources, assaut de la horde, soif. Suite de tests et
+              démonstration jouable en console.
+            </p>
+          </li>
+          <li class="milestone milestone--active">
+            <span class="milestone__status">En cours</span>
+            <h3>M1 — Serveur de partie &amp; API</h3>
+            <p>
+              État de partie persistant, API HTTP pour créer une ville, la
+              rejoindre, agir et consulter l'état. Résolution de la nuit en
+              temps réel.
+            </p>
+          </li>
+          <li class="milestone">
+            <span class="milestone__status">À venir</span>
+            <h3>M2 — Client web</h3>
+            <p>
+              L'interface jouable&nbsp;: chantier de la ville, carte du désert
+              case par case, compte rendu de nuit.
+            </p>
+          </li>
+          <li class="milestone">
+            <span class="milestone__status">À venir</span>
+            <h3>M3 — Profondeur de jeu</h3>
+            <p>
+              Bâtiments et objets, métiers des citoyens, chantiers
+              collaboratifs, votes de ville, classement des villes.
+            </p>
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p class="site-footer__brand">☣ Hordes Revival</p>
+      <p>
+        Recréation libre inspirée du browser game
+        <a
+          href="https://fr.wikipedia.org/wiki/Hordes_(jeu_vid%C3%A9o)"
+          rel="noreferrer"
+          >Hordes</a
+        >.
+      </p>
+      <p class="site-footer__meta">© <span id="year">2026</span> Hordes Revival</p>
+    </footer>
+
+    <script src="main.js" defer></script>
+  </body>
+</html>
