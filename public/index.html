@@ -3,15 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hordes Revival — Survivre à la horde</title>
+    <title>Hordes Revival — Survivre à la horde, ensemble</title>
     <meta
       name="description"
-      content="Hordes Revival : browser game multijoueur de survie. Une ville d'humains résiste, jour après jour, aux hordes de zombies."
+      content="Hordes Revival : browser game multijoueur coopératif de survie. Une ville d'humains résiste, jour après jour, aux hordes de zombies. Inscrivez-vous à la newsletter pour suivre le développement."
     />
+    <meta name="theme-color" content="#15110d" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -26,8 +27,9 @@
       </a>
       <nav class="site-nav" aria-label="Navigation principale">
         <a href="#cycle">Le cycle</a>
-        <a href="#survivre">Survivre</a>
+        <a href="#cooperer">Coopérer</a>
         <a href="#avancement">Avancement</a>
+        <a href="#newsletter">Newsletter</a>
       </nav>
       <button
         type="button"
@@ -43,20 +45,28 @@
 
     <main id="contenu">
       <section class="hero" id="accueil">
+        <div class="hero__glow" aria-hidden="true"></div>
         <div class="hero__inner">
-          <p class="hero__eyebrow">Browser game multijoueur de survie</p>
+          <p class="hero__eyebrow">Browser game multijoueur coopératif</p>
           <h1 class="hero__title">
             La ville tiendra-t-elle<br />une nuit de plus&nbsp;?
           </h1>
           <p class="hero__lead">
             Une poignée d'humains, un désert hostile et une horde qui grossit
-            chaque jour. Fouillez, bâtissez, rationnez l'eau&nbsp;: chaque
-            décision rapproche la ville du salut ou de la chute.
+            chaque jour. Fouillez, bâtissez, rationnez l'eau&nbsp;: ensemble,
+            chaque décision rapproche la ville du salut ou de la chute.
           </p>
           <div class="hero__actions">
-            <a class="btn btn--primary" href="#cycle">Découvrir le jeu</a>
-            <a class="btn btn--ghost" href="#avancement">Suivre l'avancement</a>
+            <a class="btn btn--primary" href="#newsletter"
+              >Rejoindre la liste d'attente</a
+            >
+            <a class="btn btn--ghost" href="#cycle">Découvrir le jeu</a>
           </div>
+          <ul class="hero__meta" aria-label="Points clés">
+            <li><span aria-hidden="true">⚔</span> 40 citoyens par ville</li>
+            <li><span aria-hidden="true">☾</span> Une nuit, un assaut</li>
+            <li><span aria-hidden="true">∞</span> Gratuit, sans pay-to-win</li>
+          </ul>
           <p class="hero__notice">
             🚧 Jeu en développement — le moteur de partie tourne déjà, le client
             jouable arrive bientôt.
@@ -64,6 +74,7 @@
         </div>
         <div class="hero__horde" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span>
         </div>
       </section>
 
@@ -90,6 +101,71 @@
               La horde assaille la ville. Ceux restés dans le désert sont
               dévorés&nbsp;; si l'attaque déborde la défense, des citoyens
               abrités périssent aussi. Demain, la horde sera plus forte.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="coop" id="cooperer">
+        <h2 class="section-title">Seul, on ne tient pas trois nuits</h2>
+        <p class="section-intro">
+          Hordes Revival est un jeu fondamentalement coopératif&nbsp;: la ville
+          est commune, les ressources sont communes, et chaque décision
+          individuelle pèse sur la survie collective.
+        </p>
+        <div class="coop__grid">
+          <article class="feature">
+            <span class="feature__icon" aria-hidden="true">🏛</span>
+            <h3 class="feature__title">Une ville, un destin</h3>
+            <p>
+              Banque d'eau, stocks de bois et de métal, défenses, postes de
+              garde&nbsp;: tout est partagé. Un égoïste de trop, et la ville
+              s'effondre.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature__icon" aria-hidden="true">🛠</span>
+            <h3 class="feature__title">Chantiers collaboratifs</h3>
+            <p>
+              Tour de guet, puits, fortifications&nbsp;: chaque construction
+              demande des points d'action de plusieurs citoyens. Personne ne
+              bâtit la défense tout seul.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature__icon" aria-hidden="true">🗺</span>
+            <h3 class="feature__title">Exploration en équipe</h3>
+            <p>
+              Le désert se partage. On y dépose des sacs, des balises et des
+              messages pour les suivants&nbsp;; un éclaireur isolé ne rapporte
+              rien si personne ne sécurise son retour.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature__icon" aria-hidden="true">🗳</span>
+            <h3 class="feature__title">Décisions collectives</h3>
+            <p>
+              Élire un guide, voter une expédition, bannir un saboteur&nbsp;:
+              les choix structurants se tranchent en commun. La ville se
+              gouverne elle-même.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature__icon" aria-hidden="true">💬</span>
+            <h3 class="feature__title">Communication permanente</h3>
+            <p>
+              Chat de ville, journal de bord, annonces du conseil&nbsp;:
+              l'information circule en continu pour coordonner fouilles,
+              constructions et rationnements.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature__icon" aria-hidden="true">⚒</span>
+            <h3 class="feature__title">Métiers complémentaires</h3>
+            <p>
+              Éclaireur, constructeur, médecin, charognard&nbsp;: chaque rôle
+              débloque des actions uniques. La ville survit par la diversité
+              des compétences réunies.
             </p>
           </article>
         </div>
@@ -168,6 +244,63 @@
             </p>
           </li>
         </ol>
+      </section>
+
+      <section class="newsletter" id="newsletter">
+        <div class="newsletter__inner">
+          <p class="newsletter__eyebrow">Rejoindre la liste d'attente</p>
+          <h2 class="newsletter__title">
+            Soyez la première horde à entrer en ville
+          </h2>
+          <p class="newsletter__lead">
+            Recevez une notification dès l'ouverture des inscriptions, des
+            comptes rendus de chantier et un accès anticipé aux tests fermés.
+            Aucun spam, désinscription d'un clic.
+          </p>
+
+          <form
+            class="newsletter__form"
+            id="newsletter-form"
+            novalidate
+            aria-describedby="newsletter-status"
+          >
+            <label class="visually-hidden" for="newsletter-email"
+              >Adresse email</label
+            >
+            <input
+              class="newsletter__input"
+              id="newsletter-email"
+              name="email"
+              type="email"
+              required
+              autocomplete="email"
+              inputmode="email"
+              placeholder="votre@email.fr"
+              aria-required="true"
+              aria-invalid="false"
+            />
+            <button class="btn btn--primary newsletter__submit" type="submit">
+              <span class="newsletter__submit-label">M'inscrire</span>
+            </button>
+          </form>
+
+          <p
+            class="newsletter__status"
+            id="newsletter-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+          <ul class="newsletter__bullets" aria-label="Ce que vous recevrez">
+            <li><span aria-hidden="true">✓</span> Annonce du lancement</li>
+            <li>
+              <span aria-hidden="true">✓</span> Accès anticipé aux tests fermés
+            </li>
+            <li>
+              <span aria-hidden="true">✓</span> Compte rendu mensuel du chantier
+            </li>
+          </ul>
+        </div>
       </section>
     </main>
 
