@@ -65,6 +65,35 @@ npm run demo       # joue une partie de démonstration en console
 La landing page est un fichier statique : ouvrir `public/index.html` dans un
 navigateur. Aucune dépendance ni build requis.
 
+### Déploiement
+
+La landing est publiée sur **GitHub Pages** depuis la branche dédiée
+`gh-pages`, qui contient le contenu de `public/` à sa racine (avec un
+fichier `.nojekyll` pour court-circuiter Jekyll).
+
+URL publique : **https://botlings.github.io/Test/**
+
+Activation initiale (à faire une seule fois sur GitHub) :
+**Settings → Pages → Build and deployment → Source = "Deploy from a branch"**,
+branche `gh-pages`, dossier `/ (root)`.
+
+Republier après modification de `public/` :
+
+```sh
+git switch gh-pages
+git rm -rf .
+git checkout main -- public
+mv public/* . && rmdir public
+touch .nojekyll
+git add -A
+git commit -m "Republier landing"
+git push origin gh-pages
+git switch main
+```
+
+> Une automatisation par GitHub Actions sera ajoutée quand le PAT du dépôt
+> aura le scope `workflow` (refusé pour l'instant côté GitHub).
+
 ## Avancement
 
 Voir [ROADMAP.md](./ROADMAP.md). Jalon actif : **M1 — Serveur de partie & API**.
