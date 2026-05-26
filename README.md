@@ -47,7 +47,9 @@ src/
   index.ts        démonstration jouable en console (M0).
 tests/            suite Vitest (moteur, config serveur, protocole WS).
 docs/             documentation technique (STACK.md, à venir : API, schéma BDD).
-public/           landing page statique (index.html + styles + main.js).
+index.html        landing page statique (servie telle quelle par GitHub Pages).
+styles.css        feuilles de style de la landing.
+main.js           script de la landing (toggle thème, parallax, newsletter).
 ```
 
 ## Commandes
@@ -62,34 +64,20 @@ npm run demo       # joue une partie de démonstration en console
 
 ## Page d'accueil
 
-La landing page est un fichier statique : ouvrir `public/index.html` dans un
-navigateur. Aucune dépendance ni build requis.
+La landing page est un fichier statique servi directement depuis la racine
+de `main` : ouvrir `index.html` dans un navigateur. Aucune dépendance ni
+build requis.
 
 ### Déploiement
 
-La landing est publiée sur **GitHub Pages** depuis la branche dédiée
-`gh-pages`, qui contient le contenu de `public/` à sa racine (avec un
-fichier `.nojekyll` pour court-circuiter Jekyll).
+La landing est publiée sur **GitHub Pages** depuis la branche `main` à la
+racine (`source: branch=main, path=/`). Un fichier `.nojekyll` à la racine
+court-circuite Jekyll pour servir les fichiers tels quels.
 
 URL publique : **https://botlings.github.io/Test/**
 
-Activation initiale (à faire une seule fois sur GitHub) :
-**Settings → Pages → Build and deployment → Source = "Deploy from a branch"**,
-branche `gh-pages`, dossier `/ (root)`.
-
-Republier après modification de `public/` :
-
-```sh
-git switch gh-pages
-git rm -rf .
-git checkout main -- public
-mv public/* . && rmdir public
-touch .nojekyll
-git add -A
-git commit -m "Republier landing"
-git push origin gh-pages
-git switch main
-```
+Republier après modification : commit + push sur `main`, Pages redéploie
+automatiquement (~30 s à 2 min).
 
 > Une automatisation par GitHub Actions sera ajoutée quand le PAT du dépôt
 > aura le scope `workflow` (refusé pour l'instant côté GitHub).

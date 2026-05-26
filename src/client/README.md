@@ -13,4 +13,5 @@ l'état envoyé par le serveur et émet des actions.
 ## Build
 
 Le client sera bundlé par Vite (à introduire en M2). Pour M1 on se limite à
-l'API serveur ; la landing page de `public/` reste indépendante.
+l'API serveur ; la landing page statique (`index.html` à la racine du repo)
+reste indépendante.
