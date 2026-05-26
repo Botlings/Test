@@ -367,7 +367,8 @@ section {
 .cycle,
 .coop,
 .survive,
-.roadmap {
+.roadmap,
+.faq {
   max-width: var(--maxw);
   margin: 0 auto;
   padding: clamp(3rem, 7vw, 5rem) clamp(1rem, 4vw, 2.5rem);
@@ -560,6 +561,73 @@ section {
   font-size: 0.95rem;
 }
 
+/* ── FAQ ───────────────────────────────────────────────────── */
+.faq__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 720px;
+  margin: 2.5rem auto 0;
+}
+
+.faq-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 1.4rem;
+  transition: border-color 0.2s ease;
+}
+
+.faq-item[open] {
+  border-color: var(--gold);
+}
+
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1rem 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 500;
+  font-size: 1.02rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: '+';
+  font-family: 'Inter', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--gold);
+  line-height: 1;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.faq-item summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.faq-item p {
+  color: var(--ink-soft);
+  font-size: 0.97rem;
+  padding: 0 0 1.1rem;
+  max-width: 62ch;
+}
+
 /* ── Newsletter ────────────────────────────────────────────── */
 .newsletter {
   position: relative;
@@ -671,6 +739,14 @@ body.theme-day .newsletter {
 .newsletter__status[data-state='success'] {
   color: var(--success);
   font-weight: 600;
+}
+
+.newsletter__privacy {
+  margin: 1.4rem auto 0;
+  max-width: 480px;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  line-height: 1.55;
 }
 
 .newsletter__bullets {
