@@ -9,29 +9,27 @@
  *   { type: 'build'    }
  *
  * Toute mutation publie un événement sur le hub temps réel ; la résolution
- * de nuit est protégée par `MemoryStore.nightLock`.
+ * de nuit est protégée par `store.nightLock` (sémantique NX-EX).
  */
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth-guard.js';
 import { GameRuleError } from '../../domain/game.js';
 import type { Location } from '../../domain/types.js';
-import { StoreError, type MemoryStore } from '../../persistence/memory.js';
+import { StoreError, type Store, type TownRecord } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
 
 interface ActionsDeps {
-  readonly store: MemoryStore;
+  readonly store: Store;
   readonly jwtSecret: string;
   readonly hub: RealtimeHub;
 }
 
 const LOCATIONS: ReadonlySet<Location> = new Set(['town', 'desert']);
 
-function publishTownSnapshot(hub: RealtimeHub, store: MemoryStore, townId: Id): void {
-  const town = store.getTown(townId);
-  if (!town) return;
+function publishTownSnapshot(hub: RealtimeHub, town: TownRecord): void {
   const status = town.game.status();
-  hub.publish(townId, {
+  hub.publish(town.id, {
     type: 'town.snapshot',
     day: status.day,
     phase: status.phase,
@@ -60,7 +58,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
         error: { code: 'params-missing', message: 'townId et citizenId requis' },
       });
     }
-    const town = store.getTown(townId);
+    const town = await store.getTown(townId);
     if (!town) {
       return reply.code(404).send({
         error: { code: 'town-not-found', message: 'Ville introuvable' },
@@ -90,17 +88,20 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             });
           }
           town.game.setLocation(citizenId, to as Location);
+          await store.saveTown(town);
           hub.publish(townId, { type: 'citizen.moved', citizenId, to: to as Location });
           break;
         }
         case 'scavenge': {
           town.game.scavenge(citizenId);
-          publishTownSnapshot(hub, store, townId);
+          await store.saveTown(town);
+          publishTownSnapshot(hub, town);
           break;
         }
         case 'build': {
           town.game.build(citizenId);
-          publishTownSnapshot(hub, store, townId);
+          await store.saveTown(town);
+          publishTownSnapshot(hub, town);
           hub.publish(townId, {
             type: 'build.completed',
             structureId: `${townId}-build-${Date.now()}`,
@@ -147,7 +148,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
         error: { code: 'town-id-missing', message: 'Identifiant de ville manquant' },
       });
     }
-    const town = store.getTown(townId);
+    const town = await store.getTown(townId);
     if (!town) {
       return reply.code(404).send({
         error: { code: 'town-not-found', message: 'Ville introuvable' },
@@ -159,8 +160,8 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
       });
     }
     try {
-      const report = await store.nightLock(townId, () => {
-        const current = store.getTown(townId);
+      const report = await store.nightLock(townId, async () => {
+        const current = await store.getTown(townId);
         if (!current) {
           throw new StoreError('town-not-found', 'Ville introuvable');
         }
@@ -175,8 +176,16 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
         if (out.gameOver) {
           current.closed = true;
         }
+        await store.saveTown(current);
+        await store.recordNightEvent(townId, {
+          day: out.day,
+          attackers: out.hordePower,
+          defense: out.townDefense,
+          breached: out.breached,
+          deaths: out.deaths.length,
+        });
         hub.publish(townId, { type: 'night.report', day: out.day, report: out });
-        publishTownSnapshot(hub, store, townId);
+        publishTownSnapshot(hub, current);
         return out;
       });
       return reply.code(200).send({ report });

@@ -7,7 +7,7 @@
  * email déjà utilisé, 500 pour erreur serveur.
  */
 import type { FastifyInstance } from 'fastify';
-import type { MemoryStore } from '../../persistence/memory.js';
+import type { Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import {
   fingerprintToken,
@@ -18,7 +18,7 @@ import {
 } from '../crypto.js';
 
 interface AuthDeps {
-  readonly store: MemoryStore;
+  readonly store: Store;
   readonly jwtSecret: string;
   readonly accessTokenTtlSeconds: number;
   readonly secureCookies: boolean;
@@ -41,10 +41,12 @@ function emitAccessToken(accountId: Id, jwtSecret: string, ttlSeconds: number): 
 export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   const { store, jwtSecret, accessTokenTtlSeconds, secureCookies } = deps;
 
-  const issueSession = (accountId: Id): { accessToken: string; refreshToken: string } => {
+  const issueSession = async (
+    accountId: Id,
+  ): Promise<{ accessToken: string; refreshToken: string }> => {
     const accessToken = emitAccessToken(accountId, jwtSecret, accessTokenTtlSeconds);
     const refreshToken = generateRefreshToken();
-    store.createSession(fingerprintToken(refreshToken), accountId);
+    await store.createSession(fingerprintToken(refreshToken), accountId);
     return { accessToken, refreshToken };
   };
 
@@ -75,15 +77,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       );
       return reply.code(err.status).send(err.body);
     }
-    if (store.findAccountByEmail(email)) {
+    if (await store.findAccountByEmail(email)) {
       return reply.code(409).send({
         error: { code: 'email-taken', message: 'Cet email est déjà utilisé' },
       });
     }
 
     const passwordHash = await hashPassword(password);
-    const account = store.createAccount(email, passwordHash);
-    const { accessToken, refreshToken } = issueSession(account.id);
+    const account = await store.createAccount(email, passwordHash);
+    const { accessToken, refreshToken } = await issueSession(account.id);
     setRefreshCookie(reply, refreshToken);
     return reply.code(201).send({
       userId: account.id,
@@ -103,7 +105,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return reply.code(err.status).send(err.body);
     }
 
-    const account = store.findAccountByEmail(email);
+    const account = await store.findAccountByEmail(email);
     if (!account) {
       return reply.code(401).send({
         error: { code: 'invalid-credentials', message: 'Identifiants invalides' },
@@ -115,7 +117,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         error: { code: 'invalid-credentials', message: 'Identifiants invalides' },
       });
     }
-    const { accessToken, refreshToken } = issueSession(account.id);
+    const { accessToken, refreshToken } = await issueSession(account.id);
     setRefreshCookie(reply, refreshToken);
     return reply.code(200).send({
       userId: account.id,
@@ -134,13 +136,13 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         error: { code: 'no-refresh-token', message: 'Aucun refresh token' },
       });
     }
-    const session = store.consumeSession(fingerprintToken(refreshToken));
+    const session = await store.consumeSession(fingerprintToken(refreshToken));
     if (!session) {
       return reply.code(401).send({
         error: { code: 'invalid-refresh-token', message: 'Refresh token invalide ou expiré' },
       });
     }
-    const { accessToken, refreshToken: rotated } = issueSession(session.accountId);
+    const { accessToken, refreshToken: rotated } = await issueSession(session.accountId);
     setRefreshCookie(reply, rotated);
     return reply.code(200).send({ accessToken, expiresIn: accessTokenTtlSeconds });
   });
@@ -150,7 +152,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     const cookies = (request.cookies ?? {}) as Record<string, string | undefined>;
     const refreshToken = cookies[REFRESH_COOKIE];
     if (refreshToken) {
-      store.revokeSession(fingerprintToken(refreshToken));
+      await store.revokeSession(fingerprintToken(refreshToken));
     }
     reply.clearCookie(REFRESH_COOKIE, { path: '/auth' });
     return reply.code(204).send();

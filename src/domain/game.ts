@@ -18,6 +18,21 @@ export class GameRuleError extends Error {
 }
 
 /**
+ * Snapshot sérialisable de l'état complet d'une partie. Utilisé par la
+ * couche persistence (Postgres) pour sauvegarder / restaurer un `Game`
+ * sans dépendre de la représentation interne (champs privés) du moteur.
+ */
+export interface GameSnapshot {
+  readonly day: number;
+  readonly phase: Phase;
+  readonly townDefense: number;
+  readonly bank: ResourceBank;
+  readonly citizens: ReadonlyArray<Citizen>;
+  readonly gameOver: boolean;
+  readonly nextCitizenSeq: number;
+}
+
+/**
  * Moteur de jeu déterministe d'une partie de Hordes Revival.
  *
  * Une partie commence au jour 1, en phase `day`. Les citoyens fouillent le
@@ -38,6 +53,36 @@ export class Game {
     this.config = config;
     this._townDefense = config.baseDefense;
     this._bank = { ...config.startingBank };
+  }
+
+  /** Reconstruit un moteur à partir d'un snapshot persisté. */
+  static fromSnapshot(config: GameConfig, snapshot: GameSnapshot): Game {
+    const game = new Game(config);
+    game._day = snapshot.day;
+    game._phase = snapshot.phase;
+    game._townDefense = snapshot.townDefense;
+    game._bank.wood = snapshot.bank.wood;
+    game._bank.metal = snapshot.bank.metal;
+    game._bank.water = snapshot.bank.water;
+    game._gameOver = snapshot.gameOver;
+    game.nextCitizenSeq = snapshot.nextCitizenSeq;
+    for (const c of snapshot.citizens) {
+      game._citizens.push({ ...c });
+    }
+    return game;
+  }
+
+  /** Exporte un snapshot sérialisable de l'état courant. */
+  snapshot(): GameSnapshot {
+    return {
+      day: this._day,
+      phase: this._phase,
+      townDefense: this._townDefense,
+      bank: { ...this._bank },
+      citizens: this._citizens.map((c) => ({ ...c })),
+      gameOver: this._gameOver,
+      nextCitizenSeq: this.nextCitizenSeq,
+    };
   }
 
   /** Ajoute un citoyen à la ville et renvoie l'entité créée. */

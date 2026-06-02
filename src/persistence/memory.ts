@@ -1,59 +1,51 @@
 /**
- * Implémentation in-memory du store de Hordes Revival.
+ * Implémentation in-memory du `Store` de Hordes Revival.
  *
  * Sert de back-end pour les tests d'intégration et pour le démarrage local
- * sans Postgres/Redis. La forme des entités suit `persistence/types.ts` ;
- * une future implémentation Drizzle pourra brancher la même interface
- * `Store` sans toucher au reste du code.
+ * sans Postgres/Redis. Les méthodes sont déclarées `async` afin de respecter
+ * le contrat commun ; le coût réel reste O(1) (Map en mémoire).
  *
- * Concurrence : Node étant single-threaded, les mutations sont atomiques.
- * Le `nightLock(townId)` retourne une promesse-mutex pour sérialiser les
- * résolutions de nuit d'une même ville (équivalent in-memory du lock Redis).
+ * Concurrence : Node étant single-threaded, les mutations d'un même tick
+ * sont atomiques. Le `nightLock(townId)` mime le lock NX-EX d'un store
+ * distribué (rejet immédiat si déjà détenu).
  */
 import { randomUUID } from 'node:crypto';
 import { Game } from '../domain/game.js';
 import type { GameConfig } from '../domain/config.js';
 import { DEFAULT_CONFIG } from '../domain/config.js';
 import type { Id } from './types.js';
+import {
+  MAX_CITIZENS_PER_TOWN,
+  REFRESH_TOKEN_TTL_MS,
+  StoreError,
+  type AccountRecord,
+  type Difficulty,
+  type NightEventInput,
+  type SessionRecord,
+  type Store,
+  type TownRecord,
+} from './store.js';
 
-export type Difficulty = 'normal' | 'hard' | 'hardcore';
-
-/** Nombre maximum de joueurs distincts dans une ville. */
-export const MAX_CITIZENS_PER_TOWN = 10;
-/** Durée de vie par défaut d'un refresh token (en ms) — 30 jours. */
-export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-export interface AccountRecord {
-  readonly id: Id;
-  readonly email: string;
-  readonly passwordHash: string;
-  readonly createdAt: Date;
-}
-
-export interface SessionRecord {
-  readonly tokenFingerprint: string;
-  readonly accountId: Id;
-  readonly expiresAt: Date;
-}
-
-export interface TownRecord {
-  readonly id: Id;
-  readonly name: string;
-  readonly difficulty: Difficulty;
-  readonly createdAt: Date;
-  /** Le moteur de jeu de la ville (mutable). */
-  readonly game: Game;
-  /** Mapping accountId → citizenId (mutable). */
-  readonly membership: Map<Id, string>;
-  /** `true` si la partie est gagnée ou perdue (verrouille les actions). */
-  closed: boolean;
-}
+export {
+  MAX_CITIZENS_PER_TOWN,
+  REFRESH_TOKEN_TTL_MS,
+  StoreError,
+  type AccountRecord,
+  type Difficulty,
+  type SessionRecord,
+  type TownRecord,
+};
 
 function newId(): Id {
   return randomUUID() as Id;
 }
 
-function difficultyConfig(difficulty: Difficulty): GameConfig {
+/**
+ * Renvoie la configuration de jeu correspondant à une difficulté. Exporté
+ * pour que le store Postgres puisse reconstruire un `Game` avec la bonne
+ * config à partir de la ligne `towns.difficulty`.
+ */
+export function difficultyConfig(difficulty: Difficulty): GameConfig {
   switch (difficulty) {
     case 'normal':
       return DEFAULT_CONFIG;
@@ -73,30 +65,28 @@ function difficultyConfig(difficulty: Difficulty): GameConfig {
   }
 }
 
-/**
- * Store applicatif. Les méthodes synchrones ne réservent pas d'I/O ;
- * `nightLock` retourne une promesse pour mimer un lock distribué.
- */
-export class MemoryStore {
+/** Implémentation in-memory du `Store`. */
+export class MemoryStore implements Store {
   private readonly accounts = new Map<Id, AccountRecord>();
   private readonly accountsByEmail = new Map<string, Id>();
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly towns = new Map<Id, TownRecord>();
   private readonly nightLocks = new Set<Id>();
+  private readonly nightEvents: Array<{ townId: Id; event: NightEventInput; at: Date }> = [];
 
   /* ---------------------------- Comptes ---------------------------------- */
 
-  findAccountByEmail(email: string): AccountRecord | undefined {
+  async findAccountByEmail(email: string): Promise<AccountRecord | undefined> {
     const id = this.accountsByEmail.get(email.toLowerCase());
     if (!id) return undefined;
     return this.accounts.get(id);
   }
 
-  getAccount(id: Id): AccountRecord | undefined {
+  async getAccount(id: Id): Promise<AccountRecord | undefined> {
     return this.accounts.get(id);
   }
 
-  createAccount(email: string, passwordHash: string): AccountRecord {
+  async createAccount(email: string, passwordHash: string): Promise<AccountRecord> {
     const normalized = email.toLowerCase();
     if (this.accountsByEmail.has(normalized)) {
       throw new StoreError('email-taken', 'Cet email est déjà utilisé');
@@ -114,7 +104,11 @@ export class MemoryStore {
 
   /* ---------------------------- Sessions --------------------------------- */
 
-  createSession(tokenFingerprint: string, accountId: Id, ttlMs = REFRESH_TOKEN_TTL_MS): SessionRecord {
+  async createSession(
+    tokenFingerprint: string,
+    accountId: Id,
+    ttlMs = REFRESH_TOKEN_TTL_MS,
+  ): Promise<SessionRecord> {
     const record: SessionRecord = {
       tokenFingerprint,
       accountId,
@@ -124,7 +118,10 @@ export class MemoryStore {
     return record;
   }
 
-  consumeSession(tokenFingerprint: string, now: Date = new Date()): SessionRecord | undefined {
+  async consumeSession(
+    tokenFingerprint: string,
+    now: Date = new Date(),
+  ): Promise<SessionRecord | undefined> {
     const session = this.sessions.get(tokenFingerprint);
     if (!session) return undefined;
     if (session.expiresAt.getTime() <= now.getTime()) {
@@ -135,23 +132,23 @@ export class MemoryStore {
     return session;
   }
 
-  revokeSession(tokenFingerprint: string): void {
+  async revokeSession(tokenFingerprint: string): Promise<void> {
     this.sessions.delete(tokenFingerprint);
   }
 
   /* ---------------------------- Villes ----------------------------------- */
 
-  listOpenTowns(): TownRecord[] {
+  async listOpenTowns(): Promise<TownRecord[]> {
     return [...this.towns.values()].filter(
       (t) => !t.closed && t.membership.size < MAX_CITIZENS_PER_TOWN,
     );
   }
 
-  getTown(id: Id): TownRecord | undefined {
+  async getTown(id: Id): Promise<TownRecord | undefined> {
     return this.towns.get(id);
   }
 
-  createTown(name: string, difficulty: Difficulty): TownRecord {
+  async createTown(name: string, difficulty: Difficulty): Promise<TownRecord> {
     const trimmed = name.trim();
     if (trimmed.length < 3 || trimmed.length > 30) {
       throw new StoreError('town-name-invalid', 'Le nom de la ville doit faire 3 à 30 caractères');
@@ -169,11 +166,11 @@ export class MemoryStore {
     return town;
   }
 
-  /**
-   * Inscrit un compte comme citoyen d'une ville. Renvoie le citoyen créé
-   * (côté domain) ainsi que la ville mise à jour.
-   */
-  joinTown(townId: Id, accountId: Id, citizenName: string): { citizenId: string } {
+  async joinTown(
+    townId: Id,
+    accountId: Id,
+    citizenName: string,
+  ): Promise<{ citizenId: string }> {
     const town = this.towns.get(townId);
     if (!town) {
       throw new StoreError('town-not-found', 'Ville introuvable');
@@ -192,20 +189,18 @@ export class MemoryStore {
     return { citizenId: citizen.id };
   }
 
-  /**
-   * Retourne le citoyen lié à un compte dans une ville (ou `undefined`).
-   */
-  citizenIdFor(townId: Id, accountId: Id): string | undefined {
+  async citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined> {
     return this.towns.get(townId)?.membership.get(accountId);
   }
 
-  /**
-   * Verrouille la résolution de nuit d'une ville selon une sémantique
-   * « NX-EX » à la Redis : si une nuit est déjà en cours pour cette ville,
-   * lève `StoreError('night-already-running')` immédiatement plutôt que de
-   * mettre la requête en file d'attente. Cela garantit que deux résolutions
-   * simultanées ne peuvent pas s'enchaîner par erreur.
-   */
+  async saveTown(_town: TownRecord): Promise<void> {
+    // No-op : le `Game` est déjà mis à jour en place dans la Map.
+  }
+
+  async recordNightEvent(townId: Id, event: NightEventInput): Promise<void> {
+    this.nightEvents.push({ townId, event, at: new Date() });
+  }
+
   async nightLock<T>(townId: Id, fn: () => Promise<T> | T): Promise<T> {
     if (this.nightLocks.has(townId)) {
       throw new StoreError('night-already-running', 'La nuit est déjà en cours');
@@ -217,15 +212,8 @@ export class MemoryStore {
       this.nightLocks.delete(townId);
     }
   }
-}
 
-/** Erreur métier émise par le store. Le `code` est stable et utilisable côté API. */
-export class StoreError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'StoreError';
+  async close(): Promise<void> {
+    // Rien à fermer : aucune ressource externe.
   }
 }

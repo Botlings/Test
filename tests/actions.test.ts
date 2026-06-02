@@ -71,7 +71,7 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
       headers: bearer(ctx.accessToken),
       payload: { type: 'move', to: 'desert' },
     });
-    const before = ctx.store.getTown(ctx.townId as unknown as never)!.game.status();
+    const before = (await ctx.store.getTown(ctx.townId as unknown as never))!.game.status();
     const scavenge = await ctx.app.inject({
       method: 'POST',
       url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
@@ -86,7 +86,7 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
   it('build : augmente la défense, dépense ressources', async () => {
     const ctx = await bootstrapTown();
     app = ctx.app;
-    const before = ctx.store.getTown(ctx.townId as unknown as never)!.game.status();
+    const before = (await ctx.store.getTown(ctx.townId as unknown as never))!.game.status();
     const build = await ctx.app.inject({
       method: 'POST',
       url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,

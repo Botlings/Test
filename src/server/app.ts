@@ -17,13 +17,13 @@ import { verifyJwt } from './crypto.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerTownRoutes } from './routes/towns.js';
 import { registerActionRoutes } from './routes/actions.js';
-import { MemoryStore } from '../persistence/memory.js';
+import type { Store } from '../persistence/store.js';
 import type { Id } from '../persistence/types.js';
 import { RealtimeHub } from '../realtime/hub.js';
 import type { ServerMessage } from '../realtime/protocol.js';
 
 export interface AppDeps {
-  readonly store: MemoryStore;
+  readonly store: Store;
   readonly hub: RealtimeHub;
   readonly jwtSecret: string;
   readonly accessTokenTtlSeconds?: number;
@@ -33,7 +33,7 @@ export interface AppDeps {
 
 export interface BuiltApp {
   readonly app: FastifyInstance;
-  readonly store: MemoryStore;
+  readonly store: Store;
   readonly hub: RealtimeHub;
 }
 
@@ -86,43 +86,46 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
       socket.close();
       return;
     }
-    const town = store.getTown(townId);
-    if (!town || !town.membership.has(accountId)) {
+
+    void (async () => {
+      const town = await store.getTown(townId);
+      if (!town || !town.membership.has(accountId)) {
+        socket.send(
+          JSON.stringify({
+            type: 'error',
+            code: 'ws-not-a-citizen',
+            message: 'Vous devez être citoyen de cette ville',
+          } satisfies ServerMessage),
+        );
+        socket.close();
+        return;
+      }
+
+      // Snapshot initial
+      const status = town.game.status();
       socket.send(
         JSON.stringify({
-          type: 'error',
-          code: 'ws-not-a-citizen',
-          message: 'Vous devez être citoyen de cette ville',
+          type: 'town.snapshot',
+          day: status.day,
+          phase: status.phase,
+          resources: { ...status.bank },
+          citizens: status.citizens.map((c) => ({
+            id: c.id,
+            name: c.name,
+            location: c.location,
+            alive: c.alive,
+          })),
         } satisfies ServerMessage),
       );
-      socket.close();
-      return;
-    }
 
-    // Snapshot initial
-    const status = town.game.status();
-    socket.send(
-      JSON.stringify({
-        type: 'town.snapshot',
-        day: status.day,
-        phase: status.phase,
-        resources: { ...status.bank },
-        citizens: status.citizens.map((c) => ({
-          id: c.id,
-          name: c.name,
-          location: c.location,
-          alive: c.alive,
-        })),
-      } satisfies ServerMessage),
-    );
-
-    const unsubscribe = hub.subscribe(townId, (msg) => {
-      if (socket.readyState === socket.OPEN) {
-        socket.send(JSON.stringify(msg));
-      }
-    });
-    socket.on('close', unsubscribe);
-    socket.on('error', unsubscribe);
+      const unsubscribe = hub.subscribe(townId, (msg) => {
+        if (socket.readyState === socket.OPEN) {
+          socket.send(JSON.stringify(msg));
+        }
+      });
+      socket.on('close', unsubscribe);
+      socket.on('error', unsubscribe);
+    })();
   });
 
   return { app, store, hub };

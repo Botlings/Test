@@ -6,12 +6,18 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth-guard.js';
-import { MAX_CITIZENS_PER_TOWN, StoreError, type Difficulty, type MemoryStore, type TownRecord } from '../../persistence/memory.js';
+import {
+  MAX_CITIZENS_PER_TOWN,
+  StoreError,
+  type Difficulty,
+  type Store,
+  type TownRecord,
+} from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
 
 interface TownsDeps {
-  readonly store: MemoryStore;
+  readonly store: Store;
   readonly jwtSecret: string;
   readonly hub: RealtimeHub;
 }
@@ -68,7 +74,8 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
   /* ------------------------------ GET /towns ------------------------------ */
   app.get('/towns', async (request, reply) => {
     if (!requireAuth(request, reply, { jwtSecret })) return;
-    return reply.code(200).send({ towns: store.listOpenTowns().map(summarizeTown) });
+    const towns = await store.listOpenTowns();
+    return reply.code(200).send({ towns: towns.map(summarizeTown) });
   });
 
   /* ------------------------------ POST /towns ----------------------------- */
@@ -84,16 +91,18 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
       });
     }
     try {
-      const town = store.createTown(name, difficulty as Difficulty);
-      const account = store.getAccount(accountId)!;
+      const town = await store.createTown(name, difficulty as Difficulty);
+      const account = (await store.getAccount(accountId))!;
       const citizenName = account.email.split('@')[0]!;
-      store.joinTown(town.id, accountId, citizenName);
+      await store.joinTown(town.id, accountId, citizenName);
+      await store.saveTown(town);
+      const status = town.game.status();
       hub.publish(town.id, {
         type: 'town.snapshot',
-        day: town.game.status().day,
-        phase: town.game.status().phase,
-        resources: { ...town.game.status().bank },
-        citizens: town.game.status().citizens.map((c) => ({
+        day: status.day,
+        phase: status.phase,
+        resources: { ...status.bank },
+        citizens: status.citizens.map((c) => ({
           id: c.id,
           name: c.name,
           location: c.location,
@@ -122,21 +131,23 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
       });
     }
     try {
-      const account = store.getAccount(accountId);
+      const account = await store.getAccount(accountId);
       if (!account) {
         return reply.code(401).send({
           error: { code: 'account-not-found', message: 'Compte introuvable' },
         });
       }
       const citizenName = account.email.split('@')[0]!;
-      store.joinTown(townId, accountId, citizenName);
-      const town = store.getTown(townId)!;
+      await store.joinTown(townId, accountId, citizenName);
+      const town = (await store.getTown(townId))!;
+      await store.saveTown(town);
+      const status = town.game.status();
       hub.publish(town.id, {
         type: 'town.snapshot',
-        day: town.game.status().day,
-        phase: town.game.status().phase,
-        resources: { ...town.game.status().bank },
-        citizens: town.game.status().citizens.map((c) => ({
+        day: status.day,
+        phase: status.phase,
+        resources: { ...status.bank },
+        citizens: status.citizens.map((c) => ({
           id: c.id,
           name: c.name,
           location: c.location,
@@ -162,7 +173,7 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
     const accountId = requireAuth(request, reply, { jwtSecret });
     if (!accountId) return;
     const params = request.params as { townId?: string };
-    const town = params.townId ? store.getTown(params.townId as Id) : undefined;
+    const town = params.townId ? await store.getTown(params.townId as Id) : undefined;
     if (!town) {
       return reply.code(404).send({
         error: { code: 'town-not-found', message: 'Ville introuvable' },

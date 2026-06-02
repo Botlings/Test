@@ -21,7 +21,7 @@ describe('POST /auth/register', () => {
     expect(refresh).toBeDefined();
     expect(refresh?.value.length).toBeGreaterThan(20);
     // Le hash en DB ne doit pas contenir le mot de passe en clair.
-    const account = built.store.findAccountByEmail('alia@hordes.test')!;
+    const account = (await built.store.findAccountByEmail('alia@hordes.test'))!;
     expect(account.passwordHash).not.toContain('password!1');
     expect(account.passwordHash).toMatch(/^\$argon2id\$/);
   });
