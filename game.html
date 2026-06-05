@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hordes Revival — Tableau de bord de la ville</title>
+    <meta
+      name="description"
+      content="Tableau de bord de la ville pour Hordes Revival. Gérez votre citoyen, partez fouiller le désert, construisez les défenses et survivez à la nuit."
+    />
+    <meta name="theme-color" content="#15110d" />
+    <meta name="robots" content="noindex,nofollow" />
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%230d0a07%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2244%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2Cserif%22%20font-size%3D%2240%22%20fill%3D%22%23c0392b%22%3E%E2%98%A3%3C%2Ftext%3E%3C%2Fsvg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="game.css" />
+  </head>
+  <body class="game-body">
+    <a class="skip-link" href="#game-main">Aller au contenu</a>
+
+    <header class="game-header">
+      <a class="brand" href="./" aria-label="Hordes Revival — retour à l'accueil">
+        <span class="brand__mark" aria-hidden="true">☣</span>
+        <span class="brand__name">Hordes Revival</span>
+      </a>
+
+      <div class="game-header__status" id="game-header-status" hidden>
+        <span class="status-pill status-pill--day" id="status-day">Jour 1</span>
+        <span class="status-pill status-pill--phase" id="status-phase">☀ Jour</span>
+        <span class="status-pill status-pill--threat" id="status-threat" title="Puissance de la horde annoncée pour la nuit">
+          <span aria-hidden="true">⚔</span>
+          <span id="status-threat-value">—</span>
+        </span>
+      </div>
+
+      <div class="game-header__account">
+        <span class="game-header__email" id="account-email" hidden></span>
+        <button
+          type="button"
+          class="btn btn--ghost btn--sm"
+          id="logout-btn"
+          hidden
+        >
+          Se déconnecter
+        </button>
+      </div>
+    </header>
+
+    <main class="game-main" id="game-main">
+      <!-- =================== Bandeau API =================== -->
+      <aside class="api-banner" id="api-banner" hidden>
+        <div class="api-banner__inner">
+          <p>
+            <strong>Backend non joignable.</strong>
+            Le client a besoin d'une instance serveur en ligne. Lancez-le en
+            local (<code>npm start</code>) et indiquez son URL ci-dessous.
+          </p>
+          <form class="api-banner__form" id="api-config-form">
+            <label for="api-url-input">URL de l'API</label>
+            <input
+              type="url"
+              id="api-url-input"
+              name="apiUrl"
+              placeholder="http://localhost:3000"
+              required
+            />
+            <button type="submit" class="btn btn--primary btn--sm">
+              Tester la connexion
+            </button>
+          </form>
+          <p class="api-banner__hint" id="api-banner-hint"></p>
+        </div>
+      </aside>
+
+      <!-- =================== Écran AUTH =================== -->
+      <section class="screen screen--auth" id="screen-auth" hidden>
+        <div class="auth-card">
+          <h1 class="auth-card__title">Entrer dans la ville</h1>
+          <p class="auth-card__lead">
+            Un compte, un citoyen, et la horde qui attend dehors.
+          </p>
+
+          <div class="auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              class="auth-tab is-active"
+              data-tab="login"
+              aria-selected="true"
+              id="tab-login"
+            >
+              Connexion
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="auth-tab"
+              data-tab="register"
+              aria-selected="false"
+              id="tab-register"
+            >
+              Inscription
+            </button>
+          </div>
+
+          <form class="auth-form" id="login-form" novalidate>
+            <label class="field">
+              <span class="field__label">Email</span>
+              <input
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="vous@exemple.fr"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">Mot de passe</span>
+              <input
+                type="password"
+                name="password"
+                required
+                minlength="8"
+                autocomplete="current-password"
+                placeholder="8 caractères minimum"
+              />
+            </label>
+            <p class="form-error" id="login-error" role="alert" hidden></p>
+            <button type="submit" class="btn btn--primary">
+              Entrer
+            </button>
+          </form>
+
+          <form class="auth-form" id="register-form" novalidate hidden>
+            <label class="field">
+              <span class="field__label">Email</span>
+              <input
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="vous@exemple.fr"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">Mot de passe</span>
+              <input
+                type="password"
+                name="password"
+                required
+                minlength="8"
+                autocomplete="new-password"
+                placeholder="8 caractères minimum"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">Confirmation du mot de passe</span>
+              <input
+                type="password"
+                name="passwordConfirm"
+                required
+                minlength="8"
+                autocomplete="new-password"
+              />
+            </label>
+            <p class="form-error" id="register-error" role="alert" hidden></p>
+            <button type="submit" class="btn btn--primary">
+              Créer mon compte
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- =================== Écran LOBBY =================== -->
+      <section class="screen screen--lobby" id="screen-lobby" hidden>
+        <header class="screen__header">
+          <h1>Villes ouvertes</h1>
+          <p>
+            Rejoignez une ville en cours de partie ou fondez la vôtre. Toute
+            ville accepte jusqu'à 40 citoyens.
+          </p>
+        </header>
+
+        <div class="lobby-grid">
+          <article class="card card--create">
+            <h2 class="card__title">Fonder une nouvelle ville</h2>
+            <form class="lobby-create__form" id="create-town-form" novalidate>
+              <label class="field">
+                <span class="field__label">Nom de la ville</span>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  minlength="3"
+                  maxlength="30"
+                  placeholder="Ex. Faubourg-Cendre"
+                />
+              </label>
+              <label class="field">
+                <span class="field__label">Difficulté</span>
+                <select name="difficulty" required>
+                  <option value="normal">Normal</option>
+                  <option value="hard">Difficile</option>
+                  <option value="hardcore">Hardcore</option>
+                </select>
+              </label>
+              <p class="form-error" id="create-town-error" role="alert" hidden></p>
+              <button type="submit" class="btn btn--primary">Fonder</button>
+            </form>
+          </article>
+
+          <article class="card card--list">
+            <header class="card__header">
+              <h2 class="card__title">Villes disponibles</h2>
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm"
+                id="refresh-towns-btn"
+                aria-label="Rafraîchir la liste des villes"
+              >
+                ↻ Rafraîchir
+              </button>
+            </header>
+            <ul class="lobby-list" id="towns-list">
+              <li class="lobby-empty" id="towns-empty">
+                Aucune ville ouverte pour le moment. Fondez la première.
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- =================== Écran TOWN =================== -->
+      <section class="screen screen--town" id="screen-town" hidden>
+        <header class="town-header">
+          <div class="town-header__title">
+            <h1 id="town-name">—</h1>
+            <p class="town-header__sub">
+              <span class="badge" id="town-difficulty">normal</span>
+              <span id="town-population">0 citoyen</span>
+            </p>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" id="leave-town-btn">
+            ← Retour au lobby
+          </button>
+        </header>
+
+        <div class="town-grid">
+          <!-- Carte de la ville -->
+          <article class="card card--map">
+            <header class="card__header">
+              <h2 class="card__title">Carte</h2>
+              <p class="card__sub" id="map-hint">
+                Cliquez sur une zone pour vous y rendre.
+              </p>
+            </header>
+            <div class="map" id="map">
+              <div
+                class="zone zone--town"
+                data-zone="town"
+                id="zone-town"
+                role="button"
+                tabindex="0"
+                aria-label="Aller en ville"
+              >
+                <div class="zone__art" aria-hidden="true">
+                  <span class="zone__icon">🏛</span>
+                  <span class="zone__wall"></span>
+                </div>
+                <h3 class="zone__name">La Ville</h3>
+                <p class="zone__desc">
+                  À l'abri des murs. Construisez ici, buvez à la banque.
+                </p>
+                <div class="zone__tokens" id="zone-town-tokens"></div>
+              </div>
+
+              <div class="map__bridge" aria-hidden="true">
+                <span>⇄</span>
+              </div>
+
+              <div
+                class="zone zone--desert"
+                data-zone="desert"
+                id="zone-desert"
+                role="button"
+                tabindex="0"
+                aria-label="Sortir dans le désert"
+              >
+                <div class="zone__art" aria-hidden="true">
+                  <span class="zone__icon">☀</span>
+                  <span class="zone__sand"></span>
+                </div>
+                <h3 class="zone__name">Le Désert</h3>
+                <p class="zone__desc">
+                  Fouilles risquées. Y rester la nuit, c'est mourir.
+                </p>
+                <div class="zone__tokens" id="zone-desert-tokens"></div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Inventaire / Banque -->
+          <article class="card card--bank">
+            <header class="card__header">
+              <h2 class="card__title">Inventaire de la ville</h2>
+            </header>
+            <dl class="bank">
+              <div class="bank__item bank__item--wood">
+                <dt><span aria-hidden="true">🪵</span> Bois</dt>
+                <dd id="bank-wood">0</dd>
+              </div>
+              <div class="bank__item bank__item--metal">
+                <dt><span aria-hidden="true">⚙</span> Métal</dt>
+                <dd id="bank-metal">0</dd>
+              </div>
+              <div class="bank__item bank__item--water">
+                <dt><span aria-hidden="true">💧</span> Eau</dt>
+                <dd id="bank-water">0</dd>
+              </div>
+            </dl>
+
+            <div class="defense">
+              <div class="defense__row">
+                <span class="defense__label">Défense de la ville</span>
+                <span class="defense__value" id="defense-value">10</span>
+              </div>
+              <div class="defense__bar" role="img" aria-label="Défense vs horde">
+                <span
+                  class="defense__bar-fill"
+                  id="defense-bar-fill"
+                  style="width: 50%"
+                ></span>
+                <span
+                  class="defense__bar-horde"
+                  id="defense-bar-horde"
+                  style="left: 50%"
+                  aria-hidden="true"
+                ></span>
+              </div>
+              <p class="defense__hint">
+                Horde annoncée cette nuit :
+                <strong id="horde-value">—</strong>
+              </p>
+            </div>
+          </article>
+
+          <!-- Mon citoyen + actions -->
+          <article class="card card--actions">
+            <header class="card__header">
+              <h2 class="card__title">Mon citoyen</h2>
+            </header>
+            <div class="citizen-card" id="citizen-card">
+              <p class="citizen-card__placeholder">Citoyen non identifié.</p>
+            </div>
+
+            <h3 class="actions__title">Actions du jour</h3>
+            <div class="actions" id="actions">
+              <button
+                type="button"
+                class="action"
+                data-action="move-town"
+                disabled
+              >
+                <span class="action__icon" aria-hidden="true">🏛</span>
+                <span class="action__label">Rentrer en ville</span>
+                <span class="action__cost">gratuit</span>
+              </button>
+              <button
+                type="button"
+                class="action"
+                data-action="move-desert"
+                disabled
+              >
+                <span class="action__icon" aria-hidden="true">🚪</span>
+                <span class="action__label">Sortir dans le désert</span>
+                <span class="action__cost">gratuit</span>
+              </button>
+              <button
+                type="button"
+                class="action"
+                data-action="scavenge"
+                disabled
+              >
+                <span class="action__icon" aria-hidden="true">🔎</span>
+                <span class="action__label">Fouiller</span>
+                <span class="action__cost" id="scavenge-cost">2 PA</span>
+              </button>
+              <button
+                type="button"
+                class="action"
+                data-action="build"
+                disabled
+              >
+                <span class="action__icon" aria-hidden="true">🛠</span>
+                <span class="action__label">Construire</span>
+                <span class="action__cost" id="build-cost">1 PA · 3 bois · 1 métal</span>
+              </button>
+            </div>
+
+            <h3 class="actions__title">Fin de journée</h3>
+            <button
+              type="button"
+              class="btn btn--danger btn--block"
+              id="trigger-night-btn"
+              disabled
+            >
+              <span aria-hidden="true">☾</span> Verrouiller les portes (lancer la nuit)
+            </button>
+            <p class="actions__hint">
+              Une fois la nuit lancée, plus aucune action n'est possible
+              jusqu'à l'aube.
+            </p>
+          </article>
+
+          <!-- Citoyens de la ville -->
+          <article class="card card--roster">
+            <header class="card__header">
+              <h2 class="card__title">
+                Citoyens
+                <span class="card__count" id="roster-count">0</span>
+              </h2>
+            </header>
+            <ul class="roster" id="roster-list"></ul>
+          </article>
+
+          <!-- Journal -->
+          <article class="card card--log">
+            <header class="card__header">
+              <h2 class="card__title">Journal</h2>
+              <p class="card__sub">Flux temps réel de la ville.</p>
+            </header>
+            <ul class="log" id="event-log">
+              <li class="log__empty">Le journal est vide. Agissez pour le remplir.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- =================== Modale fin de nuit =================== -->
+    <div
+      class="modal"
+      id="night-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="night-modal-title"
+      hidden
+    >
+      <div class="modal__overlay" id="night-modal-overlay"></div>
+      <div class="modal__card">
+        <h2 class="modal__title" id="night-modal-title">Compte rendu de la nuit</h2>
+        <div class="modal__body" id="night-modal-body"></div>
+        <button
+          type="button"
+          class="btn btn--primary"
+          id="close-night-modal-btn"
+        >
+          Continuer
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div
+      class="toast"
+      id="toast"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
