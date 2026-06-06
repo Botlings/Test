@@ -14,6 +14,7 @@
  * un 409 côté API, pas s'enchaîner par hasard.
  */
 import type { Game } from '../domain/game.js';
+import type { Phase } from '../domain/types.js';
 import type { Id } from './types.js';
 
 export type Difficulty = 'normal' | 'hard' | 'hardcore';
@@ -61,6 +62,28 @@ export interface NightEventInput {
   readonly deaths: number;
 }
 
+/**
+ * Une ligne d'historique : une ville à laquelle un compte a participé, avec
+ * l'état actuel (jour atteint, partie terminée ou non) et le devenir du
+ * citoyen contrôlé. Sert à alimenter le profil du joueur.
+ */
+export interface AccountTownEntry {
+  readonly townId: Id;
+  readonly townName: string;
+  readonly difficulty: Difficulty;
+  readonly joinedAt: Date;
+  readonly currentDay: number;
+  readonly phase: Phase;
+  readonly gameOver: boolean;
+  readonly closed: boolean;
+  readonly citizen: {
+    readonly id: string;
+    readonly name: string;
+    readonly alive: boolean;
+    readonly causeOfDeath: string | null;
+  };
+}
+
 export interface Store {
   /* ------------------------------ Comptes ------------------------------- */
   findAccountByEmail(email: string): Promise<AccountRecord | undefined>;
@@ -82,6 +105,11 @@ export interface Store {
   createTown(name: string, difficulty: Difficulty): Promise<TownRecord>;
   joinTown(townId: Id, accountId: Id, citizenName: string): Promise<{ citizenId: string }>;
   citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined>;
+  /**
+   * Liste les villes auxquelles un compte a participé, triées de la plus
+   * récente à la plus ancienne. Utilisé par `/auth/me/history`.
+   */
+  listAccountTowns(accountId: Id): Promise<AccountTownEntry[]>;
 
   /**
    * Persiste l'état courant du moteur (`town.game.snapshot()`) et le drapeau

@@ -376,13 +376,16 @@
   function refreshAccountUI() {
     var emailEl = $('account-email');
     var logoutBtn = $('logout-btn');
+    var profileBtn = $('profile-btn');
     if (state.accessToken && state.accountEmail) {
       emailEl.textContent = state.accountEmail;
       show(emailEl);
       show(logoutBtn);
+      show(profileBtn);
     } else {
       hide(emailEl);
       hide(logoutBtn);
+      hide(profileBtn);
     }
   }
 
@@ -399,6 +402,154 @@
     closeSocket();
     refreshAccountUI();
     showScreen('auth');
+  }
+
+  /* =========================================================================
+   *  PROFIL JOUEUR & HISTORIQUE
+   * =======================================================================*/
+
+  var DIFFICULTY_BADGE = {
+    normal: 'Normal',
+    hard: 'Difficile',
+    hardcore: 'Hardcore',
+  };
+
+  function setupProfileUI() {
+    var profileBtn = $('profile-btn');
+    var closeBtn = $('close-profile-modal-btn');
+    var overlay = $('profile-modal-overlay');
+    if (profileBtn) profileBtn.addEventListener('click', openProfileModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeProfileModal);
+    if (overlay) overlay.addEventListener('click', closeProfileModal);
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        var modal = $('profile-modal');
+        if (modal && !modal.hidden) closeProfileModal();
+      }
+    });
+  }
+
+  function openProfileModal() {
+    var modal = $('profile-modal');
+    if (!modal) return;
+    show(modal);
+    renderProfileLoading();
+    Promise.all([apiCall('/auth/me'), apiCall('/auth/me/history')])
+      .then(function (results) {
+        renderProfile(results[0], (results[1] && results[1].history) || []);
+      })
+      .catch(function (err) {
+        $('profile-identity').innerHTML =
+          '<p class="profile-loading">Impossible de charger le profil : ' +
+          escapeHtml(err.message || 'erreur réseau') + '</p>';
+        hide($('profile-stats'));
+        $('profile-history-list').innerHTML =
+          '<li class="profile-history__empty">—</li>';
+      });
+  }
+
+  function closeProfileModal() {
+    hide($('profile-modal'));
+  }
+
+  function renderProfileLoading() {
+    $('profile-identity').innerHTML =
+      '<p class="profile-loading">Chargement…</p>';
+    hide($('profile-stats'));
+    $('profile-history-list').innerHTML =
+      '<li class="profile-history__empty">Chargement de l\'historique…</li>';
+  }
+
+  function renderProfile(me, history) {
+    if (!me) return;
+    state.accountEmail = me.email || state.accountEmail;
+    if (state.accountEmail) lsSet(EMAIL_KEY, state.accountEmail);
+    refreshAccountUI();
+
+    var createdLabel = me.createdAt
+      ? new Date(me.createdAt).toLocaleDateString('fr-FR', {
+          day: '2-digit', month: 'short', year: 'numeric',
+        })
+      : '—';
+    $('profile-identity').innerHTML =
+      '<span class="profile-identity__email">' + escapeHtml(me.email || '') + '</span>' +
+      '<span class="profile-identity__meta">Compte créé le ' + escapeHtml(createdLabel) +
+      ' · id <code>' + escapeHtml((me.userId || '').slice(0, 8)) + '…</code></span>';
+
+    var stats = me.stats || { totalGames: 0, aliveGames: 0, deathsCount: 0, bestDay: 0 };
+    $('stat-total').textContent = String(stats.totalGames);
+    $('stat-alive').textContent = String(stats.aliveGames);
+    $('stat-deaths').textContent = String(stats.deathsCount);
+    $('stat-best-day').textContent = stats.bestDay > 0 ? 'Jour ' + stats.bestDay : '—';
+    show($('profile-stats'));
+
+    renderProfileHistory(history);
+  }
+
+  function renderProfileHistory(history) {
+    var listEl = $('profile-history-list');
+    if (!history.length) {
+      listEl.innerHTML =
+        '<li class="profile-history__empty">Aucune partie pour le moment. Rejoignez une ville depuis le lobby.</li>';
+      return;
+    }
+    listEl.innerHTML = '';
+    history.forEach(function (entry) {
+      var li = document.createElement('li');
+      li.className = 'history-entry';
+      var statusLabel;
+      var statusClass;
+      if (entry.gameOver || entry.closed) {
+        statusLabel = 'Partie terminée';
+        statusClass = 'history-entry__status--over';
+      } else if (entry.citizen.alive) {
+        statusLabel = 'En vie';
+        statusClass = 'history-entry__status--alive';
+      } else {
+        statusLabel = 'Disparu';
+        statusClass = 'history-entry__status--dead';
+      }
+      var joinedLabel = entry.joinedAt
+        ? new Date(entry.joinedAt).toLocaleDateString('fr-FR', {
+            day: '2-digit', month: 'short', year: 'numeric',
+          })
+        : '—';
+      var diffLabel = DIFFICULTY_BADGE[entry.difficulty] || entry.difficulty;
+      var phaseLabel = entry.phase === 'night' ? 'nuit' : 'jour';
+      var canResume = !entry.gameOver && !entry.closed && entry.citizen.alive;
+      var resumeBtn = canResume
+        ? '<button type="button" class="history-entry__resume" data-town-id="' +
+          escapeHtml(entry.townId) + '">Reprendre →</button>'
+        : '<span class="history-entry__resume" aria-hidden="true">—</span>';
+      li.innerHTML =
+        '<div class="history-entry__name">' +
+        '  <span>' + escapeHtml(entry.townName) + '</span>' +
+        '  <span class="badge badge--' + escapeHtml(entry.difficulty) + '">' +
+        escapeHtml(diffLabel) + '</span>' +
+        '  <span class="history-entry__status ' + statusClass + '">' +
+        escapeHtml(statusLabel) + '</span>' +
+        '</div>' +
+        resumeBtn +
+        '<div class="history-entry__meta">' +
+        '  <span>Citoyen <strong>' + escapeHtml(entry.citizen.name) + '</strong></span>' +
+        '  <span>Jour atteint <strong>' + entry.currentDay + '</strong> (' + phaseLabel + ')</span>' +
+        '  <span>Rejointe le <strong>' + escapeHtml(joinedLabel) + '</strong></span>' +
+        '</div>' +
+        (entry.citizen.causeOfDeath
+          ? '<div class="history-entry__cause">☠ ' + escapeHtml(entry.citizen.causeOfDeath) + '</div>'
+          : '');
+      var btn = li.querySelector('button[data-town-id]');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          closeProfileModal();
+          var townId = btn.getAttribute('data-town-id');
+          apiCall('/towns/' + encodeURIComponent(townId))
+            .then(function (town) { enterTown(town.id, town); })
+            .catch(function (err) { toast(err.message || 'Reprise impossible', 'error'); });
+        });
+      }
+      listEl.appendChild(li);
+    });
   }
 
   /* =========================================================================
@@ -1051,34 +1202,87 @@
    *  Démarrage
    * =======================================================================*/
 
-  function maybeRouteToScreen() {
-    // Si on a un token, on tente d'entrer en lobby (puis éventuellement de
-    // restaurer la ville courante). Sinon on affiche le formulaire d'auth.
-    if (!state.accessToken) {
-      showScreen('auth');
-      return;
-    }
-    var savedTown = lsGet(TOWN_KEY);
-    if (savedTown) {
-      apiCall('/towns/' + encodeURIComponent(savedTown))
-        .then(function (town) {
-          if (town && town.yourCitizenId) {
-            enterTown(town.id, town);
-          } else {
-            enterLobby();
+  /**
+   * Tente une reconnexion silencieuse via le cookie HTTPonly de refresh, puis
+   * récupère le profil pour vérifier la validité du token et resynchroniser
+   * l'email affiché. Renvoie une promesse qui résout en `true` si on dispose
+   * d'un accessToken utilisable, `false` sinon.
+   */
+  function ensureAuthenticated() {
+    if (state.accessToken) {
+      return apiCall('/auth/me')
+        .then(function (me) {
+          if (me && me.email) {
+            state.accountEmail = me.email;
+            lsSet(EMAIL_KEY, me.email);
+            refreshAccountUI();
           }
+          return true;
         })
-        .catch(function (err) {
-          if (err.status === 401) {
-            logout();
-          } else {
-            lsSet(TOWN_KEY, null);
-            enterLobby();
-          }
+        .catch(function () {
+          // Le retry via tryRefreshAndRetry est déjà tenté dans apiCall.
+          // Si on échoue ici, on considère la session perdue.
+          state.accessToken = null;
+          state.accountEmail = null;
+          lsSet(TOKEN_KEY, null);
+          lsSet(EMAIL_KEY, null);
+          refreshAccountUI();
+          return false;
         });
-    } else {
-      enterLobby();
     }
+    // Pas d'accessToken : on tente d'en obtenir un via le cookie refresh.
+    return fetch(state.apiUrl + '/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !data.accessToken) return false;
+        state.accessToken = data.accessToken;
+        lsSet(TOKEN_KEY, data.accessToken);
+        return apiCall('/auth/me').then(function (me) {
+          if (me && me.email) {
+            state.accountEmail = me.email;
+            lsSet(EMAIL_KEY, me.email);
+          }
+          refreshAccountUI();
+          return true;
+        });
+      })
+      .catch(function () { return false; });
+  }
+
+  function maybeRouteToScreen() {
+    var savedTown = lsGet(TOWN_KEY);
+    ensureAuthenticated().then(function (ok) {
+      if (!ok) {
+        showScreen('auth');
+        return;
+      }
+      if (savedTown) {
+        apiCall('/towns/' + encodeURIComponent(savedTown))
+          .then(function (town) {
+            if (town && town.yourCitizenId) {
+              enterTown(town.id, town);
+            } else {
+              enterLobby();
+            }
+          })
+          .catch(function (err) {
+            if (err.status === 401) {
+              logout();
+            } else {
+              lsSet(TOWN_KEY, null);
+              enterLobby();
+            }
+          });
+      } else {
+        enterLobby();
+      }
+    });
   }
 
   function boot() {
@@ -1091,6 +1295,7 @@
     state.accountEmail = lsGet(EMAIL_KEY);
 
     setupAuthUI();
+    setupProfileUI();
     setupLobbyUI();
     setupTownUI();
     setupApiBanner();

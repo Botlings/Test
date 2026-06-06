@@ -7,6 +7,7 @@
  * email déjà utilisé, 500 pour erreur serveur.
  */
 import type { FastifyInstance } from 'fastify';
+import { requireAuth } from '../auth-guard.js';
 import type { Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import {
@@ -156,5 +157,61 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     }
     reply.clearCookie(REFRESH_COOKIE, { path: '/auth' });
     return reply.code(204).send();
+  });
+
+  /* ----------------------------- /auth/me --------------------------------- */
+  /**
+   * Renvoie le profil du compte authentifié : identité + statistiques agrégées
+   * sur l'ensemble des villes auxquelles il a participé.
+   */
+  app.get('/auth/me', async (request, reply) => {
+    const accountId = requireAuth(request, reply, { jwtSecret });
+    if (!accountId) return;
+    const account = await store.getAccount(accountId);
+    if (!account) {
+      return reply.code(401).send({
+        error: { code: 'account-not-found', message: 'Compte introuvable' },
+      });
+    }
+    const history = await store.listAccountTowns(accountId);
+    const aliveGames = history.filter((h) => h.citizen.alive).length;
+    const totalGames = history.length;
+    const bestDay = history.reduce((acc, h) => Math.max(acc, h.currentDay), 0);
+    return reply.code(200).send({
+      userId: account.id,
+      email: account.email,
+      createdAt: account.createdAt.toISOString(),
+      stats: {
+        totalGames,
+        aliveGames,
+        deathsCount: totalGames - aliveGames,
+        bestDay,
+      },
+    });
+  });
+
+  /* ------------------------- /auth/me/history ----------------------------- */
+  /**
+   * Liste détaillée des villes jouées par le compte, des plus récentes aux
+   * plus anciennes. Chaque entrée décrit le devenir du citoyen et l'état
+   * de la partie au moment de la requête.
+   */
+  app.get('/auth/me/history', async (request, reply) => {
+    const accountId = requireAuth(request, reply, { jwtSecret });
+    if (!accountId) return;
+    const history = await store.listAccountTowns(accountId);
+    return reply.code(200).send({
+      history: history.map((h) => ({
+        townId: h.townId,
+        townName: h.townName,
+        difficulty: h.difficulty,
+        joinedAt: h.joinedAt.toISOString(),
+        currentDay: h.currentDay,
+        phase: h.phase,
+        gameOver: h.gameOver,
+        closed: h.closed,
+        citizen: h.citizen,
+      })),
+    });
   });
 }

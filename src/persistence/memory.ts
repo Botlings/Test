@@ -19,6 +19,7 @@ import {
   REFRESH_TOKEN_TTL_MS,
   StoreError,
   type AccountRecord,
+  type AccountTownEntry,
   type Difficulty,
   type NightEventInput,
   type SessionRecord,
@@ -31,6 +32,7 @@ export {
   REFRESH_TOKEN_TTL_MS,
   StoreError,
   type AccountRecord,
+  type AccountTownEntry,
   type Difficulty,
   type SessionRecord,
   type TownRecord,
@@ -73,6 +75,7 @@ export class MemoryStore implements Store {
   private readonly towns = new Map<Id, TownRecord>();
   private readonly nightLocks = new Set<Id>();
   private readonly nightEvents: Array<{ townId: Id; event: NightEventInput; at: Date }> = [];
+  private readonly membershipJoinedAt = new Map<string, Date>();
 
   /* ---------------------------- Comptes ---------------------------------- */
 
@@ -186,11 +189,43 @@ export class MemoryStore implements Store {
     }
     const citizen = town.game.addCitizen(citizenName);
     town.membership.set(accountId, citizen.id);
+    this.membershipJoinedAt.set(`${townId}|${accountId}`, new Date());
     return { citizenId: citizen.id };
   }
 
   async citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined> {
     return this.towns.get(townId)?.membership.get(accountId);
+  }
+
+  async listAccountTowns(accountId: Id): Promise<AccountTownEntry[]> {
+    const entries: AccountTownEntry[] = [];
+    for (const town of this.towns.values()) {
+      const citizenId = town.membership.get(accountId);
+      if (!citizenId) continue;
+      const status = town.game.status();
+      const citizen = status.citizens.find((c) => c.id === citizenId);
+      if (!citizen) continue;
+      const joinedAt =
+        this.membershipJoinedAt.get(`${town.id}|${accountId}`) ?? town.createdAt;
+      entries.push({
+        townId: town.id,
+        townName: town.name,
+        difficulty: town.difficulty,
+        joinedAt,
+        currentDay: status.day,
+        phase: status.phase,
+        gameOver: status.gameOver,
+        closed: town.closed,
+        citizen: {
+          id: citizen.id,
+          name: citizen.name,
+          alive: citizen.alive,
+          causeOfDeath: citizen.causeOfDeath ?? null,
+        },
+      });
+    }
+    entries.sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime());
+    return entries;
   }
 
   async saveTown(_town: TownRecord): Promise<void> {

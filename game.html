@@ -49,6 +49,14 @@
         <button
           type="button"
           class="btn btn--ghost btn--sm"
+          id="profile-btn"
+          hidden
+        >
+          ☰ Mon profil
+        </button>
+        <button
+          type="button"
+          class="btn btn--ghost btn--sm"
           id="logout-btn"
           hidden
         >
@@ -468,6 +476,60 @@
         >
           Continuer
         </button>
+      </div>
+    </div>
+
+    <!-- =================== Modale profil joueur =================== -->
+    <div
+      class="modal"
+      id="profile-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-modal-title"
+      hidden
+    >
+      <div class="modal__overlay" id="profile-modal-overlay"></div>
+      <div class="modal__card modal__card--wide">
+        <header class="profile-head">
+          <h2 class="modal__title" id="profile-modal-title">Mon profil</h2>
+          <button
+            type="button"
+            class="btn btn--ghost btn--sm"
+            id="close-profile-modal-btn"
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        </header>
+        <div class="modal__body">
+          <section class="profile-identity" id="profile-identity">
+            <p class="profile-loading">Chargement…</p>
+          </section>
+          <section class="profile-stats" id="profile-stats" hidden>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Parties jouées</span>
+              <span class="profile-stat__value" id="stat-total">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Citoyens vivants</span>
+              <span class="profile-stat__value" id="stat-alive">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Disparus</span>
+              <span class="profile-stat__value" id="stat-deaths">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Meilleur jour</span>
+              <span class="profile-stat__value" id="stat-best-day">—</span>
+            </div>
+          </section>
+          <section class="profile-history">
+            <h3 class="profile-history__title">Historique des parties</h3>
+            <ul class="profile-history__list" id="profile-history-list">
+              <li class="profile-history__empty">Aucune partie pour le moment.</li>
+            </ul>
+          </section>
+        </div>
       </div>
     </div>
 

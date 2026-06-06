@@ -27,6 +27,7 @@ import {
   REFRESH_TOKEN_TTL_MS,
   StoreError,
   type AccountRecord,
+  type AccountTownEntry,
   type Difficulty,
   type NightEventInput,
   type SessionRecord,
@@ -368,6 +369,43 @@ export class PgStore implements Store {
 
   async citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined> {
     return this.towns.get(townId)?.membership.get(accountId);
+  }
+
+  async listAccountTowns(accountId: Id): Promise<AccountTownEntry[]> {
+    const res = await this.pool.query<{ town_id: Id; joined_at: Date }>(
+      `SELECT town_id, joined_at
+         FROM town_memberships
+        WHERE account_id = $1`,
+      [accountId],
+    );
+    const entries: AccountTownEntry[] = [];
+    for (const row of res.rows) {
+      const town = this.towns.get(row.town_id);
+      if (!town) continue;
+      const citizenId = town.membership.get(accountId);
+      if (!citizenId) continue;
+      const status = town.game.status();
+      const citizen = status.citizens.find((c) => c.id === citizenId);
+      if (!citizen) continue;
+      entries.push({
+        townId: town.id,
+        townName: town.name,
+        difficulty: town.difficulty,
+        joinedAt: row.joined_at,
+        currentDay: status.day,
+        phase: status.phase,
+        gameOver: status.gameOver,
+        closed: town.closed,
+        citizen: {
+          id: citizen.id,
+          name: citizen.name,
+          alive: citizen.alive,
+          causeOfDeath: citizen.causeOfDeath ?? null,
+        },
+      });
+    }
+    entries.sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime());
+    return entries;
   }
 
   async saveTown(town: TownRecord): Promise<void> {
