@@ -15,11 +15,13 @@ import {
 } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
+import type { NightScheduler } from '../night-scheduler.js';
 
 interface TownsDeps {
   readonly store: Store;
   readonly jwtSecret: string;
   readonly hub: RealtimeHub;
+  readonly scheduler?: NightScheduler;
 }
 
 const DIFFICULTIES: ReadonlySet<Difficulty> = new Set(['normal', 'hard', 'hardcore']);
@@ -41,9 +43,14 @@ function summarizeTown(town: TownRecord) {
   };
 }
 
-function fullTownState(town: TownRecord, accountId: Id) {
+function fullTownState(
+  town: TownRecord,
+  accountId: Id,
+  scheduler?: NightScheduler,
+) {
   const status = town.game.status();
   const yourCitizenId = town.membership.get(accountId);
+  const scheduledAt = scheduler?.getScheduledFor(town.id) ?? null;
   return {
     id: town.id,
     name: town.name,
@@ -65,11 +72,12 @@ function fullTownState(town: TownRecord, accountId: Id) {
     yourCitizenId: yourCitizenId ?? null,
     closed: town.closed,
     gameOver: status.gameOver,
+    nextNightAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
   };
 }
 
 export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void {
-  const { store, jwtSecret, hub } = deps;
+  const { store, jwtSecret, hub, scheduler } = deps;
 
   /* ------------------------------ GET /towns ------------------------------ */
   app.get('/towns', async (request, reply) => {
@@ -109,7 +117,8 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
           alive: c.alive,
         })),
       });
-      return reply.code(201).send(fullTownState(town, accountId));
+      scheduler?.scheduleTown(town.id, { day: town.game.day });
+      return reply.code(201).send(fullTownState(town, accountId, scheduler));
     } catch (err) {
       if (err instanceof StoreError) {
         const code = err.code === 'town-name-invalid' ? 400 : 409;
@@ -154,7 +163,7 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
           alive: c.alive,
         })),
       });
-      return reply.code(200).send(fullTownState(town, accountId));
+      return reply.code(200).send(fullTownState(town, accountId, scheduler));
     } catch (err) {
       if (err instanceof StoreError) {
         const code =
@@ -179,6 +188,48 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
         error: { code: 'town-not-found', message: 'Ville introuvable' },
       });
     }
-    return reply.code(200).send(fullTownState(town, accountId));
+    return reply.code(200).send(fullTownState(town, accountId, scheduler));
+  });
+
+  /* -------------------- GET /towns/:id/night-reports --------------------- */
+  app.get('/towns/:townId/night-reports', async (request, reply) => {
+    const accountId = requireAuth(request, reply, { jwtSecret });
+    if (!accountId) return;
+    const params = request.params as { townId?: string };
+    const query = request.query as { limit?: string } | undefined;
+    const townId = params.townId as Id | undefined;
+    if (!townId) {
+      return reply.code(400).send({
+        error: { code: 'town-id-missing', message: 'Identifiant de ville manquant' },
+      });
+    }
+    const town = await store.getTown(townId);
+    if (!town) {
+      return reply.code(404).send({
+        error: { code: 'town-not-found', message: 'Ville introuvable' },
+      });
+    }
+    if (!town.membership.has(accountId)) {
+      return reply.code(403).send({
+        error: { code: 'not-a-citizen', message: 'Vous devez être citoyen de cette ville' },
+      });
+    }
+    let limit = 20;
+    if (typeof query?.limit === 'string') {
+      const parsed = Number.parseInt(query.limit, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        limit = Math.min(100, parsed);
+      }
+    }
+    const reports = await store.listNightReports(townId, limit);
+    return reply.code(200).send({
+      townId,
+      count: reports.length,
+      reports: reports.map((r) => ({
+        trigger: r.trigger,
+        storedAt: r.storedAt.toISOString(),
+        report: r.report,
+      })),
+    });
   });
 }

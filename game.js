@@ -45,6 +45,7 @@
     yourCitizenId: null,
     ws: null,
     wsReconnectTimer: null,
+    nextNightTicker: null,
     refreshing: false,
   };
 
@@ -704,6 +705,7 @@
 
   function leaveTown() {
     closeSocket();
+    stopNextNightTicker();
     state.currentTownId = null;
     state.town = null;
     state.yourCitizenId = null;
@@ -713,6 +715,55 @@
       logList.innerHTML = '<li class="log__empty">Le journal est vide. Agissez pour le remplir.</li>';
     }
     enterLobby();
+  }
+
+  function formatScheduledFor(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatCountdown(iso) {
+    if (!iso) return '';
+    var ms = new Date(iso).getTime() - Date.now();
+    if (!isFinite(ms)) return '';
+    if (ms <= 0) return 'imminente';
+    var totalSec = Math.floor(ms / 1000);
+    var h = Math.floor(totalSec / 3600);
+    var m = Math.floor((totalSec % 3600) / 60);
+    var s = totalSec % 60;
+    if (h > 0) return h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+    if (m > 0) return m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+    return s + 's';
+  }
+
+  function renderNextNightPill(iso) {
+    var pill = $('status-next-night');
+    var value = $('status-next-night-value');
+    if (!pill || !value) return;
+    if (!iso) {
+      pill.hidden = true;
+      stopNextNightTicker();
+      return;
+    }
+    pill.hidden = false;
+    var update = function () {
+      var countdown = formatCountdown(iso);
+      value.textContent = countdown
+        ? countdown + ' (' + formatScheduledFor(iso) + ')'
+        : formatScheduledFor(iso);
+    };
+    update();
+    stopNextNightTicker();
+    state.nextNightTicker = window.setInterval(update, 1000);
+  }
+
+  function stopNextNightTicker() {
+    if (state.nextNightTicker) {
+      window.clearInterval(state.nextNightTicker);
+      state.nextNightTicker = null;
+    }
   }
 
   function renderTown(town) {
@@ -734,6 +785,7 @@
     $('status-phase').textContent = town.phase === 'night' ? '☾ Nuit' : '☀ Jour';
     $('status-threat-value').textContent = String(town.hordePowerTonight);
     document.body.setAttribute('data-phase', town.phase);
+    renderNextNightPill(town.nextNightAt || null);
 
     // Inventaire
     updateBank(town.bank || {}, false);
@@ -1003,17 +1055,48 @@
     var rows =
       '<div class="report-row"><span>Jour</span><strong>' + report.day + '</strong></div>' +
       '<div class="report-row"><span>Puissance de la horde</span><strong>' + report.hordePower + '</strong></div>' +
-      '<div class="report-row"><span>Défense de la ville</span><strong>' + report.townDefense + '</strong></div>' +
+      '<div class="report-row"><span>Défense totale de la ville</span><strong>' + report.townDefense + '</strong></div>' +
       '<div class="report-row"><span>Survivants après la nuit</span><strong>' + report.survivors + '</strong></div>';
+
+    var defenseHtml = '';
+    if (report.defense) {
+      defenseHtml =
+        '<h3 style="margin-top:0.6rem">Sources de défense</h3>' +
+        '<ul class="report-deaths">' +
+        '<li>Murs et constructions <strong>+' + report.defense.walls + '</strong></li>' +
+        '<li>Citoyens en faction (' + report.defense.watcherCount + ') <strong>+' + report.defense.watchers + '</strong></li>' +
+        '<li>Total <strong>' + report.defense.total + '</strong></li>' +
+        '</ul>';
+    }
+
+    var wavesHtml = '';
+    if (report.waves && report.waves.length) {
+      wavesHtml = '<h3 style="margin-top:0.6rem">Vagues d\'assaut</h3><ul class="report-deaths">';
+      report.waves.forEach(function (w) {
+        var label = w.overflow > 0
+          ? 'a débordé de <strong>' + w.overflow + '</strong>'
+          : 'absorbée par les défenses';
+        wavesHtml += '<li>Vague ' + w.index + ' — attaque <strong>' + w.attack + '</strong>, ' + label + '</li>';
+      });
+      wavesHtml += '</ul>';
+    }
+
     var deathsHtml = '';
     if (report.deaths && report.deaths.length) {
-      deathsHtml = '<h3 style="margin-top:0.6rem">Pertes (' + report.deaths.length + ')</h3><ul class="report-deaths">';
+      var bySource = report.deathsBySource || {};
+      var summary = [];
+      if (bySource.desert) summary.push(bySource.desert + ' dans le désert');
+      if (bySource.watch) summary.push(bySource.watch + ' tombé(s) en faction');
+      if (bySource.breach) summary.push(bySource.breach + ' lors de la percée');
+      if (bySource.dehydration) summary.push(bySource.dehydration + ' de soif');
+      var summaryText = summary.length ? ' — ' + summary.join(', ') : '';
+      deathsHtml = '<h3 style="margin-top:0.6rem">Pertes (' + report.deaths.length + ')' + summaryText + '</h3><ul class="report-deaths">';
       report.deaths.forEach(function (d) {
         deathsHtml += '<li><strong>' + escapeHtml(d.name) + '</strong> — ' + escapeHtml(d.cause) + '</li>';
       });
       deathsHtml += '</ul>';
     }
-    body.innerHTML = verdict + rows + deathsHtml;
+    body.innerHTML = verdict + rows + defenseHtml + wavesHtml + deathsHtml;
     show(modal);
   }
 
@@ -1098,8 +1181,16 @@
       case 'night.start':
         logEvent('☾ La nuit du jour ' + msg.day + ' commence — les portes se referment.', 'warning');
         break;
+      case 'night.scheduled':
+        if (state.town) {
+          state.town.nextNightAt = msg.scheduledFor;
+          renderTown(state.town);
+        }
+        logEvent('⏰ Prochaine résolution prévue à ' + formatScheduledFor(msg.scheduledFor) + '.', 'info');
+        break;
       case 'night.report':
-        logEvent('Rapport de la nuit ' + msg.day + ' : ' + msg.report.deaths.length + ' pertes.',
+        var triggerLabel = msg.trigger === 'scheduler' ? 'automatique' : 'déclenchée';
+        logEvent('Rapport ' + triggerLabel + ' de la nuit ' + msg.day + ' : ' + msg.report.deaths.length + ' pertes.',
           msg.report.breached ? 'danger' : 'success');
         showNightReport(msg.report);
         // Le snapshot serveur arrivera ensuite et rafraîchira l'état complet.

@@ -17,6 +17,7 @@ import { verifyJwt } from './crypto.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerTownRoutes } from './routes/towns.js';
 import { registerActionRoutes } from './routes/actions.js';
+import type { NightScheduler } from './night-scheduler.js';
 import type { Store } from '../persistence/store.js';
 import type { Id } from '../persistence/types.js';
 import { RealtimeHub } from '../realtime/hub.js';
@@ -29,12 +30,14 @@ export interface AppDeps {
   readonly accessTokenTtlSeconds?: number;
   readonly secureCookies?: boolean;
   readonly logger?: boolean;
+  readonly scheduler?: NightScheduler;
 }
 
 export interface BuiltApp {
   readonly app: FastifyInstance;
   readonly store: Store;
   readonly hub: RealtimeHub;
+  readonly scheduler?: NightScheduler;
 }
 
 export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
@@ -45,6 +48,7 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
     accessTokenTtlSeconds = 15 * 60,
     secureCookies = false,
     logger = false,
+    scheduler,
   } = deps;
 
   const app = Fastify({ logger });
@@ -54,8 +58,8 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   app.get('/health', async () => ({ status: 'ok' }));
 
   registerAuthRoutes(app, { store, jwtSecret, accessTokenTtlSeconds, secureCookies });
-  registerTownRoutes(app, { store, jwtSecret, hub });
-  registerActionRoutes(app, { store, jwtSecret, hub });
+  registerTownRoutes(app, { store, jwtSecret, hub, scheduler });
+  registerActionRoutes(app, { store, jwtSecret, hub, scheduler });
 
   app.get('/ws', { websocket: true }, (socket: WebSocket, request) => {
     const url = new URL(request.url, 'http://localhost');
@@ -128,5 +132,5 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
     })();
   });
 
-  return { app, store, hub };
+  return { app, store, hub, scheduler };
 }

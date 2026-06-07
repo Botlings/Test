@@ -17,6 +17,17 @@ export interface GameConfig {
   hordeGrowthPerDay: number;
   /** Points de débordement de la horde nécessaires pour tuer un citoyen abrité. */
   killThreshold: number;
+  /**
+   * Défense apportée par chaque citoyen en faction (vivant, présent en ville)
+   * la nuit. Les citoyens veillent sur les remparts ; ils renforcent la
+   * défense mais sont aussi les premiers en première ligne en cas de percée.
+   */
+  watchDefensePerCitizen: number;
+  /**
+   * Poids des trois vagues de la horde (somme = 1). Détermine la répartition
+   * narrative de l'attaque, sans changer l'arithmétique du verdict final.
+   */
+  hordeWaveWeights: readonly [number, number, number];
   /** Coût en points d'action d'une action de construction. */
   buildActionPointCost: number;
   /** Coût en ressources d'une action de construction. */
@@ -37,6 +48,8 @@ export const DEFAULT_CONFIG: GameConfig = {
   hordeBaseAttack: 12,
   hordeGrowthPerDay: 8,
   killThreshold: 15,
+  watchDefensePerCitizen: 2,
+  hordeWaveWeights: [0.45, 0.35, 0.2],
   buildActionPointCost: 1,
   buildResourceCost: { wood: 3, metal: 1 },
   defensePerBuildAction: 6,

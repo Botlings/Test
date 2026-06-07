@@ -15,36 +15,23 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth-guard.js';
 import { GameRuleError } from '../../domain/game.js';
 import type { Location } from '../../domain/types.js';
-import { StoreError, type Store, type TownRecord } from '../../persistence/store.js';
+import { StoreError, type Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
+import type { NightScheduler } from '../night-scheduler.js';
+import { publishTownSnapshot, resolveNight } from '../night-resolver.js';
 
 interface ActionsDeps {
   readonly store: Store;
   readonly jwtSecret: string;
   readonly hub: RealtimeHub;
+  readonly scheduler?: NightScheduler;
 }
 
 const LOCATIONS: ReadonlySet<Location> = new Set(['town', 'desert']);
 
-function publishTownSnapshot(hub: RealtimeHub, town: TownRecord): void {
-  const status = town.game.status();
-  hub.publish(town.id, {
-    type: 'town.snapshot',
-    day: status.day,
-    phase: status.phase,
-    resources: { ...status.bank },
-    citizens: status.citizens.map((c) => ({
-      id: c.id,
-      name: c.name,
-      location: c.location,
-      alive: c.alive,
-    })),
-  });
-}
-
 export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): void {
-  const { store, jwtSecret, hub } = deps;
+  const { store, jwtSecret, hub, scheduler } = deps;
 
   /* ----------- POST /towns/:townId/citizens/:citizenId/action -------------- */
   app.post('/towns/:townId/citizens/:citizenId/action', async (request, reply) => {
@@ -160,34 +147,19 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
       });
     }
     try {
-      const report = await store.nightLock(townId, async () => {
-        const current = await store.getTown(townId);
-        if (!current) {
-          throw new StoreError('town-not-found', 'Ville introuvable');
-        }
-        if (current.closed) {
-          throw new StoreError('town-closed', 'Cette ville est terminée');
-        }
-        if (current.game.status().phase !== 'day') {
-          throw new StoreError('night-already-running', 'La nuit est déjà en cours');
-        }
-        hub.publish(townId, { type: 'night.start', day: current.game.day });
-        const out = current.game.endDay();
-        if (out.gameOver) {
-          current.closed = true;
-        }
-        await store.saveTown(current);
-        await store.recordNightEvent(townId, {
-          day: out.day,
-          attackers: out.hordePower,
-          defense: out.townDefense,
-          breached: out.breached,
-          deaths: out.deaths.length,
-        });
-        hub.publish(townId, { type: 'night.report', day: out.day, report: out });
-        publishTownSnapshot(hub, current);
-        return out;
+      const { report } = await resolveNight({
+        store,
+        hub,
+        townId,
+        trigger: 'manual',
       });
+      if (scheduler) {
+        if (report.gameOver) {
+          scheduler.cancelTown(townId);
+        } else {
+          scheduler.scheduleTown(townId, { day: town.game.day });
+        }
+      }
       return reply.code(200).send({ report });
     } catch (err) {
       if (err instanceof StoreError) {

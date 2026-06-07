@@ -33,11 +33,52 @@ export interface Citizen {
   causeOfDeath?: string;
 }
 
+/** Catégorie d'origine d'un décès — sert au tri narratif du rapport. */
+export type DeathSource = 'desert' | 'watch' | 'breach' | 'dehydration';
+
 /** Décès survenu lors de la résolution d'une nuit (ou de l'aube qui suit). */
 export interface Death {
   readonly citizenId: string;
   readonly name: string;
   readonly cause: string;
+  readonly source: DeathSource;
+}
+
+/** Décomposition de la défense totale opposée à la horde. */
+export interface DefenseBreakdown {
+  /** Défense provenant des murs et constructions de la ville. */
+  readonly walls: number;
+  /** Défense apportée par les citoyens en faction (présents en ville la nuit). */
+  readonly watchers: number;
+  /** Nombre de citoyens vivants en ville au moment de la résolution. */
+  readonly watcherCount: number;
+  /** Somme `walls + watchers`. */
+  readonly total: number;
+}
+
+/**
+ * Une vague de la horde. La horde frappe en trois vagues successives : si la
+ * défense totale n'absorbe pas la vague, le surplus passe sur les habitants.
+ * Les vagues sont déterministes (poids fixes) — elles servent à raconter le
+ * déroulé de la nuit au joueur.
+ */
+export interface AttackWave {
+  /** Numéro de la vague (1, 2, 3). */
+  readonly index: number;
+  /** Puissance d'attaque de cette vague. */
+  readonly attack: number;
+  /** Quantité absorbée par la défense de la ville. */
+  readonly absorbed: number;
+  /** Surplus passé au travers des défenses (contribue aux décès). */
+  readonly overflow: number;
+}
+
+/** Décès groupés par origine — pratique pour l'affichage joueur. */
+export interface DeathsBySource {
+  readonly desert: number;
+  readonly watch: number;
+  readonly breach: number;
+  readonly dehydration: number;
 }
 
 /** Compte rendu de la résolution d'une nuit. */
@@ -46,15 +87,25 @@ export interface NightReport {
   readonly day: number;
   /** Puissance d'attaque de la horde cette nuit. */
   readonly hordePower: number;
-  /** Défense totale de la ville opposée à la horde. */
+  /** Défense totale de la ville opposée à la horde (alias de `defense.total`). */
   readonly townDefense: number;
+  /** Détail des sources de défense. */
+  readonly defense: DefenseBreakdown;
+  /** Découpe narrative de l'assaut en trois vagues. */
+  readonly waves: readonly AttackWave[];
+  /** Surplus cumulé qui a franchi les défenses. */
+  readonly overflow: number;
   /** `true` si la horde a percé les défenses de la ville. */
   readonly breached: boolean;
   readonly deaths: readonly Death[];
+  /** Décès groupés par cause (pour l'affichage). */
+  readonly deathsBySource: DeathsBySource;
   /** Nombre de citoyens encore en vie après la nuit et l'aube. */
   readonly survivors: number;
   /** `true` si plus aucun citoyen n'est en vie : la partie est terminée. */
   readonly gameOver: boolean;
+  /** Horodatage ISO de la résolution (utile au client pour trier l'historique). */
+  readonly resolvedAt: string;
 }
 
 /** État public complet d'une partie. */

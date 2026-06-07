@@ -83,6 +83,19 @@ CREATE TABLE IF NOT EXISTS night_events (
 );
 CREATE INDEX IF NOT EXISTS night_events_town_idx ON night_events(town_id, day);
 
+-- Compte rendu détaillé d'une nuit (JSON sérialisé du `NightReport` domain).
+-- Sert à l'affichage joueur : timeline des vagues, défense par source, décès.
+CREATE TABLE IF NOT EXISTS night_reports (
+  id          uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
+  town_id     uuid         NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+  day         integer      NOT NULL,
+  trigger     text         NOT NULL CHECK (trigger IN ('manual','scheduler')),
+  report      jsonb        NOT NULL,
+  created_at  timestamptz  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS night_reports_town_idx
+  ON night_reports(town_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS night_locks (
   town_id      uuid         PRIMARY KEY REFERENCES towns(id) ON DELETE CASCADE,
   acquired_at  timestamptz  NOT NULL DEFAULT now()

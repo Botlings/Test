@@ -1,7 +1,11 @@
 import { DEFAULT_CONFIG, type GameConfig } from './config.js';
 import type {
+  AttackWave,
   Citizen,
   Death,
+  DeathSource,
+  DefenseBreakdown,
+  DeathsBySource,
   GameStatus,
   Location,
   NightReport,
@@ -155,67 +159,178 @@ export class Game {
   /**
    * Clôt la journée : verrouille les portes, résout l'assaut de la horde,
    * puis fait lever le jour suivant (gestion de la soif et des points
-   * d'action). Renvoie le compte rendu de la nuit.
+   * d'action). Renvoie le compte rendu détaillé de la nuit.
+   *
+   * Algorithme :
+   *   1. Les citoyens restés dans le désert sont dévorés en premier.
+   *    2. La défense totale = murs (`townDefense`) + faction (citoyens en
+   *       ville × `watchDefensePerCitizen`).
+   *   3. La horde frappe en trois vagues (poids `hordeWaveWeights`). Si la
+   *      somme dépasse la défense, le surplus déborde sur les habitants.
+   *   4. Le débordement total tue `ceil(overflow / killThreshold)` citoyens
+   *      abrités : d'abord les guetteurs (tombés en faction), puis les
+   *      réfugiés (écrasés lors de la percée).
    */
   endDay(): NightReport {
     this.assertPlayable();
+    const resolvedAt = new Date().toISOString();
     this._phase = 'night';
 
     const deaths: Death[] = [];
     const hordePower = this.hordePower(this._day);
 
-    // Les citoyens restés dans le désert sont sans défense face à la horde.
+    // 1. Désert : carnage immédiat.
     for (const citizen of this._citizens) {
       if (citizen.alive && citizen.location === 'desert') {
         this.kill(citizen, 'dévoré dans le désert');
-        deaths.push(this.toDeath(citizen));
+        deaths.push(this.toDeath(citizen, 'desert'));
       }
     }
 
-    // La horde frappe les murs. Si elle déborde la défense, des citoyens
-    // abrités meurent, proportionnellement au débordement.
-    const breached = hordePower > this._townDefense;
+    // 2. Calcul de la défense composite (avant que les pertes ne tombent).
+    const watcherCount = this._citizens.filter(
+      (c) => c.alive && c.location === 'town',
+    ).length;
+    const watchers = watcherCount * this.config.watchDefensePerCitizen;
+    const defense: DefenseBreakdown = {
+      walls: this._townDefense,
+      watchers,
+      watcherCount,
+      total: this._townDefense + watchers,
+    };
+
+    // 3. Décomposition de l'assaut en trois vagues.
+    const waves = this.splitWaves(hordePower, defense.total);
+
+    // 4. Calcul des décès sur la base du débordement total.
+    const overflow = Math.max(0, hordePower - defense.total);
+    const breached = overflow > 0;
     if (breached) {
-      const overflow = hordePower - this._townDefense;
       const victimsCount = Math.ceil(overflow / this.config.killThreshold);
-      const shelteredAlive = this._citizens.filter(
+      const sheltered = this._citizens.filter(
         (c) => c.alive && c.location === 'town',
       );
-      for (let i = 0; i < victimsCount && i < shelteredAlive.length; i++) {
-        const victim = shelteredAlive[i]!;
-        this.kill(victim, 'tué lors de la percée de la horde');
-        deaths.push(this.toDeath(victim));
+      // Les premiers à tomber sont les guetteurs sur les remparts ; au-delà
+      // de la moitié des pertes, les réfugiés massés derrière les portes
+      // sont à leur tour atteints. Sans `watchDefensePerCitizen`, personne
+      // n'est officiellement « en faction » : toutes les pertes sont "breach".
+      const watchersAvailable =
+        this.config.watchDefensePerCitizen > 0 ? watcherCount : 0;
+      const maxWatchDeaths = Math.min(
+        watchersAvailable,
+        Math.ceil(victimsCount / 2),
+      );
+      for (let i = 0; i < victimsCount && i < sheltered.length; i++) {
+        const victim = sheltered[i]!;
+        if (i < maxWatchDeaths) {
+          this.kill(victim, 'tombé en faction sur les remparts');
+          deaths.push(this.toDeath(victim, 'watch'));
+        } else {
+          this.kill(victim, 'tué lors de la percée de la horde');
+          deaths.push(this.toDeath(victim, 'breach'));
+        }
       }
     }
 
     const survivorsAfterNight = this.aliveCount;
     if (survivorsAfterNight === 0) {
       this._gameOver = true;
-      return {
-        day: this._day,
+      return this.buildReport({
+        nightDay: this._day,
         hordePower,
-        townDefense: this._townDefense,
+        defense,
+        waves,
+        overflow,
         breached,
         deaths,
         survivors: 0,
         gameOver: true,
-      };
+        resolvedAt,
+      });
     }
 
-    // L'aube se lève : nouveau jour, gestion de la soif et des points d'action.
+    // 5. L'aube se lève : nouveau jour, soif et recharge des points d'action.
     const nightDay = this._day;
     this.dawn(deaths);
 
     const survivors = this.aliveCount;
     this._gameOver = survivors === 0;
-    return {
-      day: nightDay,
+    return this.buildReport({
+      nightDay,
       hordePower,
-      townDefense: this._townDefense,
+      defense,
+      waves,
+      overflow,
       breached,
       deaths,
       survivors,
       gameOver: this._gameOver,
+      resolvedAt,
+    });
+  }
+
+  /**
+   * Découpe l'attaque de la horde en trois vagues déterministes. La défense
+   * (walls + faction) est supposée se ré-armer entre deux vagues — les
+   * vagues servent à raconter le déroulé au joueur. La somme des `attack`
+   * vaut toujours exactement `hordePower`.
+   */
+  private splitWaves(hordePower: number, totalDefense: number): AttackWave[] {
+    const weights = this.config.hordeWaveWeights;
+    const attacks: number[] = [];
+    let assigned = 0;
+    for (let i = 0; i < weights.length - 1; i++) {
+      const a = Math.round(hordePower * weights[i]!);
+      attacks.push(a);
+      assigned += a;
+    }
+    attacks.push(Math.max(0, hordePower - assigned));
+    return attacks.map((attack, idx) => {
+      const absorbed = Math.min(attack, totalDefense);
+      return {
+        index: idx + 1,
+        attack,
+        absorbed,
+        overflow: attack - absorbed,
+      };
+    });
+  }
+
+  private buildReport(input: {
+    nightDay: number;
+    hordePower: number;
+    defense: DefenseBreakdown;
+    waves: AttackWave[];
+    overflow: number;
+    breached: boolean;
+    deaths: Death[];
+    survivors: number;
+    gameOver: boolean;
+    resolvedAt: string;
+  }): NightReport {
+    const counts: Record<DeathSource, number> = {
+      desert: 0,
+      watch: 0,
+      breach: 0,
+      dehydration: 0,
+    };
+    for (const d of input.deaths) {
+      counts[d.source] += 1;
+    }
+    const deathsBySource: DeathsBySource = counts;
+    return {
+      day: input.nightDay,
+      hordePower: input.hordePower,
+      townDefense: input.defense.total,
+      defense: input.defense,
+      waves: input.waves,
+      overflow: input.overflow,
+      breached: input.breached,
+      deaths: input.deaths,
+      deathsBySource,
+      survivors: input.survivors,
+      gameOver: input.gameOver,
+      resolvedAt: input.resolvedAt,
     };
   }
 
@@ -275,7 +390,7 @@ export class Game {
         citizen.consecutiveThirstDays += 1;
         if (citizen.consecutiveThirstDays >= 2) {
           this.kill(citizen, 'mort de déshydratation');
-          deaths.push(this.toDeath(citizen));
+          deaths.push(this.toDeath(citizen, 'dehydration'));
         } else {
           // Un citoyen assoiffé n'a la force que de la moitié de ses actions.
           citizen.actionPoints = Math.floor(this.config.startingActionPoints / 2);
@@ -290,11 +405,12 @@ export class Game {
     citizen.causeOfDeath = cause;
   }
 
-  private toDeath(citizen: Citizen): Death {
+  private toDeath(citizen: Citizen, source: DeathSource): Death {
     return {
       citizenId: citizen.id,
       name: citizen.name,
       cause: citizen.causeOfDeath ?? 'cause inconnue',
+      source,
     };
   }
 

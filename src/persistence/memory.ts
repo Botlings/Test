@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { Game } from '../domain/game.js';
 import type { GameConfig } from '../domain/config.js';
 import { DEFAULT_CONFIG } from '../domain/config.js';
+import type { NightReport } from '../domain/types.js';
 import type { Id } from './types.js';
 import {
   MAX_CITIZENS_PER_TOWN,
@@ -22,7 +23,9 @@ import {
   type AccountTownEntry,
   type Difficulty,
   type NightEventInput,
+  type NightTrigger,
   type SessionRecord,
+  type StoredNightReport,
   type Store,
   type TownRecord,
 } from './store.js';
@@ -75,7 +78,9 @@ export class MemoryStore implements Store {
   private readonly towns = new Map<Id, TownRecord>();
   private readonly nightLocks = new Set<Id>();
   private readonly nightEvents: Array<{ townId: Id; event: NightEventInput; at: Date }> = [];
+  private readonly nightReports = new Map<Id, StoredNightReport[]>();
   private readonly membershipJoinedAt = new Map<string, Date>();
+  private static readonly DEFAULT_REPORT_LIMIT = 20;
 
   /* ---------------------------- Comptes ---------------------------------- */
 
@@ -145,6 +150,10 @@ export class MemoryStore implements Store {
     return [...this.towns.values()].filter(
       (t) => !t.closed && t.membership.size < MAX_CITIZENS_PER_TOWN,
     );
+  }
+
+  async listOngoingTowns(): Promise<TownRecord[]> {
+    return [...this.towns.values()].filter((t) => !t.closed);
   }
 
   async getTown(id: Id): Promise<TownRecord | undefined> {
@@ -234,6 +243,27 @@ export class MemoryStore implements Store {
 
   async recordNightEvent(townId: Id, event: NightEventInput): Promise<void> {
     this.nightEvents.push({ townId, event, at: new Date() });
+  }
+
+  async recordNightReport(
+    townId: Id,
+    trigger: NightTrigger,
+    report: NightReport,
+  ): Promise<void> {
+    const list = this.nightReports.get(townId) ?? [];
+    list.unshift({ trigger, storedAt: new Date(), report });
+    if (list.length > MemoryStore.DEFAULT_REPORT_LIMIT) {
+      list.length = MemoryStore.DEFAULT_REPORT_LIMIT;
+    }
+    this.nightReports.set(townId, list);
+  }
+
+  async listNightReports(
+    townId: Id,
+    limit: number = MemoryStore.DEFAULT_REPORT_LIMIT,
+  ): Promise<StoredNightReport[]> {
+    const list = this.nightReports.get(townId) ?? [];
+    return list.slice(0, Math.max(0, limit));
   }
 
   async nightLock<T>(townId: Id, fn: () => Promise<T> | T): Promise<T> {

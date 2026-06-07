@@ -12,10 +12,14 @@
  *                   et le schéma est appliqué ; sinon `MemoryStore`).
  */
 import { buildApp } from './app.js';
+import { NightScheduler } from './night-scheduler.js';
 import { MemoryStore } from '../persistence/memory.js';
 import { PgStore } from '../persistence/postgres.js';
 import type { Store } from '../persistence/store.js';
 import { RealtimeHub } from '../realtime/hub.js';
+
+/** Durée par défaut d'une journée de jeu : 24 heures. */
+const DEFAULT_DAY_DURATION_MS = 24 * 60 * 60 * 1000;
 
 async function main(): Promise<void> {
   const jwtSecret = process.env['JWT_SECRET'];
@@ -40,10 +44,31 @@ async function main(): Promise<void> {
   }
 
   const hub = new RealtimeHub();
-  const { app } = await buildApp({ store, hub, jwtSecret, secureCookies, logger: true });
+  const dayDurationMs = parseDayDuration(process.env['DAY_DURATION_MS']);
+  const scheduler = new NightScheduler({
+    store,
+    hub,
+    dayDurationMs,
+    logger: {
+      info: (msg) => console.log(msg),
+      warn: (msg) => console.warn(msg),
+      error: (msg) => console.error(msg),
+    },
+  });
+  await scheduler.bootstrap();
+
+  const { app } = await buildApp({
+    store,
+    hub,
+    jwtSecret,
+    secureCookies,
+    logger: true,
+    scheduler,
+  });
 
   const shutdown = async (signal: string): Promise<void> => {
     app.log.info({ signal }, 'Arrêt en cours');
+    scheduler.stop();
     try {
       await app.close();
     } finally {
@@ -61,6 +86,18 @@ async function main(): Promise<void> {
     app.log.error(err);
     process.exit(1);
   }
+}
+
+function parseDayDuration(raw: string | undefined): number {
+  if (raw === undefined || raw === '') return DEFAULT_DAY_DURATION_MS;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.warn(
+      `DAY_DURATION_MS invalide (${raw}), retour à la valeur par défaut (${DEFAULT_DAY_DURATION_MS} ms).`,
+    );
+    return DEFAULT_DAY_DURATION_MS;
+  }
+  return parsed;
 }
 
 void main();

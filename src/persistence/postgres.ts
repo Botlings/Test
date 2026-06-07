@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { Pool, type PoolClient, type PoolConfig } from 'pg';
 import { Game } from '../domain/game.js';
-import type { Citizen, Location, Phase } from '../domain/types.js';
+import type { Citizen, Location, NightReport, Phase } from '../domain/types.js';
 import type { Id } from './types.js';
 import {
   MAX_CITIZENS_PER_TOWN,
@@ -30,7 +30,9 @@ import {
   type AccountTownEntry,
   type Difficulty,
   type NightEventInput,
+  type NightTrigger,
   type SessionRecord,
+  type StoredNightReport,
   type Store,
   type TownRecord,
 } from './store.js';
@@ -277,6 +279,10 @@ export class PgStore implements Store {
     );
   }
 
+  async listOngoingTowns(): Promise<TownRecord[]> {
+    return [...this.towns.values()].filter((t) => !t.closed);
+  }
+
   async getTown(id: Id): Promise<TownRecord | undefined> {
     return this.towns.get(id);
   }
@@ -494,6 +500,39 @@ export class PgStore implements Store {
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [townId, event.day, event.attackers, event.defense, event.breached, event.deaths],
     );
+  }
+
+  async recordNightReport(
+    townId: Id,
+    trigger: NightTrigger,
+    report: NightReport,
+  ): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO night_reports (town_id, day, trigger, report)
+       VALUES ($1, $2, $3, $4::jsonb)`,
+      [townId, report.day, trigger, JSON.stringify(report)],
+    );
+  }
+
+  async listNightReports(townId: Id, limit = 20): Promise<StoredNightReport[]> {
+    const safeLimit = Math.max(0, Math.min(100, Math.trunc(limit)));
+    const res = await this.pool.query<{
+      trigger: NightTrigger;
+      created_at: Date;
+      report: NightReport;
+    }>(
+      `SELECT trigger, created_at, report
+         FROM night_reports
+        WHERE town_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2`,
+      [townId, safeLimit],
+    );
+    return res.rows.map((row) => ({
+      trigger: row.trigger,
+      storedAt: row.created_at,
+      report: row.report,
+    }));
   }
 
   /**

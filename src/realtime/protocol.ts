@@ -50,10 +50,21 @@ export interface NightStartMessage {
   readonly day: number;
 }
 
+/**
+ * Annonce l'horaire prévu de la prochaine résolution automatique. Permet au
+ * client d'afficher un compte à rebours avant que la horde ne frappe.
+ */
+export interface NightScheduledMessage {
+  readonly type: 'night.scheduled';
+  readonly day: number;
+  readonly scheduledFor: string;
+}
+
 /** La nuit est résolue : compte rendu envoyé à tous les joueurs. */
 export interface NightReportMessage {
   readonly type: 'night.report';
   readonly day: number;
+  readonly trigger: 'manual' | 'scheduler';
   readonly report: NightReport;
 }
 
@@ -77,6 +88,7 @@ export type ServerMessage =
   | CitizenMovedMessage
   | BuildCompletedMessage
   | NightStartMessage
+  | NightScheduledMessage
   | NightReportMessage
   | ChatBroadcastMessage
   | ServerErrorMessage;
@@ -113,6 +125,7 @@ const SERVER_TYPES = new Set<ServerMessage['type']>([
   'citizen.moved',
   'build.completed',
   'night.start',
+  'night.scheduled',
   'night.report',
   'chat.message',
   'error',

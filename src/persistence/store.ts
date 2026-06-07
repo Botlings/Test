@@ -14,8 +14,18 @@
  * un 409 côté API, pas s'enchaîner par hasard.
  */
 import type { Game } from '../domain/game.js';
-import type { Phase } from '../domain/types.js';
+import type { NightReport, Phase } from '../domain/types.js';
 import type { Id } from './types.js';
+
+/** D'où vient la résolution d'une nuit : action joueur ou tic automatique. */
+export type NightTrigger = 'manual' | 'scheduler';
+
+/** Une entrée du journal des nuits passées d'une ville. */
+export interface StoredNightReport {
+  readonly trigger: NightTrigger;
+  readonly storedAt: Date;
+  readonly report: NightReport;
+}
 
 export type Difficulty = 'normal' | 'hard' | 'hardcore';
 
@@ -101,6 +111,12 @@ export interface Store {
 
   /* ------------------------------ Villes -------------------------------- */
   listOpenTowns(): Promise<TownRecord[]>;
+  /**
+   * Toutes les villes encore en vie (non `closed`), même celles qui sont
+   * pleines. Utilisé par le scheduler de nuit qui doit faire tourner toutes
+   * les parties actives.
+   */
+  listOngoingTowns(): Promise<TownRecord[]>;
   getTown(id: Id): Promise<TownRecord | undefined>;
   createTown(name: string, difficulty: Difficulty): Promise<TownRecord>;
   joinTown(townId: Id, accountId: Id, citizenName: string): Promise<{ citizenId: string }>;
@@ -119,6 +135,19 @@ export interface Store {
 
   /** Enregistre l'événement de résolution d'une nuit (audit / classement). */
   recordNightEvent(townId: Id, event: NightEventInput): Promise<void>;
+
+  /**
+   * Persiste le compte rendu détaillé d'une nuit pour rejouabilité côté UI.
+   * Implémentations libres de tronquer l'historique au-delà d'une certaine
+   * profondeur (par défaut : 20 dernières nuits par ville).
+   */
+  recordNightReport(townId: Id, trigger: NightTrigger, report: NightReport): Promise<void>;
+
+  /**
+   * Renvoie les comptes rendus persistés pour une ville, du plus récent au
+   * plus ancien (limite par défaut : 20).
+   */
+  listNightReports(townId: Id, limit?: number): Promise<StoredNightReport[]>;
 
   /** Lock NX-EX sur une ville. Rejette immédiatement si déjà acquis. */
   nightLock<T>(townId: Id, fn: () => Promise<T> | T): Promise<T>;
