@@ -16,6 +16,7 @@ import {
 import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
 import type { NightScheduler } from '../night-scheduler.js';
+import { publishActivity } from '../activity.js';
 
 interface TownsDeps {
   readonly store: Store;
@@ -102,7 +103,7 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
       const town = await store.createTown(name, difficulty as Difficulty);
       const account = (await store.getAccount(accountId))!;
       const citizenName = account.email.split('@')[0]!;
-      await store.joinTown(town.id, accountId, citizenName);
+      const { citizenId } = await store.joinTown(town.id, accountId, citizenName);
       await store.saveTown(town);
       const status = town.game.status();
       hub.publish(town.id, {
@@ -116,6 +117,20 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
           location: c.location,
           alive: c.alive,
         })),
+      });
+      await publishActivity(store, hub, town.id, {
+        accountId,
+        citizenId,
+        citizenName,
+        kind: 'town.create',
+        details: { townName: town.name, difficulty: town.difficulty },
+      });
+      await publishActivity(store, hub, town.id, {
+        accountId,
+        citizenId,
+        citizenName,
+        kind: 'citizen.join',
+        details: { citizen: citizenName },
       });
       scheduler?.scheduleTown(town.id, { day: town.game.day });
       return reply.code(201).send(fullTownState(town, accountId, scheduler));
@@ -147,7 +162,7 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
         });
       }
       const citizenName = account.email.split('@')[0]!;
-      await store.joinTown(townId, accountId, citizenName);
+      const { citizenId } = await store.joinTown(townId, accountId, citizenName);
       const town = (await store.getTown(townId))!;
       await store.saveTown(town);
       const status = town.game.status();
@@ -162,6 +177,13 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
           location: c.location,
           alive: c.alive,
         })),
+      });
+      await publishActivity(store, hub, town.id, {
+        accountId,
+        citizenId,
+        citizenName,
+        kind: 'citizen.join',
+        details: { citizen: citizenName },
       });
       return reply.code(200).send(fullTownState(town, accountId, scheduler));
     } catch (err) {

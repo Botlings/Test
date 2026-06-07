@@ -72,6 +72,118 @@ export interface NightEventInput {
   readonly deaths: number;
 }
 
+/* ------------------------------ Forum --------------------------------- */
+
+/** Type d'un sujet du forum de ville. */
+export type ForumThreadKind = 'discussion' | 'vote';
+
+/** Option disponible pour un sujet de type `vote`. */
+export interface ForumVoteOption {
+  readonly id: string;
+  readonly label: string;
+}
+
+/** Un sujet du forum (discussion ou vote). */
+export interface ForumThreadRecord {
+  readonly id: Id;
+  readonly townId: Id;
+  readonly authorAccountId: Id;
+  readonly authorCitizenName: string;
+  readonly title: string;
+  readonly kind: ForumThreadKind;
+  readonly options: readonly ForumVoteOption[];
+  readonly createdAt: Date;
+  readonly closesAt: Date | null;
+  closed: boolean;
+}
+
+/** Un sujet enrichi pour l'API : compte de messages + dernier message. */
+export interface ForumThreadSummary extends ForumThreadRecord {
+  readonly messageCount: number;
+  readonly lastMessageAt: Date | null;
+  readonly voteCount: number;
+}
+
+/** Un message d'une discussion. */
+export interface ForumMessageRecord {
+  readonly id: Id;
+  readonly threadId: Id;
+  readonly townId: Id;
+  readonly authorAccountId: Id;
+  readonly authorCitizenName: string;
+  readonly body: string;
+  readonly createdAt: Date;
+}
+
+/** Un vote individuel posé par un compte sur un sujet. */
+export interface ForumVoteRecord {
+  readonly threadId: Id;
+  readonly accountId: Id;
+  readonly citizenName: string;
+  readonly optionId: string;
+  readonly castAt: Date;
+}
+
+/** Agrégat de votes pour un sujet. */
+export interface ForumVoteTally {
+  readonly threadId: Id;
+  /** Total de votes posés. */
+  readonly total: number;
+  /** Comptes par optionId. */
+  readonly counts: Readonly<Record<string, number>>;
+  /** Vote courant de l'utilisateur courant (si l'API a passé un accountId). */
+  readonly myChoice: string | null;
+}
+
+/** Détail complet d'un sujet : sujet + messages + tally + votant éventuel. */
+export interface ForumThreadDetail {
+  readonly thread: ForumThreadSummary;
+  readonly messages: readonly ForumMessageRecord[];
+  readonly tally: ForumVoteTally;
+}
+
+/* ------------------------------ Activité ------------------------------ */
+
+/**
+ * Types d'événements d'activité publiés dans le journal de la ville.
+ * Les actions joueur (`citizen.*`) et événements de partie (`night.*`,
+ * `town.*`) sont émis automatiquement par les routes correspondantes.
+ */
+export type ActivityKind =
+  | 'town.create'
+  | 'citizen.join'
+  | 'citizen.move'
+  | 'citizen.scavenge'
+  | 'citizen.build'
+  | 'citizen.died'
+  | 'night.resolved'
+  | 'forum.thread.created'
+  | 'forum.vote.created'
+  | 'forum.vote.cast'
+  | 'forum.message.posted';
+
+/** Une entrée du journal d'activité d'une ville. */
+export interface ActivityEntry {
+  readonly id: Id;
+  readonly townId: Id;
+  readonly accountId: Id | null;
+  readonly citizenId: string | null;
+  readonly citizenName: string | null;
+  readonly kind: ActivityKind;
+  /** Détails sérialisables : montant ramassé, destination, etc. */
+  readonly details: Readonly<Record<string, string | number | boolean | null>>;
+  readonly createdAt: Date;
+}
+
+/** Input pour `recordActivity`. */
+export interface ActivityInput {
+  readonly accountId?: Id | null;
+  readonly citizenId?: string | null;
+  readonly citizenName?: string | null;
+  readonly kind: ActivityKind;
+  readonly details?: Readonly<Record<string, string | number | boolean | null>>;
+}
+
 /**
  * Une ligne d'historique : une ville à laquelle un compte a participé, avec
  * l'état actuel (jour atteint, partie terminée ou non) et le devenir du
@@ -148,6 +260,68 @@ export interface Store {
    * plus ancien (limite par défaut : 20).
    */
   listNightReports(townId: Id, limit?: number): Promise<StoredNightReport[]>;
+
+  /* ------------------------------ Forum -------------------------------- */
+  /**
+   * Crée un nouveau sujet du forum. Pour `kind: 'vote'`, `options` doit
+   * contenir 2..6 entrées et un `closesAt` futur peut être fourni pour
+   * verrouiller automatiquement le sujet à l'échéance.
+   */
+  createForumThread(input: {
+    readonly townId: Id;
+    readonly authorAccountId: Id;
+    readonly authorCitizenName: string;
+    readonly title: string;
+    readonly kind: ForumThreadKind;
+    readonly options?: readonly ForumVoteOption[];
+    readonly closesAt?: Date | null;
+    readonly body?: string;
+  }): Promise<ForumThreadDetail>;
+
+  /** Liste tous les sujets d'une ville, du plus récent au plus ancien. */
+  listForumThreads(townId: Id, viewerAccountId?: Id): Promise<ForumThreadSummary[]>;
+
+  /** Récupère le détail d'un sujet avec ses messages et tally de votes. */
+  getForumThread(
+    townId: Id,
+    threadId: Id,
+    viewerAccountId?: Id,
+  ): Promise<ForumThreadDetail | undefined>;
+
+  /** Ajoute un message à une discussion ou un commentaire à un vote. */
+  postForumMessage(input: {
+    readonly townId: Id;
+    readonly threadId: Id;
+    readonly authorAccountId: Id;
+    readonly authorCitizenName: string;
+    readonly body: string;
+  }): Promise<ForumMessageRecord>;
+
+  /**
+   * Pose ou met à jour le vote du compte sur un sujet `kind: 'vote'`. Renvoie
+   * le nouveau tally agrégé. Lève `StoreError('vote-not-allowed' | 'option-invalid' | 'vote-closed')`
+   * en cas d'incompatibilité.
+   */
+  castForumVote(input: {
+    readonly townId: Id;
+    readonly threadId: Id;
+    readonly accountId: Id;
+    readonly citizenName: string;
+    readonly optionId: string;
+  }): Promise<ForumVoteTally>;
+
+  /** Ferme manuellement un sujet (seul l'auteur peut le demander côté route). */
+  closeForumThread(townId: Id, threadId: Id): Promise<ForumThreadSummary>;
+
+  /* ------------------------------ Activité ----------------------------- */
+  /** Persiste une entrée du journal d'activité. */
+  recordActivity(townId: Id, input: ActivityInput): Promise<ActivityEntry>;
+
+  /**
+   * Liste les entrées d'activité d'une ville, des plus récentes aux plus
+   * anciennes. Limite par défaut : 50.
+   */
+  listActivity(townId: Id, limit?: number): Promise<ActivityEntry[]>;
 
   /** Lock NX-EX sur une ville. Rejette immédiatement si déjà acquis. */
   nightLock<T>(townId: Id, fn: () => Promise<T> | T): Promise<T>;

@@ -19,6 +19,7 @@ import type { Id } from '../persistence/types.js';
 import type { RealtimeHub } from '../realtime/hub.js';
 import type { NightReport } from '../domain/index.js';
 import type { ServerMessage } from '../realtime/protocol.js';
+import { publishActivity } from './activity.js';
 
 export type NightTrigger = 'manual' | 'scheduler';
 
@@ -87,6 +88,33 @@ export async function resolveNight(
       report: out,
     });
     publishTownSnapshot(hub, current);
+
+    // Journal d'activité : la nuit elle-même + chaque décès individuel.
+    await publishActivity(store, hub, townId, {
+      accountId: null,
+      citizenId: null,
+      citizenName: null,
+      kind: 'night.resolved',
+      details: {
+        day: out.day,
+        hordePower: out.hordePower,
+        defense: out.townDefense,
+        deaths: out.deaths.length,
+        breached: out.breached,
+        survivors: out.survivors,
+        gameOver: out.gameOver,
+        trigger,
+      },
+    });
+    for (const death of out.deaths) {
+      await publishActivity(store, hub, townId, {
+        accountId: null,
+        citizenId: death.citizenId,
+        citizenName: death.name,
+        kind: 'citizen.died',
+        details: { cause: death.cause, source: death.source, day: out.day },
+      });
+    }
     return out;
   });
   return { report };

@@ -47,6 +47,16 @@
     wsReconnectTimer: null,
     nextNightTicker: null,
     refreshing: false,
+    forum: {
+      activeTab: 'threads',
+      threads: [],
+      threadsLoadedFor: null,
+      activity: [],
+      activityLoadedFor: null,
+      openThreadId: null,
+      openThreadDetail: null,
+      createKind: 'discussion',
+    },
   };
 
   /* =========================================================================
@@ -690,6 +700,8 @@
     $('trigger-night-btn').addEventListener('click', triggerNight);
     $('close-night-modal-btn').addEventListener('click', closeNightModal);
     $('night-modal-overlay').addEventListener('click', closeNightModal);
+
+    setupForumUI();
   }
 
   function enterTown(townId, payload) {
@@ -701,6 +713,9 @@
     renderTown(payload);
     openSocket(townId);
     logEvent('Vous avez rejoint la ville.', 'success');
+    resetForumState();
+    loadForumThreads();
+    loadActivity();
   }
 
   function leaveTown() {
@@ -714,6 +729,11 @@
     if (logList) {
       logList.innerHTML = '<li class="log__empty">Le journal est vide. Agissez pour le remplir.</li>';
     }
+    resetForumState();
+    closeThreadView();
+    closeThreadCreate();
+    renderForumThreads();
+    renderActivityFeed();
     enterLobby();
   }
 
@@ -1195,6 +1215,21 @@
         showNightReport(msg.report);
         // Le snapshot serveur arrivera ensuite et rafraîchira l'état complet.
         break;
+      case 'forum.thread.created':
+        onForumThreadCreated(msg.thread);
+        break;
+      case 'forum.thread.closed':
+        onForumThreadClosed(msg.threadId);
+        break;
+      case 'forum.message.posted':
+        onForumMessagePosted(msg.threadId, msg.message);
+        break;
+      case 'forum.vote.cast':
+        onForumVoteCast(msg.threadId, msg.tally);
+        break;
+      case 'activity.recorded':
+        onActivityRecorded(msg.entry);
+        break;
       case 'error':
         toast(msg.message || 'Erreur serveur', 'error');
         break;
@@ -1245,6 +1280,651 @@
     state.town.townDefense = msg.defense;
     $('defense-value').textContent = String(msg.defense);
     logEvent('Un chantier est terminé. Défense : ' + msg.defense + '.', 'success');
+  }
+
+  /* =========================================================================
+   *  FORUM & JOURNAL D'ACTIVITÉ
+   * =======================================================================*/
+
+  var ACTIVITY_KIND_META = {
+    'town.create':           { icon: '🏗', label: 'a fondé la ville' },
+    'citizen.join':          { icon: '⛺', label: 'a rejoint la ville' },
+    'citizen.move':          { icon: '🚶', label: 'se déplace' },
+    'citizen.scavenge':      { icon: '🔎', label: 'a fouillé' },
+    'citizen.build':         { icon: '🛠', label: 'a construit' },
+    'citizen.died':          { icon: '☠', label: 'est mort' },
+    'night.resolved':        { icon: '☾', label: 'Nuit résolue' },
+    'forum.thread.created':  { icon: '💬', label: 'a ouvert une discussion' },
+    'forum.vote.created':    { icon: '☑', label: 'a lancé un vote' },
+    'forum.vote.cast':       { icon: '✔', label: 'a voté' },
+    'forum.message.posted':  { icon: '✉', label: 'a posté un message' },
+  };
+
+  function resetForumState() {
+    state.forum.threads = [];
+    state.forum.threadsLoadedFor = null;
+    state.forum.activity = [];
+    state.forum.activityLoadedFor = null;
+    state.forum.openThreadId = null;
+    state.forum.openThreadDetail = null;
+    state.forum.activeTab = 'threads';
+  }
+
+  function setupForumUI() {
+    var tabs = document.querySelectorAll('.forum-tab');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        selectForumTab(tab.getAttribute('data-forum-tab'));
+      });
+    });
+
+    $('forum-refresh-btn').addEventListener('click', function () {
+      loadForumThreads(true);
+    });
+    $('activity-refresh-btn').addEventListener('click', function () {
+      loadActivity(true);
+    });
+
+    $('forum-new-discussion-btn').addEventListener('click', function () {
+      openThreadCreate('discussion');
+    });
+    $('forum-new-vote-btn').addEventListener('click', function () {
+      openThreadCreate('vote');
+    });
+
+    $('thread-create-overlay').addEventListener('click', closeThreadCreate);
+    $('thread-create-close-btn').addEventListener('click', closeThreadCreate);
+    $('thread-create-cancel-btn').addEventListener('click', closeThreadCreate);
+    $('thread-create-form').addEventListener('submit', onSubmitThreadCreate);
+
+    $('vote-option-add-btn').addEventListener('click', function () {
+      var list = $('vote-options-list');
+      var inputs = list.querySelectorAll('.vote-option-input');
+      if (inputs.length >= 6) {
+        toast('6 options maximum.', 'error');
+        return;
+      }
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'vote-option-input';
+      input.maxLength = 60;
+      input.placeholder = 'Option ' + (inputs.length + 1);
+      list.appendChild(input);
+      input.focus();
+    });
+
+    $('thread-view-overlay').addEventListener('click', closeThreadView);
+    $('thread-view-close-btn').addEventListener('click', closeThreadView);
+    $('thread-reply-form').addEventListener('submit', onSubmitReply);
+    $('thread-close-btn').addEventListener('click', onClickCloseThread);
+  }
+
+  function selectForumTab(tab) {
+    if (!tab) return;
+    state.forum.activeTab = tab;
+    document.querySelectorAll('.forum-tab').forEach(function (el) {
+      var isActive = el.getAttribute('data-forum-tab') === tab;
+      el.classList.toggle('is-active', isActive);
+      el.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-forum-panel]').forEach(function (el) {
+      var match = el.getAttribute('data-forum-panel') === tab;
+      el.hidden = !match;
+    });
+    if (tab === 'activity' && state.currentTownId &&
+        state.forum.activityLoadedFor !== state.currentTownId) {
+      loadActivity();
+    }
+  }
+
+  /* ----------------------------- Threads ---------------------------------- */
+
+  function loadForumThreads(force) {
+    var townId = state.currentTownId;
+    if (!townId) return;
+    if (!force && state.forum.threadsLoadedFor === townId) return;
+    apiCall('/towns/' + encodeURIComponent(townId) + '/forum/threads')
+      .then(function (data) {
+        if (state.currentTownId !== townId) return;
+        state.forum.threads = (data && data.threads) || [];
+        state.forum.threadsLoadedFor = townId;
+        renderForumThreads();
+      })
+      .catch(function (err) {
+        if (err.status === 401) return;
+        toast(err.message || 'Forum indisponible', 'error');
+      });
+  }
+
+  function renderForumThreads() {
+    var list = $('forum-threads-list');
+    if (!list) return;
+    var threads = state.forum.threads || [];
+    if (!threads.length) {
+      list.innerHTML =
+        '<li class="forum-threads__empty">' +
+        'Aucun sujet pour le moment. Lancez la discussion ou ouvrez un vote.' +
+        '</li>';
+      return;
+    }
+    list.innerHTML = '';
+    threads.forEach(function (t) {
+      var li = document.createElement('li');
+      li.className = 'thread-row' + (t.closed ? ' is-closed' : '');
+      li.setAttribute('role', 'button');
+      li.setAttribute('tabindex', '0');
+      var kindBadge = t.kind === 'vote'
+        ? '<span class="thread-row__badge thread-row__badge--vote">Vote</span>'
+        : '<span class="thread-row__badge thread-row__badge--discussion">Discussion</span>';
+      var closedBadge = t.closed
+        ? '<span class="thread-row__badge thread-row__badge--closed">Clos</span>'
+        : '';
+      var voteMeta = t.kind === 'vote'
+        ? '<span><strong>' + (t.voteCount || 0) + '</strong> votes</span>'
+        : '';
+      li.innerHTML =
+        '<div class="thread-row__head">' +
+        kindBadge +
+        '  <span class="thread-row__title">' + escapeHtml(t.title) + '</span>' +
+        closedBadge +
+        '</div>' +
+        '<div class="thread-row__meta">' +
+        '  <span>Par <strong>' + escapeHtml(t.authorCitizenName) + '</strong></span>' +
+        '  <span>' + formatRelativeTime(t.createdAt) + '</span>' +
+        '  <span><strong>' + (t.messageCount || 0) + '</strong> message' + ((t.messageCount || 0) > 1 ? 's' : '') + '</span>' +
+        voteMeta +
+        '</div>';
+      li.addEventListener('click', function () { openThreadView(t.id); });
+      li.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openThreadView(t.id);
+        }
+      });
+      list.appendChild(li);
+    });
+  }
+
+  function upsertThreadSummary(summary) {
+    if (!summary) return;
+    var idx = (state.forum.threads || []).findIndex(function (t) { return t.id === summary.id; });
+    if (idx >= 0) {
+      state.forum.threads[idx] = summary;
+    } else {
+      state.forum.threads = [summary].concat(state.forum.threads || []);
+    }
+    renderForumThreads();
+  }
+
+  function onForumThreadCreated(thread) {
+    if (!thread || thread.townId !== state.currentTownId) return;
+    upsertThreadSummary(thread);
+  }
+
+  function onForumThreadClosed(threadId) {
+    if (!threadId) return;
+    var t = (state.forum.threads || []).find(function (x) { return x.id === threadId; });
+    if (t) {
+      t.closed = true;
+      renderForumThreads();
+    }
+    if (state.forum.openThreadId === threadId && state.forum.openThreadDetail) {
+      state.forum.openThreadDetail.thread.closed = true;
+      renderThreadView();
+    }
+  }
+
+  function onForumMessagePosted(threadId, message) {
+    if (!threadId || !message) return;
+    var t = (state.forum.threads || []).find(function (x) { return x.id === threadId; });
+    if (t) {
+      t.messageCount = (t.messageCount || 0) + 1;
+      t.lastMessageAt = message.createdAt;
+      renderForumThreads();
+    }
+    if (state.forum.openThreadId === threadId && state.forum.openThreadDetail) {
+      var detail = state.forum.openThreadDetail;
+      if (!detail.messages.some(function (m) { return m.id === message.id; })) {
+        detail.messages.push(message);
+        detail.thread.messageCount = (detail.thread.messageCount || 0) + 1;
+        detail.thread.lastMessageAt = message.createdAt;
+      }
+      renderThreadView();
+    }
+  }
+
+  function onForumVoteCast(threadId, tally) {
+    if (!threadId || !tally) return;
+    var t = (state.forum.threads || []).find(function (x) { return x.id === threadId; });
+    if (t) {
+      t.voteCount = tally.total;
+      renderForumThreads();
+    }
+    if (state.forum.openThreadId === threadId && state.forum.openThreadDetail) {
+      state.forum.openThreadDetail.tally = tally;
+      state.forum.openThreadDetail.thread.voteCount = tally.total;
+      renderThreadView();
+    }
+  }
+
+  /* ----------------------------- Activité --------------------------------- */
+
+  function loadActivity(force) {
+    var townId = state.currentTownId;
+    if (!townId) return;
+    if (!force && state.forum.activityLoadedFor === townId) return;
+    apiCall('/towns/' + encodeURIComponent(townId) + '/activity?limit=80')
+      .then(function (data) {
+        if (state.currentTownId !== townId) return;
+        state.forum.activity = (data && data.entries) || [];
+        state.forum.activityLoadedFor = townId;
+        renderActivityFeed();
+      })
+      .catch(function (err) {
+        if (err.status === 401) return;
+        // Silencieux : l'activité n'est pas critique.
+      });
+  }
+
+  function onActivityRecorded(entry) {
+    if (!entry || entry.townId !== state.currentTownId) return;
+    state.forum.activity = [entry].concat(state.forum.activity || []);
+    if (state.forum.activity.length > 200) {
+      state.forum.activity.length = 200;
+    }
+    renderActivityFeed();
+  }
+
+  function renderActivityFeed() {
+    var list = $('activity-feed');
+    if (!list) return;
+    var entries = state.forum.activity || [];
+    if (!entries.length) {
+      list.innerHTML =
+        '<li class="activity-feed__empty">' +
+        'Aucune activité enregistrée pour le moment.' +
+        '</li>';
+      return;
+    }
+    list.innerHTML = '';
+    entries.forEach(function (entry) {
+      var li = document.createElement('li');
+      li.className = 'activity-feed__item';
+      var meta = ACTIVITY_KIND_META[entry.kind] || { icon: '•', label: entry.kind };
+      var who = entry.citizenName
+        ? '<strong>' + escapeHtml(entry.citizenName) + '</strong> '
+        : '';
+      var detailHtml = formatActivityDetails(entry);
+      li.innerHTML =
+        '<span class="activity-feed__icon" aria-hidden="true">' + meta.icon + '</span>' +
+        '<span class="activity-feed__text">' + who + escapeHtml(meta.label) + detailHtml + '</span>' +
+        '<span class="activity-feed__time" title="' + escapeHtml(new Date(entry.createdAt).toLocaleString()) + '">' +
+        escapeHtml(formatRelativeTime(entry.createdAt)) +
+        '</span>';
+      list.appendChild(li);
+    });
+  }
+
+  function formatActivityDetails(entry) {
+    var d = entry.details || {};
+    switch (entry.kind) {
+      case 'town.create':
+        return d.townName ? ' « ' + escapeHtml(String(d.townName)) + ' »' : '';
+      case 'citizen.move':
+        return ' vers ' + (d.to === 'desert' ? 'le désert' : 'la ville');
+      case 'citizen.scavenge': {
+        var parts = [];
+        ['wood', 'metal', 'water'].forEach(function (k) {
+          if (typeof d[k] === 'number' && d[k] !== 0) {
+            parts.push((d[k] > 0 ? '+' : '') + d[k] + ' ' + translateResource(k));
+          }
+        });
+        return parts.length ? ' (' + parts.join(', ') + ')' : '';
+      }
+      case 'citizen.build':
+        return typeof d.defense === 'number' ? ' (défense ' + d.defense + ')' : '';
+      case 'citizen.died':
+        return d.cause ? ' — ' + escapeHtml(String(d.cause)) : '';
+      case 'night.resolved': {
+        var info = [];
+        if (typeof d.day === 'number') info.push('jour ' + d.day);
+        if (typeof d.deaths === 'number') info.push(d.deaths + ' pertes');
+        if (d.breached) info.push('mur percé');
+        if (d.gameOver) info.push('ville tombée');
+        return info.length ? ' — ' + info.join(', ') : '';
+      }
+      case 'forum.thread.created':
+      case 'forum.vote.created':
+        return d.title ? ' « ' + escapeHtml(String(d.title)) + ' »' : '';
+      case 'forum.vote.cast':
+        return d.optionId ? ' (' + escapeHtml(String(d.optionId)) + ')' : '';
+      default:
+        return '';
+    }
+  }
+
+  function translateResource(key) {
+    if (key === 'wood') return 'bois';
+    if (key === 'metal') return 'métal';
+    if (key === 'water') return 'eau';
+    return key;
+  }
+
+  function formatRelativeTime(iso) {
+    if (!iso) return '';
+    var diff = Date.now() - new Date(iso).getTime();
+    if (!isFinite(diff)) return '';
+    if (diff < 0) diff = 0;
+    var sec = Math.floor(diff / 1000);
+    if (sec < 45) return 'à l\'instant';
+    var min = Math.floor(sec / 60);
+    if (min < 60) return 'il y a ' + min + ' min';
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return 'il y a ' + hr + ' h';
+    var day = Math.floor(hr / 24);
+    if (day < 7) return 'il y a ' + day + ' j';
+    return new Date(iso).toLocaleDateString();
+  }
+
+  /* ---------------------- Modale création de sujet ------------------------ */
+
+  function openThreadCreate(kind) {
+    state.forum.createKind = kind === 'vote' ? 'vote' : 'discussion';
+    var modal = $('thread-create-modal');
+    var title = $('thread-create-title');
+    var voteField = $('thread-create-vote-field');
+    var bodyField = $('thread-create-body-field');
+    var form = $('thread-create-form');
+    var error = $('thread-create-error');
+    form.reset();
+    error.hidden = true;
+    error.textContent = '';
+    if (state.forum.createKind === 'vote') {
+      title.textContent = 'Nouveau vote';
+      show(voteField);
+      hide(bodyField);
+      var list = $('vote-options-list');
+      list.innerHTML = '';
+      [1, 2].forEach(function (n) {
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'vote-option-input';
+        input.maxLength = 60;
+        input.placeholder = 'Option ' + n;
+        list.appendChild(input);
+      });
+    } else {
+      title.textContent = 'Nouvelle discussion';
+      hide(voteField);
+      show(bodyField);
+    }
+    show(modal);
+    var titleInput = form.querySelector('input[name="title"]');
+    if (titleInput) titleInput.focus();
+  }
+
+  function closeThreadCreate() {
+    hide($('thread-create-modal'));
+  }
+
+  function onSubmitThreadCreate(event) {
+    event.preventDefault();
+    if (!state.currentTownId) return;
+    var form = event.target;
+    var title = form.title.value.trim();
+    var error = $('thread-create-error');
+    error.hidden = true;
+    if (title.length < 3) {
+      error.textContent = 'Le titre doit faire au moins 3 caractères.';
+      error.hidden = false;
+      return;
+    }
+    var payload = { title: title, kind: state.forum.createKind };
+    if (state.forum.createKind === 'vote') {
+      var options = [];
+      document.querySelectorAll('#vote-options-list .vote-option-input').forEach(function (input) {
+        var v = input.value.trim();
+        if (v) options.push(v);
+      });
+      if (options.length < 2) {
+        error.textContent = 'Un vote demande au moins 2 options remplies.';
+        error.hidden = false;
+        return;
+      }
+      payload.options = options;
+    } else {
+      var body = form.body.value.trim();
+      if (body) payload.body = body;
+    }
+    var submitBtn = $('thread-create-submit-btn');
+    submitBtn.disabled = true;
+    apiCall('/towns/' + encodeURIComponent(state.currentTownId) + '/forum/threads', {
+      method: 'POST',
+      body: payload,
+    })
+      .then(function (detail) {
+        submitBtn.disabled = false;
+        if (!detail) return;
+        upsertThreadSummary(detail.thread);
+        state.forum.openThreadDetail = detail;
+        state.forum.openThreadId = detail.thread.id;
+        closeThreadCreate();
+        renderThreadView();
+        show($('thread-view-modal'));
+        toast('Sujet publié.', 'success');
+      })
+      .catch(function (err) {
+        submitBtn.disabled = false;
+        error.textContent = err.message || 'Création impossible';
+        error.hidden = false;
+      });
+  }
+
+  /* ---------------------- Modale lecture de sujet ------------------------- */
+
+  function openThreadView(threadId) {
+    if (!state.currentTownId) return;
+    apiCall('/towns/' + encodeURIComponent(state.currentTownId) +
+            '/forum/threads/' + encodeURIComponent(threadId))
+      .then(function (detail) {
+        if (!detail) return;
+        state.forum.openThreadId = threadId;
+        state.forum.openThreadDetail = detail;
+        upsertThreadSummary(detail.thread);
+        renderThreadView();
+        show($('thread-view-modal'));
+      })
+      .catch(function (err) {
+        toast(err.message || 'Sujet introuvable', 'error');
+      });
+  }
+
+  function closeThreadView() {
+    hide($('thread-view-modal'));
+    state.forum.openThreadId = null;
+    state.forum.openThreadDetail = null;
+  }
+
+  function renderThreadView() {
+    var detail = state.forum.openThreadDetail;
+    if (!detail) return;
+    var t = detail.thread;
+    $('thread-view-title').textContent = t.title;
+    $('thread-view-meta').textContent =
+      'Par ' + t.authorCitizenName + ' • ' +
+      (t.kind === 'vote' ? 'Vote' : 'Discussion') + ' • ' +
+      formatRelativeTime(t.createdAt) +
+      (t.closed ? ' • Clos' : '');
+
+    var voteEl = $('thread-view-vote');
+    if (t.kind === 'vote') {
+      show(voteEl);
+      renderVoteBlock(voteEl, t, detail.tally);
+    } else {
+      hide(voteEl);
+      voteEl.innerHTML = '';
+    }
+
+    var msgList = $('thread-view-messages');
+    var messages = detail.messages || [];
+    if (!messages.length) {
+      msgList.innerHTML =
+        '<li class="thread-view__messages-empty">' +
+        'Aucun message pour le moment. Posez la première pierre.' +
+        '</li>';
+    } else {
+      msgList.innerHTML = '';
+      messages.forEach(function (m) {
+        var li = document.createElement('li');
+        li.className = 'thread-view__message';
+        li.innerHTML =
+          '<div class="thread-view__message-head">' +
+          '<strong>' + escapeHtml(m.authorCitizenName) + '</strong>' +
+          '<span>' + escapeHtml(formatRelativeTime(m.createdAt)) + '</span>' +
+          '</div>' +
+          '<div class="thread-view__message-body">' + escapeHtml(m.body) + '</div>';
+        msgList.appendChild(li);
+      });
+    }
+
+    var form = $('thread-reply-form');
+    var closedHint = $('thread-view-closed');
+    if (t.closed) {
+      form.hidden = true;
+      closedHint.hidden = false;
+    } else {
+      form.hidden = false;
+      closedHint.hidden = true;
+    }
+
+    var closeBtn = $('thread-close-btn');
+    var isOwner = !t.closed && state.accessToken && t.authorAccountId &&
+      currentAccountId() === t.authorAccountId;
+    closeBtn.hidden = !isOwner;
+  }
+
+  function renderVoteBlock(container, thread, tally) {
+    var total = tally && typeof tally.total === 'number' ? tally.total : 0;
+    var my = tally && tally.myChoice;
+    var counts = (tally && tally.counts) || {};
+    var html = '<div class="thread-view__vote-title">Vote — choisissez une option</div>';
+    thread.options.forEach(function (opt) {
+      var count = counts[opt.id] || 0;
+      var pct = total > 0 ? Math.round((count / total) * 100) : 0;
+      var isMy = my === opt.id;
+      html +=
+        '<div class="vote-option-row' + (isMy ? ' is-my-choice' : '') + '" data-option-id="' + escapeHtml(opt.id) + '">' +
+        '  <label class="vote-option-row__label">' +
+        '    <input type="radio" class="vote-option-row__radio" name="thread-view-vote" value="' + escapeHtml(opt.id) + '"' +
+                (isMy ? ' checked' : '') + (thread.closed ? ' disabled' : '') + '>' +
+        '    <span>' + escapeHtml(opt.label) + '</span>' +
+        '    <span class="vote-option-row__bar"><span class="vote-option-row__bar-fill" style="width:' + pct + '%"></span></span>' +
+        '  </label>' +
+        '  <span class="vote-option-row__count">' + count + ' (' + pct + '%)</span>' +
+        '</div>';
+    });
+    html += '<div class="thread-view__vote-total">Total : ' + total + ' vote' + (total > 1 ? 's' : '') + '</div>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('input[type="radio"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        if (radio.checked) castVote(radio.value);
+      });
+    });
+  }
+
+  function castVote(optionId) {
+    var detail = state.forum.openThreadDetail;
+    if (!detail || !state.currentTownId) return;
+    var threadId = detail.thread.id;
+    apiCall('/towns/' + encodeURIComponent(state.currentTownId) +
+            '/forum/threads/' + encodeURIComponent(threadId) + '/votes', {
+      method: 'POST',
+      body: { optionId: optionId },
+    })
+      .then(function (res) {
+        if (!res || !res.tally) return;
+        detail.tally = res.tally;
+        detail.thread.voteCount = res.tally.total;
+        upsertThreadSummary(detail.thread);
+        renderThreadView();
+        toast('Vote enregistré.', 'success');
+      })
+      .catch(function (err) {
+        toast(err.message || 'Vote refusé', 'error');
+      });
+  }
+
+  function onSubmitReply(event) {
+    event.preventDefault();
+    var detail = state.forum.openThreadDetail;
+    if (!detail || !state.currentTownId) return;
+    var textarea = event.target.body;
+    var body = textarea.value.trim();
+    var error = $('thread-reply-error');
+    error.hidden = true;
+    if (!body) {
+      error.textContent = 'Votre message ne peut pas être vide.';
+      error.hidden = false;
+      return;
+    }
+    apiCall('/towns/' + encodeURIComponent(state.currentTownId) +
+            '/forum/threads/' + encodeURIComponent(detail.thread.id) + '/messages', {
+      method: 'POST',
+      body: { body: body },
+    })
+      .then(function (res) {
+        if (!res || !res.message) return;
+        // Le WS va aussi notifier ; on évite le doublon en s'appuyant sur
+        // onForumMessagePosted qui contrôle l'unicité via l'id.
+        onForumMessagePosted(detail.thread.id, res.message);
+        textarea.value = '';
+      })
+      .catch(function (err) {
+        error.textContent = err.message || 'Envoi impossible';
+        error.hidden = false;
+      });
+  }
+
+  function onClickCloseThread() {
+    var detail = state.forum.openThreadDetail;
+    if (!detail || !state.currentTownId) return;
+    if (!window.confirm('Clore ce sujet ? Plus aucune réponse ni vote ne sera accepté.')) return;
+    apiCall('/towns/' + encodeURIComponent(state.currentTownId) +
+            '/forum/threads/' + encodeURIComponent(detail.thread.id) + '/close', {
+      method: 'POST',
+    })
+      .then(function (res) {
+        if (!res || !res.thread) return;
+        detail.thread = Object.assign({}, detail.thread, res.thread);
+        upsertThreadSummary(detail.thread);
+        renderThreadView();
+        toast('Sujet clos.', 'success');
+      })
+      .catch(function (err) {
+        toast(err.message || 'Fermeture impossible', 'error');
+      });
+  }
+
+  /**
+   * Récupère le subject (accountId) du JWT courant en décodant son payload.
+   * Le serveur reste la source de vérité pour les autorisations — on ne s'en
+   * sert que pour décider d'afficher ou non le bouton « Clore le sujet ».
+   */
+  function currentAccountId() {
+    var token = state.accessToken;
+    if (!token) return null;
+    var parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      var pad = b64.length % 4;
+      if (pad) b64 += new Array(5 - pad).join('=');
+      var payload = JSON.parse(atob(b64));
+      return payload && payload.sub ? String(payload.sub) : null;
+    } catch (err) {
+      return null;
+    }
   }
 
   /* =========================================================================

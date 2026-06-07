@@ -461,6 +461,87 @@
               <li class="log__empty">Le journal est vide. Agissez pour le remplir.</li>
             </ul>
           </article>
+
+          <!-- Forum & Activité -->
+          <article class="card card--forum">
+            <header class="card__header card__header--with-tabs">
+              <h2 class="card__title">Forum de ville</h2>
+              <div class="forum-tabs" role="tablist">
+                <button
+                  type="button"
+                  class="forum-tab is-active"
+                  data-forum-tab="threads"
+                  role="tab"
+                  aria-selected="true"
+                >
+                  Sujets
+                </button>
+                <button
+                  type="button"
+                  class="forum-tab"
+                  data-forum-tab="activity"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  Activité
+                </button>
+              </div>
+            </header>
+
+            <div class="forum-panel" data-forum-panel="threads">
+              <div class="forum-toolbar">
+                <button
+                  type="button"
+                  class="btn btn--primary btn--sm"
+                  id="forum-new-discussion-btn"
+                >
+                  + Discussion
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  id="forum-new-vote-btn"
+                >
+                  ☑ Vote
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  id="forum-refresh-btn"
+                  aria-label="Rafraîchir les sujets"
+                  title="Rafraîchir"
+                >
+                  ↻
+                </button>
+              </div>
+              <ul class="forum-threads" id="forum-threads-list">
+                <li class="forum-threads__empty">
+                  Aucun sujet pour le moment. Lancez la discussion ou ouvrez un vote.
+                </li>
+              </ul>
+            </div>
+
+            <div class="forum-panel" data-forum-panel="activity" hidden>
+              <div class="forum-toolbar">
+                <button
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  id="activity-refresh-btn"
+                  aria-label="Rafraîchir l'activité"
+                >
+                  ↻ Rafraîchir
+                </button>
+                <span class="forum-toolbar__hint">
+                  Chaque action des habitants y laisse une trace.
+                </span>
+              </div>
+              <ul class="activity-feed" id="activity-feed">
+                <li class="activity-feed__empty">
+                  Aucune activité enregistrée pour le moment.
+                </li>
+              </ul>
+            </div>
+          </article>
         </div>
       </section>
     </main>
@@ -538,6 +619,140 @@
               <li class="profile-history__empty">Aucune partie pour le moment.</li>
             </ul>
           </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== Modale création de sujet =================== -->
+    <div
+      class="modal"
+      id="thread-create-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="thread-create-title"
+      hidden
+    >
+      <div class="modal__overlay" id="thread-create-overlay"></div>
+      <div class="modal__card modal__card--wide">
+        <header class="profile-head">
+          <h2 class="modal__title" id="thread-create-title">Nouveau sujet</h2>
+          <button
+            type="button"
+            class="btn btn--ghost btn--sm"
+            id="thread-create-close-btn"
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        </header>
+        <form class="modal__body" id="thread-create-form" novalidate>
+          <label class="field">
+            <span class="field__label">Titre du sujet</span>
+            <input
+              type="text"
+              name="title"
+              required
+              minlength="3"
+              maxlength="120"
+              placeholder="Ex. Faut-il sortir ce soir ?"
+            />
+          </label>
+          <label class="field" id="thread-create-body-field">
+            <span class="field__label">Premier message (facultatif)</span>
+            <textarea
+              name="body"
+              rows="4"
+              maxlength="1000"
+              placeholder="Expliquez votre point de vue…"
+            ></textarea>
+          </label>
+          <fieldset class="field" id="thread-create-vote-field" hidden>
+            <legend class="field__label">Options du vote (2 à 6)</legend>
+            <div class="vote-options" id="vote-options-list">
+              <input
+                type="text"
+                class="vote-option-input"
+                placeholder="Option 1"
+                maxlength="60"
+              />
+              <input
+                type="text"
+                class="vote-option-input"
+                placeholder="Option 2"
+                maxlength="60"
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              id="vote-option-add-btn"
+            >
+              + Ajouter une option
+            </button>
+          </fieldset>
+          <p class="form-error" id="thread-create-error" role="alert" hidden></p>
+          <div class="modal__actions">
+            <button type="button" class="btn btn--ghost" id="thread-create-cancel-btn">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn--primary" id="thread-create-submit-btn">
+              Publier
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================== Modale lecture d'un sujet =================== -->
+    <div
+      class="modal"
+      id="thread-view-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="thread-view-title"
+      hidden
+    >
+      <div class="modal__overlay" id="thread-view-overlay"></div>
+      <div class="modal__card modal__card--wide">
+        <header class="profile-head">
+          <div>
+            <h2 class="modal__title" id="thread-view-title">Sujet</h2>
+            <p class="thread-view__meta" id="thread-view-meta"></p>
+          </div>
+          <button
+            type="button"
+            class="btn btn--ghost btn--sm"
+            id="thread-view-close-btn"
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        </header>
+        <div class="modal__body">
+          <div class="thread-view__vote" id="thread-view-vote" hidden></div>
+          <ol class="thread-view__messages" id="thread-view-messages"></ol>
+          <form class="thread-view__reply-form" id="thread-reply-form" novalidate>
+            <label class="field">
+              <span class="field__label">Votre réponse</span>
+              <textarea
+                name="body"
+                rows="3"
+                maxlength="1000"
+                required
+                placeholder="Votre message…"
+              ></textarea>
+            </label>
+            <p class="form-error" id="thread-reply-error" role="alert" hidden></p>
+            <div class="modal__actions">
+              <button type="button" class="btn btn--ghost btn--sm" id="thread-close-btn" hidden>
+                Clore le sujet
+              </button>
+              <button type="submit" class="btn btn--primary btn--sm">Publier</button>
+            </div>
+          </form>
+          <p class="thread-view__closed-hint" id="thread-view-closed" hidden>
+            Ce sujet est clos. Plus aucun message ne peut y être posté.
+          </p>
         </div>
       </div>
     </div>

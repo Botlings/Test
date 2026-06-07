@@ -100,3 +100,56 @@ CREATE TABLE IF NOT EXISTS night_locks (
   town_id      uuid         PRIMARY KEY REFERENCES towns(id) ON DELETE CASCADE,
   acquired_at  timestamptz  NOT NULL DEFAULT now()
 );
+
+-- Forum in-game : sujets (discussion ou vote), messages et votes.
+-- Les options d'un vote sont stockées en JSONB (ordre conservé, ids stables).
+CREATE TABLE IF NOT EXISTS forum_threads (
+  id                  uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+  town_id             uuid          NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+  author_account_id   uuid          NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  author_citizen_name text          NOT NULL,
+  title               text          NOT NULL,
+  kind                text          NOT NULL CHECK (kind IN ('discussion','vote')),
+  options             jsonb         NOT NULL DEFAULT '[]'::jsonb,
+  closes_at           timestamptz,
+  closed              boolean       NOT NULL DEFAULT false,
+  created_at          timestamptz   NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS forum_threads_town_idx
+  ON forum_threads(town_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS forum_messages (
+  id                  uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+  thread_id           uuid          NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
+  town_id             uuid          NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+  author_account_id   uuid          NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  author_citizen_name text          NOT NULL,
+  body                text          NOT NULL,
+  created_at          timestamptz   NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS forum_messages_thread_idx
+  ON forum_messages(thread_id, created_at ASC);
+
+CREATE TABLE IF NOT EXISTS forum_votes (
+  thread_id    uuid          NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
+  account_id   uuid          NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  citizen_name text          NOT NULL,
+  option_id    text          NOT NULL,
+  cast_at      timestamptz   NOT NULL DEFAULT now(),
+  PRIMARY KEY (thread_id, account_id)
+);
+
+-- Journal d'activité d'une ville : qui a fait quoi, quand.
+-- `details` est un JSONB libre (montant, destination, etc.).
+CREATE TABLE IF NOT EXISTS activity_log (
+  id            uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+  town_id       uuid          NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+  account_id    uuid                   REFERENCES accounts(id) ON DELETE SET NULL,
+  citizen_id    text,
+  citizen_name  text,
+  kind          text          NOT NULL,
+  details       jsonb         NOT NULL DEFAULT '{}'::jsonb,
+  created_at    timestamptz   NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS activity_log_town_idx
+  ON activity_log(town_id, created_at DESC);

@@ -11,6 +11,12 @@
  */
 
 import type { Location, NightReport } from '../domain/index.js';
+import type {
+  ActivityEntry,
+  ForumMessageRecord,
+  ForumThreadSummary,
+  ForumVoteTally,
+} from '../persistence/store.js';
 
 /* -------------------------------------------------------------------------- */
 /*  Messages serveur → client                                                 */
@@ -76,6 +82,38 @@ export interface ChatBroadcastMessage {
   readonly at: string;
 }
 
+/** Un sujet du forum vient d'être créé. */
+export interface ForumThreadCreatedMessage {
+  readonly type: 'forum.thread.created';
+  readonly thread: ForumThreadSummary;
+}
+
+/** Un sujet du forum vient d'être clos (manuellement ou à échéance). */
+export interface ForumThreadClosedMessage {
+  readonly type: 'forum.thread.closed';
+  readonly threadId: string;
+}
+
+/** Un nouveau message a été posté dans un sujet. */
+export interface ForumMessagePostedMessage {
+  readonly type: 'forum.message.posted';
+  readonly threadId: string;
+  readonly message: ForumMessageRecord;
+}
+
+/** Un vote a été (re)posé : nouveau tally. */
+export interface ForumVoteCastMessage {
+  readonly type: 'forum.vote.cast';
+  readonly threadId: string;
+  readonly tally: ForumVoteTally;
+}
+
+/** Une nouvelle entrée d'activité a été enregistrée. */
+export interface ActivityRecordedMessage {
+  readonly type: 'activity.recorded';
+  readonly entry: ActivityEntry;
+}
+
 /** Erreur applicative renvoyée suite à une action invalide. */
 export interface ServerErrorMessage {
   readonly type: 'error';
@@ -91,6 +129,11 @@ export type ServerMessage =
   | NightScheduledMessage
   | NightReportMessage
   | ChatBroadcastMessage
+  | ForumThreadCreatedMessage
+  | ForumThreadClosedMessage
+  | ForumMessagePostedMessage
+  | ForumVoteCastMessage
+  | ActivityRecordedMessage
   | ServerErrorMessage;
 
 /* -------------------------------------------------------------------------- */
@@ -128,6 +171,11 @@ const SERVER_TYPES = new Set<ServerMessage['type']>([
   'night.scheduled',
   'night.report',
   'chat.message',
+  'forum.thread.created',
+  'forum.thread.closed',
+  'forum.message.posted',
+  'forum.vote.cast',
+  'activity.recorded',
   'error',
 ]);
 

@@ -28,7 +28,17 @@ import {
   StoreError,
   type AccountRecord,
   type AccountTownEntry,
+  type ActivityEntry,
+  type ActivityInput,
+  type ActivityKind,
   type Difficulty,
+  type ForumMessageRecord,
+  type ForumThreadDetail,
+  type ForumThreadKind,
+  type ForumThreadRecord,
+  type ForumThreadSummary,
+  type ForumVoteOption,
+  type ForumVoteTally,
   type NightEventInput,
   type NightTrigger,
   type SessionRecord,
@@ -36,7 +46,7 @@ import {
   type Store,
   type TownRecord,
 } from './store.js';
-import { difficultyConfig } from './memory.js';
+import { difficultyConfig, normalizeVoteOptions } from './memory.js';
 
 const SCHEMA_URL = new URL('./sql/schema.sql', import.meta.url);
 
@@ -535,6 +545,410 @@ export class PgStore implements Store {
     }));
   }
 
+  /* ---------------------------- Forum ------------------------------------ */
+
+  async createForumThread(input: {
+    readonly townId: Id;
+    readonly authorAccountId: Id;
+    readonly authorCitizenName: string;
+    readonly title: string;
+    readonly kind: ForumThreadKind;
+    readonly options?: readonly ForumVoteOption[];
+    readonly closesAt?: Date | null;
+    readonly body?: string;
+  }): Promise<ForumThreadDetail> {
+    const town = this.towns.get(input.townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    const title = input.title.trim();
+    if (title.length < 3 || title.length > 120) {
+      throw new StoreError('thread-title-invalid', 'Le titre doit faire 3 à 120 caractères');
+    }
+    const options = input.kind === 'vote' ? normalizeVoteOptions(input.options) : [];
+    const id = randomUUID() as Id;
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `INSERT INTO forum_threads
+           (id, town_id, author_account_id, author_citizen_name, title, kind, options, closes_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)`,
+        [
+          id,
+          input.townId,
+          input.authorAccountId,
+          input.authorCitizenName,
+          title,
+          input.kind,
+          JSON.stringify(options),
+          input.closesAt ?? null,
+        ],
+      );
+      if (input.body && input.body.trim().length > 0) {
+        const body = input.body.trim();
+        if (body.length > 1000) {
+          throw new StoreError('message-body-invalid', 'Le message doit faire 1 à 1000 caractères');
+        }
+        await client.query(
+          `INSERT INTO forum_messages
+             (thread_id, town_id, author_account_id, author_citizen_name, body)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, input.townId, input.authorAccountId, input.authorCitizenName, body],
+        );
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw err;
+    } finally {
+      client.release();
+    }
+    const detail = await this.getForumThread(input.townId, id, input.authorAccountId);
+    return detail!;
+  }
+
+  async listForumThreads(
+    townId: Id,
+    viewerAccountId?: Id,
+  ): Promise<ForumThreadSummary[]> {
+    const threadsRes = await this.pool.query<ForumThreadRow>(
+      `SELECT id, town_id, author_account_id, author_citizen_name, title, kind,
+              options, closes_at, closed, created_at
+         FROM forum_threads
+        WHERE town_id = $1
+        ORDER BY created_at DESC`,
+      [townId],
+    );
+    if (threadsRes.rowCount === 0) return [];
+    const ids = threadsRes.rows.map((r) => r.id);
+    const counts = await this.pool.query<{
+      thread_id: Id;
+      message_count: string;
+      last_message_at: Date | null;
+    }>(
+      `SELECT thread_id,
+              COUNT(*)::text AS message_count,
+              MAX(created_at) AS last_message_at
+         FROM forum_messages
+        WHERE thread_id = ANY($1::uuid[])
+        GROUP BY thread_id`,
+      [ids],
+    );
+    const countByThread = new Map(
+      counts.rows.map((r) => [r.thread_id, r] as const),
+    );
+    const voteCounts = await this.pool.query<{ thread_id: Id; vote_count: string }>(
+      `SELECT thread_id, COUNT(*)::text AS vote_count
+         FROM forum_votes
+        WHERE thread_id = ANY($1::uuid[])
+        GROUP BY thread_id`,
+      [ids],
+    );
+    const voteCountByThread = new Map(
+      voteCounts.rows.map((r) => [r.thread_id, Number.parseInt(r.vote_count, 10)] as const),
+    );
+    void viewerAccountId;
+    return threadsRes.rows.map((row) => {
+      const c = countByThread.get(row.id);
+      const thread = rowToThread(row);
+      this.maybeAutoClose(thread);
+      return {
+        ...thread,
+        messageCount: c ? Number.parseInt(c.message_count, 10) : 0,
+        lastMessageAt: c?.last_message_at ?? null,
+        voteCount: voteCountByThread.get(row.id) ?? 0,
+      };
+    });
+  }
+
+  async getForumThread(
+    townId: Id,
+    threadId: Id,
+    viewerAccountId?: Id,
+  ): Promise<ForumThreadDetail | undefined> {
+    const threadRes = await this.pool.query<ForumThreadRow>(
+      `SELECT id, town_id, author_account_id, author_citizen_name, title, kind,
+              options, closes_at, closed, created_at
+         FROM forum_threads
+        WHERE id = $1 AND town_id = $2`,
+      [threadId, townId],
+    );
+    const row = threadRes.rows[0];
+    if (!row) return undefined;
+    const thread = rowToThread(row);
+    this.maybeAutoClose(thread);
+    if (thread.closed && !row.closed) {
+      await this.pool.query(`UPDATE forum_threads SET closed = true WHERE id = $1`, [threadId]);
+    }
+    const messagesRes = await this.pool.query<{
+      id: Id;
+      thread_id: Id;
+      town_id: Id;
+      author_account_id: Id;
+      author_citizen_name: string;
+      body: string;
+      created_at: Date;
+    }>(
+      `SELECT id, thread_id, town_id, author_account_id, author_citizen_name, body, created_at
+         FROM forum_messages
+        WHERE thread_id = $1
+        ORDER BY created_at ASC`,
+      [threadId],
+    );
+    const messages: ForumMessageRecord[] = messagesRes.rows.map((m) => ({
+      id: m.id,
+      threadId: m.thread_id,
+      townId: m.town_id,
+      authorAccountId: m.author_account_id,
+      authorCitizenName: m.author_citizen_name,
+      body: m.body,
+      createdAt: m.created_at,
+    }));
+    const tally = await this.computeTally(thread, viewerAccountId);
+    const lastMessageAt = messages.length
+      ? messages[messages.length - 1]!.createdAt
+      : null;
+    const summary: ForumThreadSummary = {
+      ...thread,
+      messageCount: messages.length,
+      lastMessageAt,
+      voteCount: tally.total,
+    };
+    return { thread: summary, messages, tally };
+  }
+
+  async postForumMessage(input: {
+    readonly townId: Id;
+    readonly threadId: Id;
+    readonly authorAccountId: Id;
+    readonly authorCitizenName: string;
+    readonly body: string;
+  }): Promise<ForumMessageRecord> {
+    const threadRes = await this.pool.query<ForumThreadRow>(
+      `SELECT id, town_id, author_account_id, author_citizen_name, title, kind,
+              options, closes_at, closed, created_at
+         FROM forum_threads
+        WHERE id = $1 AND town_id = $2`,
+      [input.threadId, input.townId],
+    );
+    const row = threadRes.rows[0];
+    if (!row) {
+      throw new StoreError('thread-not-found', 'Sujet introuvable');
+    }
+    const thread = rowToThread(row);
+    this.maybeAutoClose(thread);
+    if (thread.closed) {
+      if (!row.closed) {
+        await this.pool.query(`UPDATE forum_threads SET closed = true WHERE id = $1`, [thread.id]);
+      }
+      throw new StoreError('thread-closed', 'Ce sujet est fermé');
+    }
+    const body = input.body.trim();
+    if (body.length < 1 || body.length > 1000) {
+      throw new StoreError('message-body-invalid', 'Le message doit faire 1 à 1000 caractères');
+    }
+    const id = randomUUID() as Id;
+    const res = await this.pool.query<{ created_at: Date }>(
+      `INSERT INTO forum_messages
+         (id, thread_id, town_id, author_account_id, author_citizen_name, body)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING created_at`,
+      [
+        id,
+        input.threadId,
+        input.townId,
+        input.authorAccountId,
+        input.authorCitizenName,
+        body,
+      ],
+    );
+    return {
+      id,
+      threadId: input.threadId,
+      townId: input.townId,
+      authorAccountId: input.authorAccountId,
+      authorCitizenName: input.authorCitizenName,
+      body,
+      createdAt: res.rows[0]!.created_at,
+    };
+  }
+
+  async castForumVote(input: {
+    readonly townId: Id;
+    readonly threadId: Id;
+    readonly accountId: Id;
+    readonly citizenName: string;
+    readonly optionId: string;
+  }): Promise<ForumVoteTally> {
+    const threadRes = await this.pool.query<ForumThreadRow>(
+      `SELECT id, town_id, author_account_id, author_citizen_name, title, kind,
+              options, closes_at, closed, created_at
+         FROM forum_threads
+        WHERE id = $1 AND town_id = $2`,
+      [input.threadId, input.townId],
+    );
+    const row = threadRes.rows[0];
+    if (!row) {
+      throw new StoreError('thread-not-found', 'Sujet introuvable');
+    }
+    const thread = rowToThread(row);
+    if (thread.kind !== 'vote') {
+      throw new StoreError('vote-not-allowed', 'Ce sujet n\'est pas un vote');
+    }
+    this.maybeAutoClose(thread);
+    if (thread.closed) {
+      if (!row.closed) {
+        await this.pool.query(`UPDATE forum_threads SET closed = true WHERE id = $1`, [thread.id]);
+      }
+      throw new StoreError('vote-closed', 'Le vote est clos');
+    }
+    if (!thread.options.some((o) => o.id === input.optionId)) {
+      throw new StoreError('option-invalid', 'Option de vote invalide');
+    }
+    await this.pool.query(
+      `INSERT INTO forum_votes (thread_id, account_id, citizen_name, option_id)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (thread_id, account_id)
+         DO UPDATE SET option_id = EXCLUDED.option_id,
+                       citizen_name = EXCLUDED.citizen_name,
+                       cast_at = now()`,
+      [input.threadId, input.accountId, input.citizenName, input.optionId],
+    );
+    return this.computeTally(thread, input.accountId);
+  }
+
+  async closeForumThread(townId: Id, threadId: Id): Promise<ForumThreadSummary> {
+    const res = await this.pool.query<ForumThreadRow>(
+      `UPDATE forum_threads SET closed = true
+        WHERE id = $1 AND town_id = $2
+        RETURNING id, town_id, author_account_id, author_citizen_name, title, kind,
+                  options, closes_at, closed, created_at`,
+      [threadId, townId],
+    );
+    const row = res.rows[0];
+    if (!row) {
+      throw new StoreError('thread-not-found', 'Sujet introuvable');
+    }
+    const thread = rowToThread(row);
+    const counts = await this.pool.query<{ c: string; l: Date | null }>(
+      `SELECT COUNT(*)::text AS c, MAX(created_at) AS l
+         FROM forum_messages WHERE thread_id = $1`,
+      [threadId],
+    );
+    const voteCountRes = await this.pool.query<{ c: string }>(
+      `SELECT COUNT(*)::text AS c FROM forum_votes WHERE thread_id = $1`,
+      [threadId],
+    );
+    return {
+      ...thread,
+      messageCount: Number.parseInt(counts.rows[0]?.c ?? '0', 10),
+      lastMessageAt: counts.rows[0]?.l ?? null,
+      voteCount: Number.parseInt(voteCountRes.rows[0]?.c ?? '0', 10),
+    };
+  }
+
+  private maybeAutoClose(thread: ForumThreadRecord): void {
+    if (!thread.closed && thread.closesAt && thread.closesAt.getTime() <= Date.now()) {
+      thread.closed = true;
+    }
+  }
+
+  private async computeTally(
+    thread: ForumThreadRecord,
+    viewerAccountId?: Id,
+  ): Promise<ForumVoteTally> {
+    const res = await this.pool.query<{
+      option_id: string;
+      total: string;
+    }>(
+      `SELECT option_id, COUNT(*)::text AS total
+         FROM forum_votes
+        WHERE thread_id = $1
+        GROUP BY option_id`,
+      [thread.id],
+    );
+    const counts: Record<string, number> = {};
+    for (const opt of thread.options) counts[opt.id] = 0;
+    let total = 0;
+    for (const row of res.rows) {
+      const n = Number.parseInt(row.total, 10);
+      counts[row.option_id] = (counts[row.option_id] ?? 0) + n;
+      total += n;
+    }
+    let myChoice: string | null = null;
+    if (viewerAccountId) {
+      const mine = await this.pool.query<{ option_id: string }>(
+        `SELECT option_id FROM forum_votes WHERE thread_id = $1 AND account_id = $2`,
+        [thread.id, viewerAccountId],
+      );
+      myChoice = mine.rows[0]?.option_id ?? null;
+    }
+    return { threadId: thread.id, total, counts, myChoice };
+  }
+
+  /* ---------------------------- Activité --------------------------------- */
+
+  async recordActivity(townId: Id, input: ActivityInput): Promise<ActivityEntry> {
+    const id = randomUUID() as Id;
+    const res = await this.pool.query<{ created_at: Date }>(
+      `INSERT INTO activity_log
+         (id, town_id, account_id, citizen_id, citizen_name, kind, details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+       RETURNING created_at`,
+      [
+        id,
+        townId,
+        input.accountId ?? null,
+        input.citizenId ?? null,
+        input.citizenName ?? null,
+        input.kind,
+        JSON.stringify(input.details ?? {}),
+      ],
+    );
+    return {
+      id,
+      townId,
+      accountId: input.accountId ?? null,
+      citizenId: input.citizenId ?? null,
+      citizenName: input.citizenName ?? null,
+      kind: input.kind,
+      details: input.details ?? {},
+      createdAt: res.rows[0]!.created_at,
+    };
+  }
+
+  async listActivity(townId: Id, limit = 50): Promise<ActivityEntry[]> {
+    const safe = Math.max(0, Math.min(500, Math.trunc(limit)));
+    const res = await this.pool.query<{
+      id: Id;
+      town_id: Id;
+      account_id: Id | null;
+      citizen_id: string | null;
+      citizen_name: string | null;
+      kind: ActivityKind;
+      details: Record<string, string | number | boolean | null>;
+      created_at: Date;
+    }>(
+      `SELECT id, town_id, account_id, citizen_id, citizen_name, kind, details, created_at
+         FROM activity_log
+        WHERE town_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2`,
+      [townId, safe],
+    );
+    return res.rows.map((r) => ({
+      id: r.id,
+      townId: r.town_id,
+      accountId: r.account_id,
+      citizenId: r.citizen_id,
+      citizenName: r.citizen_name,
+      kind: r.kind,
+      details: r.details ?? {},
+      createdAt: r.created_at,
+    }));
+  }
+
   /**
    * Lock NX-EX via `pg_try_advisory_lock`. La clé est dérivée du UUID de
    * la ville (16 premiers hex de son md5, projetés sur un bigint). Le lock
@@ -577,6 +991,34 @@ export class PgStore implements Store {
   async close(): Promise<void> {
     await this.pool.end();
   }
+}
+
+interface ForumThreadRow {
+  readonly id: Id;
+  readonly town_id: Id;
+  readonly author_account_id: Id;
+  readonly author_citizen_name: string;
+  readonly title: string;
+  readonly kind: ForumThreadKind;
+  readonly options: readonly ForumVoteOption[];
+  readonly closes_at: Date | null;
+  readonly closed: boolean;
+  readonly created_at: Date;
+}
+
+function rowToThread(row: ForumThreadRow): ForumThreadRecord {
+  return {
+    id: row.id,
+    townId: row.town_id,
+    authorAccountId: row.author_account_id,
+    authorCitizenName: row.author_citizen_name,
+    title: row.title,
+    kind: row.kind,
+    options: row.options ?? [],
+    closesAt: row.closes_at,
+    closed: row.closed,
+    createdAt: row.created_at,
+  };
 }
 
 interface PgError {

@@ -17,6 +17,7 @@ import { verifyJwt } from './crypto.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerTownRoutes } from './routes/towns.js';
 import { registerActionRoutes } from './routes/actions.js';
+import { registerForumRoutes } from './routes/forum.js';
 import type { NightScheduler } from './night-scheduler.js';
 import type { Store } from '../persistence/store.js';
 import type { Id } from '../persistence/types.js';
@@ -82,6 +83,7 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   registerAuthRoutes(app, { store, jwtSecret, accessTokenTtlSeconds, secureCookies });
   registerTownRoutes(app, { store, jwtSecret, hub, scheduler });
   registerActionRoutes(app, { store, jwtSecret, hub, scheduler });
+  registerForumRoutes(app, { store, jwtSecret, hub });
 
   app.get('/ws', { websocket: true }, (socket: WebSocket, request) => {
     const url = new URL(request.url, 'http://localhost');

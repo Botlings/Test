@@ -20,6 +20,7 @@ import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
 import type { NightScheduler } from '../night-scheduler.js';
 import { publishTownSnapshot, resolveNight } from '../night-resolver.js';
+import { publishActivity } from '../activity.js';
 
 interface ActionsDeps {
   readonly store: Store;
@@ -65,6 +66,9 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
 
     const body = request.body as { type?: unknown; to?: unknown } | undefined;
     const actionType = typeof body?.type === 'string' ? body.type : '';
+    const statusBefore = town.game.status();
+    const citizenBefore = statusBefore.citizens.find((c) => c.id === citizenId);
+    const citizenName = citizenBefore?.name ?? citizenId;
     try {
       switch (actionType) {
         case 'move': {
@@ -77,22 +81,51 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           town.game.setLocation(citizenId, to as Location);
           await store.saveTown(town);
           hub.publish(townId, { type: 'citizen.moved', citizenId, to: to as Location });
+          await publishActivity(store, hub, townId, {
+            accountId,
+            citizenId,
+            citizenName,
+            kind: 'citizen.move',
+            details: { to: to as Location },
+          });
           break;
         }
         case 'scavenge': {
+          const bankBefore = { ...statusBefore.bank };
           town.game.scavenge(citizenId);
           await store.saveTown(town);
           publishTownSnapshot(hub, town);
+          const bankAfter = town.game.status().bank;
+          const gained: Record<string, number> = {};
+          for (const k of Object.keys(bankAfter) as Array<keyof typeof bankAfter>) {
+            const delta = bankAfter[k] - (bankBefore[k] ?? 0);
+            if (delta !== 0) gained[k] = delta;
+          }
+          await publishActivity(store, hub, townId, {
+            accountId,
+            citizenId,
+            citizenName,
+            kind: 'citizen.scavenge',
+            details: gained,
+          });
           break;
         }
         case 'build': {
           town.game.build(citizenId);
           await store.saveTown(town);
           publishTownSnapshot(hub, town);
+          const defense = town.game.status().townDefense;
           hub.publish(townId, {
             type: 'build.completed',
             structureId: `${townId}-build-${Date.now()}`,
-            defense: town.game.status().townDefense,
+            defense,
+          });
+          await publishActivity(store, hub, townId, {
+            accountId,
+            citizenId,
+            citizenName,
+            kind: 'citizen.build',
+            details: { defense },
           });
           break;
         }

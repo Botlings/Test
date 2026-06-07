@@ -21,7 +21,17 @@ import {
   StoreError,
   type AccountRecord,
   type AccountTownEntry,
+  type ActivityEntry,
+  type ActivityInput,
   type Difficulty,
+  type ForumMessageRecord,
+  type ForumThreadDetail,
+  type ForumThreadKind,
+  type ForumThreadRecord,
+  type ForumThreadSummary,
+  type ForumVoteOption,
+  type ForumVoteRecord,
+  type ForumVoteTally,
   type NightEventInput,
   type NightTrigger,
   type SessionRecord,
@@ -43,6 +53,41 @@ export {
 
 function newId(): Id {
   return randomUUID() as Id;
+}
+
+/**
+ * Normalise et valide les options d'un sujet de type vote. Génère un id
+ * `opt-N` pour chaque option si non fourni ; rejette si <2 ou >6 options
+ * ou si une option a un libellé vide / trop long.
+ */
+export function normalizeVoteOptions(
+  options: readonly ForumVoteOption[] | undefined,
+): ForumVoteOption[] {
+  if (!options || options.length < 2 || options.length > 6) {
+    throw new StoreError(
+      'vote-options-invalid',
+      'Un vote doit proposer entre 2 et 6 options',
+    );
+  }
+  const seenIds = new Set<string>();
+  const result: ForumVoteOption[] = [];
+  options.forEach((opt, idx) => {
+    const label = String(opt.label ?? '').trim();
+    if (label.length < 1 || label.length > 60) {
+      throw new StoreError(
+        'vote-options-invalid',
+        'Chaque option doit faire 1 à 60 caractères',
+      );
+    }
+    const rawId = String(opt.id ?? `opt-${idx}`).trim();
+    const id = /^[a-z0-9_-]{1,32}$/i.test(rawId) ? rawId : `opt-${idx}`;
+    if (seenIds.has(id)) {
+      throw new StoreError('vote-options-invalid', 'Les ids d\'options doivent être uniques');
+    }
+    seenIds.add(id);
+    result.push({ id, label });
+  });
+  return result;
 }
 
 /**
@@ -80,7 +125,13 @@ export class MemoryStore implements Store {
   private readonly nightEvents: Array<{ townId: Id; event: NightEventInput; at: Date }> = [];
   private readonly nightReports = new Map<Id, StoredNightReport[]>();
   private readonly membershipJoinedAt = new Map<string, Date>();
+  private readonly forumThreads = new Map<Id, ForumThreadRecord>();
+  private readonly forumMessages = new Map<Id, ForumMessageRecord[]>();
+  private readonly forumVotes = new Map<Id, Map<Id, ForumVoteRecord>>();
+  private readonly activityLog = new Map<Id, ActivityEntry[]>();
   private static readonly DEFAULT_REPORT_LIMIT = 20;
+  private static readonly DEFAULT_ACTIVITY_LIMIT = 50;
+  private static readonly MAX_ACTIVITY_ENTRIES = 500;
 
   /* ---------------------------- Comptes ---------------------------------- */
 
@@ -264,6 +315,244 @@ export class MemoryStore implements Store {
   ): Promise<StoredNightReport[]> {
     const list = this.nightReports.get(townId) ?? [];
     return list.slice(0, Math.max(0, limit));
+  }
+
+  /* ---------------------------- Forum ------------------------------------ */
+
+  async createForumThread(input: {
+    readonly townId: Id;
+    readonly authorAccountId: Id;
+    readonly authorCitizenName: string;
+    readonly title: string;
+    readonly kind: ForumThreadKind;
+    readonly options?: readonly ForumVoteOption[];
+    readonly closesAt?: Date | null;
+    readonly body?: string;
+  }): Promise<ForumThreadDetail> {
+    const town = this.towns.get(input.townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    const title = input.title.trim();
+    if (title.length < 3 || title.length > 120) {
+      throw new StoreError('thread-title-invalid', 'Le titre doit faire 3 à 120 caractères');
+    }
+    const options = input.kind === 'vote' ? normalizeVoteOptions(input.options) : [];
+    const thread: ForumThreadRecord = {
+      id: newId(),
+      townId: input.townId,
+      authorAccountId: input.authorAccountId,
+      authorCitizenName: input.authorCitizenName,
+      title,
+      kind: input.kind,
+      options,
+      createdAt: new Date(),
+      closesAt: input.closesAt ?? null,
+      closed: false,
+    };
+    this.forumThreads.set(thread.id, thread);
+    this.forumMessages.set(thread.id, []);
+    this.forumVotes.set(thread.id, new Map());
+    if (input.body && input.body.trim().length > 0) {
+      await this.postForumMessage({
+        townId: input.townId,
+        threadId: thread.id,
+        authorAccountId: input.authorAccountId,
+        authorCitizenName: input.authorCitizenName,
+        body: input.body,
+      });
+    }
+    const detail = await this.getForumThread(input.townId, thread.id, input.authorAccountId);
+    return detail!;
+  }
+
+  async listForumThreads(
+    townId: Id,
+    viewerAccountId?: Id,
+  ): Promise<ForumThreadSummary[]> {
+    const out: ForumThreadSummary[] = [];
+    for (const thread of this.forumThreads.values()) {
+      if (thread.townId !== townId) continue;
+      out.push(this.summarizeThread(thread, viewerAccountId));
+    }
+    out.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return out;
+  }
+
+  async getForumThread(
+    townId: Id,
+    threadId: Id,
+    viewerAccountId?: Id,
+  ): Promise<ForumThreadDetail | undefined> {
+    const thread = this.forumThreads.get(threadId);
+    if (!thread || thread.townId !== townId) return undefined;
+    this.maybeAutoClose(thread);
+    const messages = (this.forumMessages.get(threadId) ?? []).slice();
+    messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const tally = this.computeTally(thread, viewerAccountId);
+    return {
+      thread: this.summarizeThread(thread, viewerAccountId),
+      messages,
+      tally,
+    };
+  }
+
+  async postForumMessage(input: {
+    readonly townId: Id;
+    readonly threadId: Id;
+    readonly authorAccountId: Id;
+    readonly authorCitizenName: string;
+    readonly body: string;
+  }): Promise<ForumMessageRecord> {
+    const thread = this.forumThreads.get(input.threadId);
+    if (!thread || thread.townId !== input.townId) {
+      throw new StoreError('thread-not-found', 'Sujet introuvable');
+    }
+    this.maybeAutoClose(thread);
+    if (thread.closed) {
+      throw new StoreError('thread-closed', 'Ce sujet est fermé');
+    }
+    const body = input.body.trim();
+    if (body.length < 1 || body.length > 1000) {
+      throw new StoreError('message-body-invalid', 'Le message doit faire 1 à 1000 caractères');
+    }
+    const message: ForumMessageRecord = {
+      id: newId(),
+      threadId: input.threadId,
+      townId: input.townId,
+      authorAccountId: input.authorAccountId,
+      authorCitizenName: input.authorCitizenName,
+      body,
+      createdAt: new Date(),
+    };
+    const list = this.forumMessages.get(input.threadId) ?? [];
+    list.push(message);
+    this.forumMessages.set(input.threadId, list);
+    return message;
+  }
+
+  async castForumVote(input: {
+    readonly townId: Id;
+    readonly threadId: Id;
+    readonly accountId: Id;
+    readonly citizenName: string;
+    readonly optionId: string;
+  }): Promise<ForumVoteTally> {
+    const thread = this.forumThreads.get(input.threadId);
+    if (!thread || thread.townId !== input.townId) {
+      throw new StoreError('thread-not-found', 'Sujet introuvable');
+    }
+    if (thread.kind !== 'vote') {
+      throw new StoreError('vote-not-allowed', 'Ce sujet n\'est pas un vote');
+    }
+    this.maybeAutoClose(thread);
+    if (thread.closed) {
+      throw new StoreError('vote-closed', 'Le vote est clos');
+    }
+    if (!thread.options.some((o) => o.id === input.optionId)) {
+      throw new StoreError('option-invalid', 'Option de vote invalide');
+    }
+    const votes = this.forumVotes.get(input.threadId) ?? new Map<Id, ForumVoteRecord>();
+    votes.set(input.accountId, {
+      threadId: input.threadId,
+      accountId: input.accountId,
+      citizenName: input.citizenName,
+      optionId: input.optionId,
+      castAt: new Date(),
+    });
+    this.forumVotes.set(input.threadId, votes);
+    return this.computeTally(thread, input.accountId);
+  }
+
+  async closeForumThread(townId: Id, threadId: Id): Promise<ForumThreadSummary> {
+    const thread = this.forumThreads.get(threadId);
+    if (!thread || thread.townId !== townId) {
+      throw new StoreError('thread-not-found', 'Sujet introuvable');
+    }
+    thread.closed = true;
+    return this.summarizeThread(thread);
+  }
+
+  /* ---------------------------- Activité ---------------------------------- */
+
+  async recordActivity(townId: Id, input: ActivityInput): Promise<ActivityEntry> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    const entry: ActivityEntry = {
+      id: newId(),
+      townId,
+      accountId: input.accountId ?? null,
+      citizenId: input.citizenId ?? null,
+      citizenName: input.citizenName ?? null,
+      kind: input.kind,
+      details: input.details ?? {},
+      createdAt: new Date(),
+    };
+    const list = this.activityLog.get(townId) ?? [];
+    list.unshift(entry);
+    if (list.length > MemoryStore.MAX_ACTIVITY_ENTRIES) {
+      list.length = MemoryStore.MAX_ACTIVITY_ENTRIES;
+    }
+    this.activityLog.set(townId, list);
+    return entry;
+  }
+
+  async listActivity(
+    townId: Id,
+    limit: number = MemoryStore.DEFAULT_ACTIVITY_LIMIT,
+  ): Promise<ActivityEntry[]> {
+    const list = this.activityLog.get(townId) ?? [];
+    return list.slice(0, Math.max(0, limit));
+  }
+
+  /* ---------------------------- Helpers forum ---------------------------- */
+
+  private maybeAutoClose(thread: ForumThreadRecord): void {
+    if (!thread.closed && thread.closesAt && thread.closesAt.getTime() <= Date.now()) {
+      thread.closed = true;
+    }
+  }
+
+  private summarizeThread(
+    thread: ForumThreadRecord,
+    viewerAccountId?: Id,
+  ): ForumThreadSummary {
+    const messages = this.forumMessages.get(thread.id) ?? [];
+    const lastMessageAt = messages.length
+      ? messages.reduce<Date>(
+          (acc, m) => (m.createdAt.getTime() > acc.getTime() ? m.createdAt : acc),
+          messages[0]!.createdAt,
+        )
+      : null;
+    const votes = this.forumVotes.get(thread.id) ?? new Map<Id, ForumVoteRecord>();
+    void viewerAccountId;
+    return {
+      ...thread,
+      messageCount: messages.length,
+      lastMessageAt,
+      voteCount: votes.size,
+    };
+  }
+
+  private computeTally(thread: ForumThreadRecord, viewerAccountId?: Id): ForumVoteTally {
+    const votes = this.forumVotes.get(thread.id) ?? new Map<Id, ForumVoteRecord>();
+    const counts: Record<string, number> = {};
+    for (const opt of thread.options) counts[opt.id] = 0;
+    let myChoice: string | null = null;
+    for (const v of votes.values()) {
+      counts[v.optionId] = (counts[v.optionId] ?? 0) + 1;
+      if (viewerAccountId && v.accountId === viewerAccountId) {
+        myChoice = v.optionId;
+      }
+    }
+    return {
+      threadId: thread.id,
+      total: votes.size,
+      counts,
+      myChoice,
+    };
   }
 
   async nightLock<T>(townId: Id, fn: () => Promise<T> | T): Promise<T> {
