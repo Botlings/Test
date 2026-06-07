@@ -1,0 +1,86 @@
+# =============================================================================
+# Pipeline CI : typecheck + tests + build Docker à chaque PR et push sur main.
+#
+# Ce fichier est un TEMPLATE — il vit dans `infra/github-actions/` parce que le
+# PAT d'accès au repo n'a pas le scope `workflow` (cf. mémoire d'équipe). Pour
+# l'activer, un humain disposant du scope `workflow` doit copier ce fichier en
+# `.github/workflows/ci.yml` et le pusher sur main.
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint + Typecheck + Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: hordes_test
+          POSTGRES_USER: hordes
+          POSTGRES_PASSWORD: hordes
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hordes -d hordes_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: test-secret-test-secret-test-secret-1234
+      DATABASE_URL: postgres://hordes:hordes@127.0.0.1:5432/hordes_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Vitest
+        run: npm test
+
+      - name: Build (tsc + copie SQL)
+        run: npm run build
+
+  docker:
+    name: Build Docker image
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: hordes-revival:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

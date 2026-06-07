@@ -1,0 +1,46 @@
+# Stack de dev local : Postgres 16 + serveur Hordes Revival.
+#
+# Démarrage :
+#   docker compose up --build
+#
+# L'API écoute sur http://localhost:3000 et utilise le Postgres du compose
+# (schéma SQL appliqué automatiquement au boot du serveur).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hordes
+      POSTGRES_USER: hordes
+      POSTGRES_PASSWORD: hordes
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hordes -d hordes"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      # JWT_SECRET de DEV uniquement — surchargez via .env en local.
+      JWT_SECRET: dev-secret-please-change-me-at-least-32-chars
+      DATABASE_URL: postgres://hordes:hordes@postgres:5432/hordes
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,37 @@
+# Fichiers à NE PAS copier dans le contexte de build Docker.
+# Limite la taille du contexte et évite d'invalider le cache pour rien.
+
+node_modules
+dist
+coverage
+*.log
+.DS_Store
+
+.git
+.gitignore
+.github
+.minicorp
+
+# Tests unitaires : non nécessaires en image de prod.
+tests
+vitest.config.*
+
+# Landing page statique servie par GitHub Pages, pas par Fastify.
+index.html
+game.html
+game.css
+game.js
+main.js
+styles.css
+.nojekyll
+
+# Documentation et fichiers d'éditeur.
+*.md
+.vscode
+.idea
+docs
+
+# Fichiers d'env locaux, ne JAMAIS embarquer dans l'image.
+.env
+.env.*
+!.env.example

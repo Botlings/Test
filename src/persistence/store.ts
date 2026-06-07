@@ -152,6 +152,13 @@ export interface Store {
   /** Lock NX-EX sur une ville. Rejette immédiatement si déjà acquis. */
   nightLock<T>(townId: Id, fn: () => Promise<T> | T): Promise<T>;
 
+  /**
+   * Sonde de santé du backend de persistance. Doit renvoyer sans erreur si
+   * le store est utilisable (pour Postgres : un `SELECT 1` ; pour la mémoire :
+   * un no-op). Utilisée par l'endpoint `/health/ready`.
+   */
+  ping(): Promise<void>;
+
   /** Libère toutes les ressources (pool de connexion, etc.). */
   close(): Promise<void>;
 }

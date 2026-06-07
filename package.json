@@ -4,12 +4,13 @@
   "description": "Hordes Revival — browser game multijoueur de survie face aux hordes de zombies",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"require('node:fs').cpSync('src/persistence/sql','dist/src/persistence/sql',{recursive:true})\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "tsx src/index.ts",
-    "start": "tsx src/server/main.ts"
+    "start": "tsx src/server/main.ts",
+    "start:prod": "node dist/src/server/main.js"
   },
   "license": "UNLICENSED",
   "private": true,

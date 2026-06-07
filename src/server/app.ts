@@ -55,7 +55,29 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   await app.register(cookiePlugin);
   await app.register(websocketPlugin);
 
-  app.get('/health', async () => ({ status: 'ok' }));
+  // Sondes de santé.
+  //   - /health/live  : process vivant (utilisé par Docker HEALTHCHECK et Render)
+  //   - /health/ready : le process est prêt à servir (DB joignable)
+  //   - /health       : alias de /health/live (rétro-compat)
+  const startedAt = new Date();
+  app.get('/health', async () => ({ status: 'ok', uptimeMs: Date.now() - startedAt.getTime() }));
+  app.get('/health/live', async () => ({
+    status: 'ok',
+    uptimeMs: Date.now() - startedAt.getTime(),
+  }));
+  app.get('/health/ready', async (_request, reply) => {
+    try {
+      await store.ping();
+      return { status: 'ok', store: 'ready' };
+    } catch (err) {
+      reply.code(503);
+      return {
+        status: 'unavailable',
+        store: 'unreachable',
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
 
   registerAuthRoutes(app, { store, jwtSecret, accessTokenTtlSeconds, secureCookies });
   registerTownRoutes(app, { store, jwtSecret, hub, scheduler });

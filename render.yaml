@@ -1,0 +1,44 @@
+# Blueprint Render — déploiement « Infrastructure as Code » du serveur.
+#
+# Documentation : https://render.com/docs/blueprint-spec
+#
+# Pour appliquer :
+#   1. Sur dashboard.render.com → New → Blueprint
+#   2. Connecter le repo Botlings/Test, brancher sur `main`
+#   3. Renseigner le secret JWT_SECRET (≥ 32 caractères) lors du provisioning
+#   4. Une fois déployé, attacher le domaine custom hordesrevival.com (voir
+#      .minicorp/docs/cto/infrastructure-cloud.md pour la procédure DNS).
+#
+# Render redéploie automatiquement à chaque push sur `main` (autoDeploy: true).
+
+databases:
+  - name: hordes-revival-postgres
+    plan: free
+    databaseName: hordes
+    user: hordes
+    postgresMajorVersion: "16"
+    ipAllowList: []  # accessible uniquement depuis l'intra-VPC Render
+
+services:
+  - type: web
+    name: hordes-revival-api
+    runtime: docker
+    plan: starter         # gratuit en attendant la beta ; passer à "standard" en prod
+    region: frankfurt     # latence FR/EU
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "3000"
+      - key: JWT_SECRET
+        sync: false       # à renseigner à la main dans le dashboard Render
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hordes-revival-postgres
+          property: connectionString

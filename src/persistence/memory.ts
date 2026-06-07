@@ -278,6 +278,10 @@ export class MemoryStore implements Store {
     }
   }
 
+  async ping(): Promise<void> {
+    // In-memory : toujours sain tant que le process tourne.
+  }
+
   async close(): Promise<void> {
     // Rien à fermer : aucune ressource externe.
   }

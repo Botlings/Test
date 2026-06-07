@@ -1,0 +1,63 @@
+# =============================================================================
+# Déploiement automatique : sur chaque push sur `main` *après* succès du CI,
+# on déclenche le Deploy Hook Render. Render reconstruit l'image et la met
+# en ligne.
+#
+# Prérequis côté GitHub (Settings → Secrets and variables → Actions) :
+#   - RENDER_DEPLOY_HOOK_URL : URL du Deploy Hook du service Render
+#     (Dashboard Render → service → Settings → Deploy Hook).
+#
+# Ce fichier est un TEMPLATE — voir `infra/README.md` pour l'installer.
+# =============================================================================
+
+name: Deploy to Render
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Trigger Render deploy hook
+    runs-on: ubuntu-latest
+    # Ne déclenche le déploiement que si le CI est vert ET que c'est un push
+    # sur main (pas une PR depuis une fork).
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+
+    steps:
+      - name: Trigger Render
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret manquant"
+            exit 1
+          fi
+          # Render répond 200 + JSON {deploy: {id, status}}.
+          response=$(curl --silent --show-error --fail \
+            --request POST "$DEPLOY_HOOK")
+          echo "Render: $response"
+
+      - name: Wait & ping /health/ready
+        env:
+          APP_URL: https://hordesrevival.com
+        run: |
+          echo "Attente du roll-out Render (~60s puis polling 5min)..."
+          sleep 60
+          for i in $(seq 1 60); do
+            code=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              "$APP_URL/health/ready" || echo "000")
+            echo "Tentative $i : HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "✅ Service en ligne"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Le service n'a pas répondu 200 sur /health/ready après 5 minutes"
+          exit 1
