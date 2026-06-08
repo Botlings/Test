@@ -27,8 +27,8 @@
       var icon = toggle.querySelector('.theme-toggle__icon');
       var label = toggle.querySelector('.theme-toggle__label');
       toggle.setAttribute('aria-pressed', isDay ? 'true' : 'false');
-      if (icon) icon.textContent = isDay ? '☀' : '☾';
-      if (label) label.textContent = isDay ? 'Jour' : 'Nuit';
+      if (icon) icon.textContent = isDay ? '◉' : '▣';
+      if (label) label.textContent = isDay ? 'AMBER' : 'GREEN';
     }
   }
 
