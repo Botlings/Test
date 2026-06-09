@@ -68,12 +68,16 @@ function fullTownState(
       location: c.location,
       actionPoints: c.actionPoints,
       consecutiveThirstDays: c.consecutiveThirstDays,
+      position: c.position ?? null,
+      waterCanteen: c.waterCanteen,
       causeOfDeath: c.causeOfDeath ?? null,
     })),
     yourCitizenId: yourCitizenId ?? null,
     closed: town.closed,
     gameOver: status.gameOver,
     nextNightAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+    buildings: status.buildings,
+    desert: status.desert,
   };
 }
 

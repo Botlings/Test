@@ -43,10 +43,27 @@ CREATE TABLE IF NOT EXISTS towns (
   bank_wood           integer       NOT NULL DEFAULT 0,
   bank_metal          integer       NOT NULL DEFAULT 0,
   bank_water          integer       NOT NULL DEFAULT 0,
+  -- Compteurs des bâtiments construits, indexés par id du catalogue
+  -- (`src/domain/buildings.ts`). Forme : { "watchtower": 2, "well": 1, ... }.
+  buildings           jsonb         NOT NULL DEFAULT '{}'::jsonb,
+  -- Carte du désert sérialisée : { seed, radius, zones: { "x,y": Zone } }.
+  -- Régénérée déterministe à partir de `desert_seed` si manquante ou invalide.
+  desert              jsonb         NOT NULL DEFAULT '{}'::jsonb,
+  desert_seed         bigint        NOT NULL DEFAULT 0,
   CONSTRAINT towns_resources_nonneg CHECK (
     bank_wood >= 0 AND bank_metal >= 0 AND bank_water >= 0
   )
 );
+
+-- Migration douce pour les bases déjà créées avant l'introduction du catalogue
+-- de bâtiments. Sans effet sur une base neuve (colonne déjà présente).
+ALTER TABLE towns
+  ADD COLUMN IF NOT EXISTS buildings jsonb NOT NULL DEFAULT '{}'::jsonb;
+-- Idem pour la carte du désert (jalon 4).
+ALTER TABLE towns
+  ADD COLUMN IF NOT EXISTS desert jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE towns
+  ADD COLUMN IF NOT EXISTS desert_seed bigint NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS citizens (
   town_id                  uuid     NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
@@ -58,9 +75,20 @@ CREATE TABLE IF NOT EXISTS citizens (
   action_points            integer  NOT NULL,
   consecutive_thirst_days  integer  NOT NULL DEFAULT 0,
   cause_of_death           text,
+  -- Position en désert (NULL quand le citoyen est en ville). Quand
+  -- `location = 'desert'`, la paire (x, y) DOIT être renseignée.
+  position_x               integer,
+  position_y               integer,
+  -- Gourde personnelle (eau pour fouiller en zone). Plafonnée par la config.
+  water_canteen            integer  NOT NULL DEFAULT 3,
   PRIMARY KEY (town_id, id)
 );
 CREATE INDEX IF NOT EXISTS citizens_account_id_idx ON citizens(account_id);
+
+-- Migrations idempotentes pour les bases pré-désert (jalon 4).
+ALTER TABLE citizens ADD COLUMN IF NOT EXISTS position_x integer;
+ALTER TABLE citizens ADD COLUMN IF NOT EXISTS position_y integer;
+ALTER TABLE citizens ADD COLUMN IF NOT EXISTS water_canteen integer NOT NULL DEFAULT 3;
 
 CREATE TABLE IF NOT EXISTS town_memberships (
   town_id     uuid         NOT NULL REFERENCES towns(id) ON DELETE CASCADE,

@@ -50,6 +50,15 @@ export interface BuildCompletedMessage {
   readonly defense: number;
 }
 
+/** Un citoyen vient d'arriver dans une zone du désert (avec ou sans découverte). */
+export interface CitizenExploringMessage {
+  readonly type: 'citizen.exploring';
+  readonly citizenId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly discovered: boolean;
+}
+
 /** La nuit commence — plus aucune action n'est possible. */
 export interface NightStartMessage {
   readonly type: 'night.start';
@@ -124,6 +133,7 @@ export interface ServerErrorMessage {
 export type ServerMessage =
   | TownSnapshotMessage
   | CitizenMovedMessage
+  | CitizenExploringMessage
   | BuildCompletedMessage
   | NightStartMessage
   | NightScheduledMessage
@@ -166,6 +176,7 @@ export type ClientMessage = AuthMessage | ChatSendMessage | PingMessage;
 const SERVER_TYPES = new Set<ServerMessage['type']>([
   'town.snapshot',
   'citizen.moved',
+  'citizen.exploring',
   'build.completed',
   'night.start',
   'night.scheduled',

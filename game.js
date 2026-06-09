@@ -47,6 +47,8 @@
     wsReconnectTimer: null,
     nextNightTicker: null,
     refreshing: false,
+    buildingsCatalog: null,
+    buildingsCatalogLoading: null,
     forum: {
       activeTab: 'threads',
       threads: [],
@@ -678,23 +680,23 @@
   function setupTownUI() {
     $('leave-town-btn').addEventListener('click', leaveTown);
 
-    $('zone-town').addEventListener('click', function () { performMove('town'); });
-    $('zone-desert').addEventListener('click', function () { performMove('desert'); });
-    ['zone-town', 'zone-desert'].forEach(function (id) {
-      $(id).addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          performMove(id === 'zone-town' ? 'town' : 'desert');
-        }
-      });
-    });
-
     var actionsEl = $('actions');
     actionsEl.addEventListener('click', function (event) {
       var btn = event.target.closest('button[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
       handleAction(action);
+    });
+
+    // Panneau de la zone courante : fouille / combat / retour ville.
+    $('zone-scavenge-btn').addEventListener('click', function () {
+      sendAction({ type: 'scavenge-zone' });
+    });
+    $('zone-fight-btn').addEventListener('click', function () {
+      sendAction({ type: 'fight' });
+    });
+    $('zone-return-btn').addEventListener('click', function () {
+      sendAction({ type: 'move-zone', x: 0, y: 0 });
     });
 
     $('trigger-night-btn').addEventListener('click', triggerNight);
@@ -831,6 +833,9 @@
 
     // Roster
     renderRoster(town);
+
+    // Catalogue de constructions
+    renderBuildings(town);
   }
 
   function updateBank(bank, animate) {
@@ -857,48 +862,225 @@
     });
   }
 
-  function renderMap(town) {
-    var townTokens = $('zone-town-tokens');
-    var desertTokens = $('zone-desert-tokens');
-    townTokens.innerHTML = '';
-    desertTokens.innerHTML = '';
+  var TERRAIN_ICONS = {
+    plain: '🌾',
+    ruins: '🏚',
+    highway: '🛣',
+    wasteland: '☢',
+  };
+  var TERRAIN_LABELS = {
+    plain: 'Plaine',
+    ruins: 'Ruines',
+    highway: 'Route',
+    wasteland: 'Friche radioactive',
+  };
 
+  function isAdjacentCell(ax, ay, bx, by) {
+    if (ax === bx && ay === by) return false;
+    return Math.abs(ax - bx) <= 1 && Math.abs(ay - by) <= 1;
+  }
+
+  function renderMap(town) {
+    var grid = $('desert-grid');
+    if (!grid) return;
+    var desert = town && town.desert ? town.desert : null;
     var citizens = town.citizens || [];
     var self = citizens.find(function (c) { return c.id === state.yourCitizenId; });
+    var canMove = !!self && self.alive && town.phase === 'day' && !town.closed;
 
+    if (!desert || !desert.zones || !desert.zones.length) {
+      grid.innerHTML = '<p class="desert-grid__empty">Carte indisponible.</p>';
+      hideZoneDetail();
+      return;
+    }
+
+    var radius = desert.radius || 3;
+    var side = 2 * radius + 1;
+    grid.style.gridTemplateColumns = 'repeat(' + side + ', minmax(0, 1fr))';
+
+    // Index zones par clé "x,y" pour accès rapide.
+    var zoneByKey = {};
+    desert.zones.forEach(function (z) { zoneByKey[z.x + ',' + z.y] = z; });
+
+    // Compte les citoyens présents par case.
+    var citizensByCell = {};
     citizens.forEach(function (c) {
-      var token = document.createElement('span');
-      var classes = 'token';
-      if (c.id === state.yourCitizenId) classes += ' is-self';
-      if (!c.alive) classes += ' is-dead';
-      token.className = classes;
-      token.innerHTML =
-        '<span class="token__avatar">' + escapeHtml(initials(c.name)) + '</span>' +
-        '<span class="token__name">' + escapeHtml(c.name) + '</span>';
-      token.title = c.name + ' — ' + (c.alive ? (c.location === 'desert' ? 'dans le désert' : 'en ville') : (c.causeOfDeath || 'mort'));
-      var container = c.location === 'desert' ? desertTokens : townTokens;
-      container.appendChild(token);
+      if (!c.alive) return;
+      var key = 'town';
+      if (c.location === 'desert' && c.position) {
+        key = c.position.x + ',' + c.position.y;
+      }
+      if (!citizensByCell[key]) citizensByCell[key] = [];
+      citizensByCell[key].push(c);
     });
 
-    var townZone = $('zone-town');
-    var desertZone = $('zone-desert');
-    townZone.classList.toggle('is-current', !!self && self.location === 'town');
-    desertZone.classList.toggle('is-current', !!self && self.location === 'desert');
+    var selfX = self && self.position ? self.position.x : 0;
+    var selfY = self && self.position ? self.position.y : 0;
+    var selfInTown = !!self && self.location === 'town';
 
-    var canMove = !!self && self.alive && town.phase === 'day' && !town.closed;
-    townZone.classList.toggle('is-disabled', !canMove);
-    desertZone.classList.toggle('is-disabled', !canMove);
+    var html = '';
+    for (var y = -radius; y <= radius; y++) {
+      for (var x = -radius; x <= radius; x++) {
+        if (x === 0 && y === 0) {
+          html += renderTownCell(citizensByCell.town || [], selfInTown);
+          continue;
+        }
+        var zone = zoneByKey[x + ',' + y];
+        if (!zone) {
+          html += '<div class="desert-cell desert-cell--undiscovered" aria-hidden="true"></div>';
+          continue;
+        }
+        var here = citizensByCell[x + ',' + y] || [];
+        var isCurrent = !!self && self.location === 'desert' && self.position
+          && self.position.x === x && self.position.y === y;
+        var fromX = selfInTown ? 0 : selfX;
+        var fromY = selfInTown ? 0 : selfY;
+        var accessible = canMove && !isCurrent
+          && isAdjacentCell(fromX, fromY, x, y);
+        html += renderDesertCell(zone, { isCurrent: isCurrent, accessible: accessible, citizens: here, selfId: state.yourCitizenId });
+      }
+    }
+    grid.innerHTML = html;
+
+    Array.prototype.forEach.call(grid.querySelectorAll('.desert-cell--accessible'), function (cell) {
+      cell.addEventListener('click', function () {
+        var tx = Number(cell.getAttribute('data-x'));
+        var ty = Number(cell.getAttribute('data-y'));
+        if (tx === 0 && ty === 0) {
+          sendAction({ type: 'move-zone', x: 0, y: 0 });
+        } else {
+          sendAction({ type: 'move-zone', x: tx, y: ty });
+        }
+      });
+      cell.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          cell.click();
+        }
+      });
+    });
 
     var hint = $('map-hint');
     if (town.phase === 'night') {
       hint.textContent = 'La nuit est tombée — les portes sont scellées.';
     } else if (!self || !self.alive) {
       hint.textContent = 'Aucun citoyen actif pour cette partie.';
-    } else if (self.location === 'town') {
-      hint.textContent = 'Vous êtes en ville. Sortez dans le désert pour fouiller.';
+    } else if (selfInTown) {
+      hint.textContent = 'Vous êtes à l\'abri. Cliquez une case adjacente pour sortir.';
     } else {
-      hint.textContent = 'Vous êtes dans le désert. Rentrez avant la nuit !';
+      hint.textContent = 'Distance ville : ' + Math.max(Math.abs(selfX), Math.abs(selfY))
+        + ' — gourde : ' + (self.waterCanteen || 0) + ' unité(s).';
     }
+
+    renderZoneDetail(town, self, zoneByKey);
+  }
+
+  function renderTownCell(here, isCurrent) {
+    var tokens = here.length
+      ? '<span class="desert-cell__token' + (isCurrent ? '' : ' desert-cell__token--others') + '" title="' + here.length + ' citoyen(s)">' + (isCurrent ? '★' : here.length) + '</span>'
+      : '';
+    var classes = 'desert-cell desert-cell--town';
+    if (isCurrent) classes += ' desert-cell--current';
+    return (
+      '<div class="' + classes + '" data-x="0" data-y="0" role="gridcell" aria-label="La Ville">' +
+      '  <span class="desert-cell__terrain" aria-hidden="true">🏛</span>' +
+      '  <span class="desert-cell__loot">Ville</span>' +
+         tokens +
+      '</div>'
+    );
+  }
+
+  function renderDesertCell(zone, opts) {
+    var classes = 'desert-cell';
+    if (!zone.discovered) classes += ' desert-cell--undiscovered';
+    if (opts.isCurrent) classes += ' desert-cell--current';
+    if (opts.accessible) classes += ' desert-cell--accessible';
+    if (zone.zombies > 0) classes += ' desert-cell--has-zombies';
+    if (zone.distance === 2) classes += ' desert-cell--danger-2';
+    if (zone.distance >= 3) classes += ' desert-cell--danger-3';
+
+    var icon = TERRAIN_ICONS[zone.terrain] || '·';
+    var lootCount = (zone.loot.wood || 0) + (zone.loot.metal || 0) + (zone.loot.water || 0);
+    var lootLine = zone.discovered ? (lootCount + ' obj.') : '?';
+    var zombiesLine = zone.discovered && zone.zombies > 0 ? '🧟 × ' + zone.zombies : '';
+    var label = 'Zone (' + zone.x + ',' + zone.y + ') — ' + (TERRAIN_LABELS[zone.terrain] || zone.terrain);
+
+    var here = opts.citizens || [];
+    var selfPresent = here.some(function (c) { return c.id === opts.selfId; });
+    var others = here.filter(function (c) { return c.id !== opts.selfId; });
+    var tokensHtml = '';
+    if (selfPresent) {
+      tokensHtml += '<span class="desert-cell__token" title="Vous êtes ici">★</span>';
+    }
+    if (others.length) {
+      tokensHtml += '<span class="desert-cell__token desert-cell__token--others" title="' + others.length + ' autre(s) citoyen(s)">' + others.length + '</span>';
+    }
+
+    var tabindex = opts.accessible ? ' tabindex="0"' : '';
+    return (
+      '<div class="' + classes + '" data-x="' + zone.x + '" data-y="' + zone.y + '"' +
+      ' role="gridcell" aria-label="' + escapeHtml(label) + '"' + tabindex + '>' +
+      '  <span class="desert-cell__terrain" aria-hidden="true">' + icon + '</span>' +
+      '  <span class="desert-cell__loot">' + escapeHtml(lootLine) + '</span>' +
+         (zombiesLine ? '  <span class="desert-cell__zombies">' + zombiesLine + '</span>' : '') +
+         tokensHtml +
+      '</div>'
+    );
+  }
+
+  function renderZoneDetail(town, self, zoneByKey) {
+    var detail = $('zone-detail');
+    if (!detail) return;
+    if (!self || self.location !== 'desert' || !self.position) {
+      hideZoneDetail();
+      return;
+    }
+    var zone = zoneByKey[self.position.x + ',' + self.position.y];
+    if (!zone) {
+      hideZoneDetail();
+      return;
+    }
+    detail.hidden = false;
+    var title = 'Zone (' + zone.x + ', ' + zone.y + ') — distance ' + zone.distance;
+    $('zone-detail-title').textContent = title;
+    $('zone-detail-terrain').textContent = TERRAIN_LABELS[zone.terrain] || zone.terrain;
+    $('zone-stock-wood').textContent = String(zone.loot.wood || 0);
+    $('zone-stock-metal').textContent = String(zone.loot.metal || 0);
+    $('zone-stock-water').textContent = String(zone.loot.water || 0);
+    var zombiesWrap = $('zone-stock-zombies-wrap');
+    if (zone.zombies > 0) {
+      zombiesWrap.hidden = false;
+      $('zone-stock-zombies').textContent = String(zone.zombies);
+    } else {
+      zombiesWrap.hidden = true;
+    }
+
+    var canPlay = !!self && self.alive && town.phase === 'day' && !town.closed;
+    var ap = self.actionPoints || 0;
+    var canteen = self.waterCanteen || 0;
+    var loot = (zone.loot.wood || 0) + (zone.loot.metal || 0) + (zone.loot.water || 0);
+
+    var scavBtn = $('zone-scavenge-btn');
+    scavBtn.disabled = !(canPlay && zone.zombies === 0 && canteen > 0 && ap >= 2 && loot > 0);
+    if (zone.zombies > 0) scavBtn.textContent = '🔎 Fouille bloquée (zombies)';
+    else if (canteen <= 0) scavBtn.textContent = '🔎 Fouille bloquée (gourde vide)';
+    else if (loot === 0) scavBtn.textContent = '🔎 Zone vide';
+    else scavBtn.textContent = '🔎 Fouiller (2 PA + 1 gourde)';
+
+    var fightBtn = $('zone-fight-btn');
+    fightBtn.hidden = zone.zombies === 0;
+    fightBtn.disabled = !(canPlay && zone.zombies > 0 && ap >= 1);
+    fightBtn.textContent = '⚔ Chasser un zombie (' + zone.zombies + ' restant)';
+
+    var returnBtn = $('zone-return-btn');
+    var canReturn = canPlay && Math.max(Math.abs(zone.x), Math.abs(zone.y)) === 1 && ap >= 1;
+    returnBtn.disabled = !canReturn;
+    returnBtn.textContent = canReturn ? '🏛 Rentrer en ville (1 PA)' : '🏛 Trop loin de la ville';
+  }
+
+  function hideZoneDetail() {
+    var detail = $('zone-detail');
+    if (detail) detail.hidden = true;
   }
 
   function renderCitizenCard(town) {
@@ -920,6 +1102,14 @@
     if (self.consecutiveThirstDays >= 2) thirstCls = ' stat--danger';
     var apCls = self.actionPoints <= 0 ? ' stat--danger' : '';
 
+    var canteenCap = 3;
+    var canteen = Math.max(0, Math.min(canteenCap, Number(self.waterCanteen || 0)));
+    var pips = '';
+    for (var i = 0; i < canteenCap; i++) {
+      pips += '<span class="canteen__pip' + (i < canteen ? ' is-full' : '') + '" aria-hidden="true"></span>';
+    }
+    var canteenCls = canteen === 0 ? ' is-empty' : '';
+
     card.innerHTML =
       '<div class="citizen-card__head">' +
       '  <span class="citizen-card__avatar">' + escapeHtml(initials(self.name)) + '</span>' +
@@ -931,6 +1121,10 @@
       '<div class="citizen-card__stats">' +
       '  <div class="stat' + apCls + '"><span class="stat__label">Points d\'action</span><span class="stat__value">' + self.actionPoints + '</span></div>' +
       '  <div class="stat' + thirstCls + '"><span class="stat__label">Jours sans eau</span><span class="stat__value">' + self.consecutiveThirstDays + '</span></div>' +
+      '</div>' +
+      '<div class="canteen' + canteenCls + '">' +
+      '  <span class="canteen__label">Gourde</span>' + pips +
+      '  <span class="canteen__value">' + canteen + ' / ' + canteenCap + '</span>' +
       '</div>';
 
     updateActionAvailability(town, self);
@@ -991,6 +1185,119 @@
   }
 
   /* =========================================================================
+   *  Constructions (catalogue de bâtiments)
+   * =======================================================================*/
+
+  function ensureBuildingsCatalog() {
+    if (state.buildingsCatalog) return Promise.resolve(state.buildingsCatalog);
+    if (state.buildingsCatalogLoading) return state.buildingsCatalogLoading;
+    state.buildingsCatalogLoading = apiCall('/buildings/catalog', { method: 'GET' })
+      .then(function (data) {
+        var list = (data && data.buildings) || [];
+        state.buildingsCatalog = list;
+        state.buildingsCatalogLoading = null;
+        return list;
+      })
+      .catch(function (err) {
+        state.buildingsCatalogLoading = null;
+        throw err;
+      });
+    return state.buildingsCatalogLoading;
+  }
+
+  function renderBuildings(town) {
+    var list = $('buildings-list');
+    var count = $('buildings-count');
+    if (!list) return;
+    var counters = (town && town.buildings) || {};
+    var total = 0;
+    Object.keys(counters).forEach(function (id) { total += Number(counters[id]) || 0; });
+    if (count) count.textContent = String(total);
+
+    if (!state.buildingsCatalog) {
+      ensureBuildingsCatalog()
+        .then(function () { renderBuildings(state.town); })
+        .catch(function () {
+          list.innerHTML = '<li class="buildings__empty">Catalogue indisponible.</li>';
+        });
+      return;
+    }
+
+    var catalog = state.buildingsCatalog;
+    if (!catalog.length) {
+      list.innerHTML = '<li class="buildings__empty">Aucun bâtiment disponible.</li>';
+      return;
+    }
+
+    var citizens = (town && town.citizens) || [];
+    var self = citizens.find(function (c) { return c.id === state.yourCitizenId; });
+    var bank = (town && town.bank) || {};
+    var canPlay = !!self && self.alive && town.phase === 'day' && !town.closed;
+    var inTown = canPlay && self.location === 'town';
+
+    var fragments = catalog.map(function (def) {
+      var current = Number(counters[def.id] || 0);
+      var maxed = current >= def.maxCount;
+      var apOk = !!self && self.actionPoints >= def.actionPointCost;
+      var woodMissing = (bank.wood || 0) < def.cost.wood;
+      var metalMissing = (bank.metal || 0) < def.cost.metal;
+      var resourcesOk = !woodMissing && !metalMissing;
+      var available = inTown && !maxed && apOk && resourcesOk;
+      var blocked = !available && !maxed;
+
+      var effects = [];
+      if (def.wallDefense > 0) effects.push('Défense +' + def.wallDefense);
+      if (def.watchBonusPerCitizen > 0) effects.push('+' + def.watchBonusPerCitizen + ' déf./guetteur');
+      if (def.waterPerDawn > 0) effects.push('+' + def.waterPerDawn + ' eau / aube');
+      if (!effects.length) effects.push('Effet narratif');
+
+      var classes = 'building';
+      if (maxed) classes += ' is-maxed';
+      else if (available) classes += ' is-available';
+      else if (blocked) classes += ' is-blocked';
+
+      var costHtml =
+        '<span class="building__cost-item' + (woodMissing ? ' is-missing' : '') + '">🪵 ' + def.cost.wood + '</span>' +
+        '<span class="building__cost-item' + (metalMissing ? ' is-missing' : '') + '">⚙ ' + def.cost.metal + '</span>' +
+        '<span class="building__cost-item">⏱ ' + def.actionPointCost + ' PA</span>';
+
+      var disabled = !available;
+      var label = maxed
+        ? 'Au maximum (' + def.maxCount + ')'
+        : (current > 0 ? 'Bâtir un de plus (' + current + '/' + def.maxCount + ')'
+                       : 'Bâtir');
+
+      return (
+        '<li class="' + classes + '" data-building="' + escapeHtml(def.id) + '">' +
+        '  <div class="building__head">' +
+        '    <span class="building__icon" aria-hidden="true">' + escapeHtml(def.icon || '🏗') + '</span>' +
+        '    <span class="building__name">' + escapeHtml(def.name) + '</span>' +
+        '    <span class="building__count">' + current + ' / ' + def.maxCount + '</span>' +
+        '  </div>' +
+        '  <p class="building__desc">' + escapeHtml(def.description) + '</p>' +
+        '  <ul class="building__effects">' +
+             effects.map(function (e) { return '<li>' + escapeHtml(e) + '</li>'; }).join('') +
+        '  </ul>' +
+        '  <div class="building__cost">' + costHtml + '</div>' +
+        '  <button type="button" class="building__action" data-action="construct"' +
+             (disabled ? ' disabled' : '') + '>' + escapeHtml(label) + '</button>' +
+        '</li>'
+      );
+    });
+
+    list.innerHTML = fragments.join('');
+    Array.prototype.forEach.call(list.querySelectorAll('.building__action'), function (btn) {
+      btn.addEventListener('click', function () {
+        var li = btn.closest('.building');
+        if (!li) return;
+        var id = li.getAttribute('data-building');
+        if (!id) return;
+        sendAction({ type: 'construct', buildingId: id });
+      });
+    });
+  }
+
+  /* =========================================================================
    *  Actions de jeu
    * =======================================================================*/
 
@@ -1024,6 +1331,8 @@
         if (state.town && res.citizen) {
           state.town.bank = res.bank || state.town.bank;
           state.town.townDefense = res.townDefense || state.town.townDefense;
+          if (res.buildings) state.town.buildings = res.buildings;
+          if (res.desert) state.town.desert = res.desert;
           state.town.citizens = state.town.citizens.map(function (c) {
             return c.id === res.citizen.id ? Object.assign({}, c, res.citizen) : c;
           });
@@ -1034,10 +1343,27 @@
             logEvent('Vous êtes parti vers ' + (body.to === 'desert' ? 'le désert' : 'la ville') + '.', 'info');
             break;
           case 'scavenge':
-            logEvent('Vous avez fouillé : +' + 4 + ' bois, +2 métal, +1 eau.', 'success');
+            logEvent('Vous avez fouillé la zone.', 'success');
             break;
           case 'build':
             logEvent('Vous avez bâti une défense (+6).', 'success');
+            break;
+          case 'construct':
+            var def = (state.buildingsCatalog || []).find(function (b) { return b.id === body.buildingId; });
+            logEvent('Vous avez érigé ' + (def ? def.name : body.buildingId) + '.', 'success');
+            break;
+          case 'move-zone':
+            if (body.x === 0 && body.y === 0) {
+              logEvent('Vous êtes rentré en ville.', 'info');
+            } else {
+              logEvent('Vous avez exploré la case (' + body.x + ', ' + body.y + ').', 'info');
+            }
+            break;
+          case 'scavenge-zone':
+            logEvent('Vous avez fouillé la zone.', 'success');
+            break;
+          case 'fight':
+            logEvent('Vous avez chassé un zombie errant.', 'warning');
             break;
         }
       })
@@ -1195,6 +1521,9 @@
       case 'citizen.moved':
         applyCitizenMoved(msg);
         break;
+      case 'citizen.exploring':
+        applyCitizenExploring(msg);
+        break;
       case 'build.completed':
         applyBuildCompleted(msg);
         break;
@@ -1275,6 +1604,21 @@
     }
   }
 
+  function applyCitizenExploring(msg) {
+    if (!state.town) return;
+    var c = (state.town.citizens || []).find(function (x) { return x.id === msg.citizenId; });
+    if (c) {
+      c.location = 'desert';
+      c.position = { x: msg.x, y: msg.y };
+      renderTown(state.town);
+    }
+    if (msg.citizenId !== state.yourCitizenId) {
+      var who = c ? c.name : 'Un citoyen';
+      logEvent(who + ' explore la case (' + msg.x + ', ' + msg.y + ')'
+        + (msg.discovered ? ' (zone inconnue).' : '.'), 'info');
+    }
+  }
+
   function applyBuildCompleted(msg) {
     if (!state.town) return;
     state.town.townDefense = msg.defense;
@@ -1292,6 +1636,10 @@
     'citizen.move':          { icon: '🚶', label: 'se déplace' },
     'citizen.scavenge':      { icon: '🔎', label: 'a fouillé' },
     'citizen.build':         { icon: '🛠', label: 'a construit' },
+    'citizen.construct':     { icon: '🏗', label: 'a érigé un bâtiment' },
+    'citizen.explore':       { icon: '🧭', label: 'a exploré une zone' },
+    'citizen.scavenge-zone': { icon: '🔎', label: 'a fouillé une zone' },
+    'citizen.fight':         { icon: '⚔', label: 'a chassé un zombie' },
     'citizen.died':          { icon: '☠', label: 'est mort' },
     'night.resolved':        { icon: '☾', label: 'Nuit résolue' },
     'forum.thread.created':  { icon: '💬', label: 'a ouvert une discussion' },

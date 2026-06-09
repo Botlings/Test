@@ -29,6 +29,18 @@ export interface Citizen {
   actionPoints: number;
   /** Nombre de jours consécutifs sans avoir pu boire. */
   consecutiveThirstDays: number;
+  /**
+   * Position du citoyen dans le désert (case (x, y)). `null` quand il est
+   * réfugié en ville. La cohérence avec `location` est maintenue par le
+   * moteur : `location === 'desert'` ⇔ `position !== null`.
+   */
+  position: { x: number; y: number } | null;
+  /**
+   * Eau personnelle (gourde). Consommée à chaque fouille en zone et rechargée
+   * à l'aube quand le citoyen passe la nuit en ville et que la banque a de
+   * l'eau. Capacité plafonnée par `DesertConfig.canteenCapacity`.
+   */
+  waterCanteen: number;
   /** Renseigné uniquement si `alive === false`. */
   causeOfDeath?: string;
 }
@@ -46,12 +58,16 @@ export interface Death {
 
 /** Décomposition de la défense totale opposée à la horde. */
 export interface DefenseBreakdown {
-  /** Défense provenant des murs et constructions de la ville. */
+  /** Défense provenant des murs et constructions de la ville (base + bonus de bâtiments). */
   readonly walls: number;
   /** Défense apportée par les citoyens en faction (présents en ville la nuit). */
   readonly watchers: number;
   /** Nombre de citoyens vivants en ville au moment de la résolution. */
   readonly watcherCount: number;
+  /** Bonus de défense fourni par les bâtiments (subdivision de `walls`). */
+  readonly buildingsWallBonus: number;
+  /** Bonus de défense par guetteur fourni par les bâtiments (subdivision de `watchers`). */
+  readonly buildingsWatchBonus: number;
   /** Somme `walls + watchers`. */
   readonly total: number;
 }
@@ -108,6 +124,23 @@ export interface NightReport {
   readonly resolvedAt: string;
 }
 
+/** Une zone du désert exposée à l'API publique (forme allégée). */
+export interface DesertZoneSnapshot {
+  readonly x: number;
+  readonly y: number;
+  readonly distance: number;
+  readonly terrain: 'plain' | 'ruins' | 'highway' | 'wasteland';
+  readonly loot: { readonly wood: number; readonly metal: number; readonly water: number };
+  readonly zombies: number;
+  readonly discovered: boolean;
+}
+
+/** Vue publique de la carte du désert. */
+export interface DesertSnapshot {
+  readonly radius: number;
+  readonly zones: readonly DesertZoneSnapshot[];
+}
+
 /** État public complet d'une partie. */
 export interface GameStatus {
   readonly day: number;
@@ -118,4 +151,8 @@ export interface GameStatus {
   readonly aliveCount: number;
   readonly hordePowerTonight: number;
   readonly gameOver: boolean;
+  /** Compteur d'instances par bâtiment construit (catalogue `buildings.ts`). */
+  readonly buildings: Readonly<Record<string, number>>;
+  /** Carte du désert (rayon + zones). */
+  readonly desert: DesertSnapshot;
 }

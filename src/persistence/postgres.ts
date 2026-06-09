@@ -20,6 +20,8 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { Pool, type PoolClient, type PoolConfig } from 'pg';
 import { Game } from '../domain/game.js';
+import { sanitizeBuildingState } from '../domain/buildings.js';
+import { sanitizeDesertMap, seedFromString } from '../domain/desert.js';
 import type { Citizen, Location, NightReport, Phase } from '../domain/types.js';
 import type { Id } from './types.js';
 import {
@@ -91,9 +93,13 @@ export class PgStore implements Store {
       bank_wood: number;
       bank_metal: number;
       bank_water: number;
+      buildings: unknown;
+      desert: unknown;
+      desert_seed: string | number;
     }>(
       `SELECT id, name, difficulty, created_at, closed, day, phase, town_defense,
-              game_over, next_citizen_seq, bank_wood, bank_metal, bank_water
+              game_over, next_citizen_seq, bank_wood, bank_metal, bank_water,
+              buildings, desert, desert_seed
          FROM towns`,
     );
     if (townsRes.rowCount === 0) return;
@@ -107,9 +113,13 @@ export class PgStore implements Store {
       action_points: number;
       consecutive_thirst_days: number;
       cause_of_death: string | null;
+      position_x: number | null;
+      position_y: number | null;
+      water_canteen: number;
     }>(
       `SELECT town_id, id, name, alive, location, action_points,
-              consecutive_thirst_days, cause_of_death
+              consecutive_thirst_days, cause_of_death,
+              position_x, position_y, water_canteen
          FROM citizens`,
     );
     const citizensByTown = new Map<Id, Citizen[]>();
@@ -121,6 +131,11 @@ export class PgStore implements Store {
         location: row.location,
         actionPoints: row.action_points,
         consecutiveThirstDays: row.consecutive_thirst_days,
+        position:
+          row.location === 'desert' && row.position_x !== null && row.position_y !== null
+            ? { x: row.position_x, y: row.position_y }
+            : null,
+        waterCanteen: row.water_canteen,
         ...(row.cause_of_death ? { causeOfDeath: row.cause_of_death } : {}),
       };
       const list = citizensByTown.get(row.town_id) ?? [];
@@ -145,6 +160,14 @@ export class PgStore implements Store {
 
     for (const row of townsRes.rows) {
       const config = difficultyConfig(row.difficulty);
+      const seedNumeric =
+        typeof row.desert_seed === 'string'
+          ? Number.parseInt(row.desert_seed, 10)
+          : row.desert_seed;
+      const desertSeed =
+        Number.isFinite(seedNumeric) && seedNumeric !== 0
+          ? (seedNumeric >>> 0)
+          : seedFromString(`town-${row.id}`);
       const game = Game.fromSnapshot(config, {
         day: row.day,
         phase: row.phase,
@@ -157,6 +180,9 @@ export class PgStore implements Store {
         citizens: citizensByTown.get(row.id) ?? [],
         gameOver: row.game_over,
         nextCitizenSeq: row.next_citizen_seq,
+        buildings: sanitizeBuildingState(row.buildings),
+        desert: sanitizeDesertMap(row.desert, desertSeed),
+        desertSeed,
       });
       const town: TownRecord = {
         id: row.id,
@@ -303,12 +329,14 @@ export class PgStore implements Store {
       throw new StoreError('town-name-invalid', 'Le nom de la ville doit faire 3 à 30 caractères');
     }
     const id = randomUUID() as Id;
-    const game = new Game(difficultyConfig(difficulty));
+    const desertSeed = seedFromString(`town-${id}`);
+    const game = new Game(difficultyConfig(difficulty), desertSeed);
     const snapshot = game.snapshot();
     const res = await this.pool.query<{ created_at: Date }>(
       `INSERT INTO towns (id, name, difficulty, day, phase, town_defense,
-                          game_over, next_citizen_seq, bank_wood, bank_metal, bank_water)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                          game_over, next_citizen_seq, bank_wood, bank_metal,
+                          bank_water, buildings, desert, desert_seed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14)
        RETURNING created_at`,
       [
         id,
@@ -322,6 +350,9 @@ export class PgStore implements Store {
         snapshot.bank.wood,
         snapshot.bank.metal,
         snapshot.bank.water,
+        JSON.stringify(snapshot.buildings ?? {}),
+        JSON.stringify(snapshot.desert ?? {}),
+        desertSeed,
       ],
     );
     const town: TownRecord = {
@@ -439,7 +470,10 @@ export class PgStore implements Store {
                bank_wood = $7,
                bank_metal = $8,
                bank_water = $9,
-               closed = $10
+               closed = $10,
+               buildings = $11::jsonb,
+               desert = $12::jsonb,
+               desert_seed = $13
          WHERE id = $1`,
         [
           town.id,
@@ -452,6 +486,9 @@ export class PgStore implements Store {
           snapshot.bank.metal,
           snapshot.bank.water,
           town.closed,
+          JSON.stringify(snapshot.buildings ?? {}),
+          JSON.stringify(snapshot.desert ?? {}),
+          snapshot.desertSeed ?? 0,
         ],
       );
       const reverseMembership = new Map<string, Id>();
@@ -480,8 +517,9 @@ export class PgStore implements Store {
     await client.query(
       `INSERT INTO citizens
          (town_id, id, account_id, name, alive, location, action_points,
-          consecutive_thirst_days, cause_of_death)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          consecutive_thirst_days, cause_of_death,
+          position_x, position_y, water_canteen)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        ON CONFLICT (town_id, id) DO UPDATE SET
          account_id              = EXCLUDED.account_id,
          name                    = EXCLUDED.name,
@@ -489,7 +527,10 @@ export class PgStore implements Store {
          location                = EXCLUDED.location,
          action_points           = EXCLUDED.action_points,
          consecutive_thirst_days = EXCLUDED.consecutive_thirst_days,
-         cause_of_death          = EXCLUDED.cause_of_death`,
+         cause_of_death          = EXCLUDED.cause_of_death,
+         position_x              = EXCLUDED.position_x,
+         position_y              = EXCLUDED.position_y,
+         water_canteen           = EXCLUDED.water_canteen`,
       [
         townId,
         citizen.id,
@@ -500,6 +541,9 @@ export class PgStore implements Store {
         citizen.actionPoints,
         citizen.consecutiveThirstDays,
         citizen.causeOfDeath ?? null,
+        citizen.position ? citizen.position.x : null,
+        citizen.position ? citizen.position.y : null,
+        citizen.waterCanteen,
       ],
     );
   }

@@ -62,7 +62,7 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
     expect((moveBack.json() as { citizen: { location: string } }).citizen.location).toBe('town');
   });
 
-  it('scavenge : ajoute des ressources à la banque et consomme des PA', async () => {
+  it('scavenge : décrémente la zone et augmente le total de banque', async () => {
     const ctx = await bootstrapTown();
     app = ctx.app;
     await ctx.app.inject({
@@ -71,6 +71,9 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
       headers: bearer(ctx.accessToken),
       payload: { type: 'move', to: 'desert' },
     });
+    // On itère jusqu'à 3 fois : sous certaines seeds, la zone d'entrée peut
+    // démarrer presque vide pour une ressource précise — mais une au moins
+    // doit être ramassée tant que la zone n'est pas complètement épuisée.
     const before = (await ctx.store.getTown(ctx.townId as unknown as never))!.game.status();
     const scavenge = await ctx.app.inject({
       method: 'POST',
@@ -79,8 +82,16 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
       payload: { type: 'scavenge' },
     });
     expect(scavenge.statusCode).toBe(200);
-    const body = scavenge.json() as { bank: { wood: number } };
-    expect(body.bank.wood).toBeGreaterThan(before.bank.wood);
+    const body = scavenge.json() as {
+      bank: { wood: number; metal: number; water: number };
+      citizen: { actionPoints: number; waterCanteen: number };
+    };
+    const beforeSum = before.bank.wood + before.bank.metal + before.bank.water;
+    const afterSum = body.bank.wood + body.bank.metal + body.bank.water;
+    expect(afterSum - beforeSum).toBeGreaterThanOrEqual(0);
+    expect(afterSum - beforeSum).toBeLessThanOrEqual(1);
+    expect(body.citizen.actionPoints).toBeLessThan(before.citizens[0]!.actionPoints);
+    expect(body.citizen.waterCanteen).toBeLessThan(before.citizens[0]!.waterCanteen);
   });
 
   it('build : augmente la défense, dépense ressources', async () => {
@@ -110,6 +121,58 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
       payload: { type: 'build' },
     });
     expect(res.statusCode).toBe(403);
+  });
+
+  it('move-zone : passe de la ville à une zone adjacente, broadcast citizen.exploring', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const events: Array<{ type: string }> = [];
+    ctx.hub.subscribe(ctx.townId, (m) => events.push(m as { type: string }));
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'move-zone', x: 1, y: 0 },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      citizen: { position: { x: number; y: number } | null; location: string };
+      desert: { zones: Array<{ x: number; y: number; discovered: boolean }> };
+    };
+    expect(body.citizen.location).toBe('desert');
+    expect(body.citizen.position).toEqual({ x: 1, y: 0 });
+    expect(events.some((e) => e.type === 'citizen.exploring')).toBe(true);
+    const zone10 = body.desert.zones.find((z) => z.x === 1 && z.y === 0)!;
+    expect(zone10.discovered).toBe(true);
+  });
+
+  it('move-zone : rejette une case non-adjacente avec 409 rule-violation', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'move-zone', x: 3, y: 0 },
+    });
+    expect(res.statusCode).toBe(409);
+    expect((res.json() as { error: { code: string } }).error.code).toBe('rule-violation');
+  });
+
+  it('GET /towns/:id expose la carte du désert', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/towns/${ctx.townId}`,
+      headers: bearer(ctx.accessToken),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      desert: { radius: number; zones: Array<{ x: number; y: number; loot: { wood: number } }> };
+    };
+    expect(body.desert.radius).toBeGreaterThanOrEqual(1);
+    expect(body.desert.zones.length).toBeGreaterThan(0);
   });
 
   it('rejette une action invalide (build depuis le désert)', async () => {

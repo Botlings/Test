@@ -275,55 +275,41 @@
         </header>
 
         <div class="town-grid">
-          <!-- Carte de la ville -->
+          <!-- Carte du désert -->
           <article class="card card--map">
             <header class="card__header">
-              <h2 class="card__title">Carte</h2>
+              <h2 class="card__title">Carte du désert</h2>
               <p class="card__sub" id="map-hint">
-                Cliquez sur une zone pour vous y rendre.
+                Cliquez sur une zone adjacente pour vous y rendre.
               </p>
             </header>
-            <div class="map" id="map">
-              <div
-                class="zone zone--town"
-                data-zone="town"
-                id="zone-town"
-                role="button"
-                tabindex="0"
-                aria-label="Aller en ville"
-              >
-                <div class="zone__art" aria-hidden="true">
-                  <span class="zone__icon">🏛</span>
-                  <span class="zone__wall"></span>
-                </div>
-                <h3 class="zone__name">La Ville</h3>
-                <p class="zone__desc">
-                  À l'abri des murs. Construisez ici, buvez à la banque.
-                </p>
-                <div class="zone__tokens" id="zone-town-tokens"></div>
-              </div>
-
-              <div class="map__bridge" aria-hidden="true">
-                <span>⇄</span>
-              </div>
-
-              <div
-                class="zone zone--desert"
-                data-zone="desert"
-                id="zone-desert"
-                role="button"
-                tabindex="0"
-                aria-label="Sortir dans le désert"
-              >
-                <div class="zone__art" aria-hidden="true">
-                  <span class="zone__icon">☀</span>
-                  <span class="zone__sand"></span>
-                </div>
-                <h3 class="zone__name">Le Désert</h3>
-                <p class="zone__desc">
-                  Fouilles risquées. Y rester la nuit, c'est mourir.
-                </p>
-                <div class="zone__tokens" id="zone-desert-tokens"></div>
+            <div class="desert-grid" id="desert-grid" role="grid" aria-label="Grille des zones du désert">
+              <p class="desert-grid__empty">Carte en cours de chargement…</p>
+            </div>
+            <div class="zone-detail" id="zone-detail" hidden>
+              <header class="zone-detail__head">
+                <h3 class="zone-detail__title" id="zone-detail-title">—</h3>
+                <span class="zone-detail__terrain" id="zone-detail-terrain">—</span>
+              </header>
+              <ul class="zone-detail__stock" id="zone-detail-stock">
+                <li><span aria-hidden="true">🪵</span> <span id="zone-stock-wood">0</span> bois</li>
+                <li><span aria-hidden="true">⚙</span> <span id="zone-stock-metal">0</span> métal</li>
+                <li><span aria-hidden="true">💧</span> <span id="zone-stock-water">0</span> eau</li>
+                <li class="zone-detail__zombies" id="zone-stock-zombies-wrap" hidden>
+                  <span aria-hidden="true">🧟</span>
+                  <span id="zone-stock-zombies">0</span> zombie(s) errant(s)
+                </li>
+              </ul>
+              <div class="zone-detail__actions">
+                <button type="button" class="btn btn--ghost btn--sm" id="zone-scavenge-btn" disabled>
+                  🔎 Fouiller la zone
+                </button>
+                <button type="button" class="btn btn--ghost btn--sm" id="zone-fight-btn" disabled hidden>
+                  ⚔ Chasser un zombie
+                </button>
+                <button type="button" class="btn btn--ghost btn--sm" id="zone-return-btn" disabled>
+                  🏛 Rentrer en ville
+                </button>
               </div>
             </div>
           </article>
@@ -439,6 +425,24 @@
               Une fois la nuit lancée, plus aucune action n'est possible
               jusqu'à l'aube.
             </p>
+          </article>
+
+          <!-- Constructions -->
+          <article class="card card--buildings">
+            <header class="card__header">
+              <h2 class="card__title">
+                Constructions
+                <span class="card__count" id="buildings-count">0</span>
+              </h2>
+              <p class="card__sub">
+                Bâtiments permanents : bonus de défense et production passive.
+              </p>
+            </header>
+            <ul class="buildings" id="buildings-list">
+              <li class="buildings__empty" id="buildings-empty">
+                Chargement du catalogue…
+              </li>
+            </ul>
           </article>
 
           <!-- Citoyens de la ville -->

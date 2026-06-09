@@ -1,3 +1,4 @@
+import { DEFAULT_DESERT_CONFIG, type DesertConfig } from './desert.js';
 import type { ResourceBank } from './types.js';
 
 /**
@@ -38,6 +39,8 @@ export interface GameConfig {
   scavengeActionPointCost: number;
   /** Ressources rapportées par une action de fouille dans le désert. */
   scavengeYield: ResourceBank;
+  /** Paramètres de la carte du désert (rayon, gourde, coûts d'exploration). */
+  desert: DesertConfig;
 }
 
 /** Configuration de partie par défaut, calibrée pour une montée en difficulté progressive. */
@@ -55,4 +58,5 @@ export const DEFAULT_CONFIG: GameConfig = {
   defensePerBuildAction: 6,
   scavengeActionPointCost: 2,
   scavengeYield: { wood: 4, metal: 2, water: 1 },
+  desert: DEFAULT_DESERT_CONFIG,
 };

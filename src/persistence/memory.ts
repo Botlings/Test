@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { Game } from '../domain/game.js';
 import type { GameConfig } from '../domain/config.js';
 import { DEFAULT_CONFIG } from '../domain/config.js';
+import { seedFromString } from '../domain/desert.js';
 import type { NightReport } from '../domain/types.js';
 import type { Id } from './types.js';
 import {
@@ -216,12 +217,13 @@ export class MemoryStore implements Store {
     if (trimmed.length < 3 || trimmed.length > 30) {
       throw new StoreError('town-name-invalid', 'Le nom de la ville doit faire 3 à 30 caractères');
     }
+    const id = newId();
     const town: TownRecord = {
-      id: newId(),
+      id,
       name: trimmed,
       difficulty,
       createdAt: new Date(),
-      game: new Game(difficultyConfig(difficulty)),
+      game: new Game(difficultyConfig(difficulty), seedFromString(`town-${id}`)),
       membership: new Map(),
       closed: false,
     };
