@@ -1,56 +1,18 @@
 /**
  * Page d'accueil de Hordes Revival — interactions client.
  *
- * - Bascule jour / nuit du thème (gimmick fidèle au cycle du jeu),
- *   mémorisée dans localStorage.
  * - Année courante dans le pied de page.
  * - Capture des inscriptions newsletter : validation client, anti-doublon
  *   et stockage local des emails capturés en attendant un vrai backend.
+ *
+ * Note : la landing publique est en thème Vault-Tec 60's (pas de bascule
+ * CRT vert/ambre). Le skin PipBoy est réservé au terminal de jeu.
  */
 'use strict';
 
 (function () {
-  var THEME_KEY = 'hordes-revival:theme';
   var SUBS_KEY = 'hordes-revival:newsletter-subs';
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-  var body = document.body;
-
-  // ── Thème jour / nuit ───────────────────────────────────────
-  var toggle = document.getElementById('theme-toggle');
-
-  function applyTheme(theme) {
-    var isDay = theme === 'day';
-    body.classList.toggle('theme-day', isDay);
-
-    if (toggle) {
-      var icon = toggle.querySelector('.theme-toggle__icon');
-      var label = toggle.querySelector('.theme-toggle__label');
-      toggle.setAttribute('aria-pressed', isDay ? 'true' : 'false');
-      if (icon) icon.textContent = isDay ? '◉' : '▣';
-      if (label) label.textContent = isDay ? 'AMBER' : 'GREEN';
-    }
-  }
-
-  var storedTheme = null;
-  try {
-    storedTheme = localStorage.getItem(THEME_KEY);
-  } catch (err) {
-    storedTheme = null;
-  }
-  applyTheme(storedTheme === 'day' ? 'day' : 'night');
-
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      var nextTheme = body.classList.contains('theme-day') ? 'night' : 'day';
-      applyTheme(nextTheme);
-      try {
-        localStorage.setItem(THEME_KEY, nextTheme);
-      } catch (err) {
-        /* localStorage indisponible : le thème reste appliqué pour la session. */
-      }
-    });
-  }
 
   // ── Année du pied de page ───────────────────────────────────
   var yearEl = document.getElementById('year');

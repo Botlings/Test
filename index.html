@@ -8,7 +8,7 @@
       name="description"
       content="Hordes Revival : browser game multijoueur coopératif de survie. Une ville d'humains résiste, jour après jour, aux hordes de zombies. Inscrivez-vous à la newsletter pour suivre le développement."
     />
-    <meta name="theme-color" content="#050a07" />
+    <meta name="theme-color" content="#14387f" />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://botlings.github.io/Test/" />
 
@@ -31,13 +31,13 @@
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%228%22%20fill%3D%22%23050a07%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2224%22%20fill%3D%22none%22%20stroke%3D%22%232eff6b%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2243%22%20text-anchor%3D%22middle%22%20font-family%3D%22monospace%22%20font-size%3D%2228%22%20font-weight%3D%22bold%22%20fill%3D%22%232eff6b%22%3E%E2%98%A2%3C%2Ftext%3E%3C%2Fsvg%3E"
+      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2210%22%20fill%3D%22%2314387f%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2222%22%20fill%3D%22none%22%20stroke%3D%22%23ffc72c%22%20stroke-width%3D%223%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2243%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2230%22%20font-weight%3D%22bold%22%20fill%3D%22%23ffc72c%22%3E%E2%98%A2%3C%2Ftext%3E%3C%2Fsvg%3E"
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Bungee&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600;700&family=Bungee&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -57,34 +57,18 @@
     </script>
   </head>
   <body>
-    <div class="crt-overlay" aria-hidden="true"></div>
-
     <a class="skip-link" href="#contenu">Aller au contenu</a>
 
-    <div class="status-bar" role="status" aria-label="Diagnostic terminal PipBoy">
-      <div class="status-bar__group">
-        <span class="status-bar__item">
-          <span class="status-bar__label">ROBCO::</span>
-          <span class="status-bar__value">PIP-BOY 3000</span>
-        </span>
-        <span class="status-bar__item">
-          <span class="status-bar__label">UPLINK:</span>
-          <span class="status-bar__value">VAULT-NET</span>
-        </span>
-      </div>
-      <div class="status-bar__group">
-        <span class="status-bar__item">
-          <span class="status-bar__label">RAD:</span>
-          <span class="status-bar__value">02 RAD/S</span>
-        </span>
-        <span class="status-bar__item">
-          <span class="status-bar__label">HP:</span>
-          <span class="status-bar__value">82/100</span>
-        </span>
-        <span class="status-bar__item">
-          <span class="status-bar__label">AP:</span>
-          <span class="status-bar__value">06</span>
-        </span>
+    <div class="ticker" role="presentation" aria-hidden="true">
+      <div class="ticker__track">
+        <span>☢ Vault-Tec® — Préparer l'avenir, aujourd'hui</span>
+        <span>★ 40 citoyens par ville</span>
+        <span>☾ Une nuit, un assaut</span>
+        <span>♻ Gratuit · sans pay-to-win</span>
+        <span>☢ Vault-Tec® — Préparer l'avenir, aujourd'hui</span>
+        <span>★ 40 citoyens par ville</span>
+        <span>☾ Une nuit, un assaut</span>
+        <span>♻ Gratuit · sans pay-to-win</span>
       </div>
     </div>
 
@@ -94,31 +78,24 @@
         <span class="brand__name">Hordes Revival</span>
       </a>
       <nav class="site-nav" aria-label="Navigation principale">
-        <a href="#cycle">Cycle</a>
-        <a href="#cooperer">Coop</a>
-        <a href="#avancement">Status</a>
+        <a href="#cycle">Le cycle</a>
+        <a href="#cooperer">Coopérer</a>
+        <a href="#avancement">Avancement</a>
         <a href="#faq">FAQ</a>
-        <a href="#newsletter">Holotape</a>
-        <a href="game.html" class="site-nav__cta">Vault &gt; Play</a>
+        <a href="#newsletter">Newsletter</a>
+        <a href="game.html" class="site-nav__cta">Jouer</a>
       </nav>
-      <button
-        type="button"
-        class="theme-toggle"
-        id="theme-toggle"
-        aria-pressed="false"
-        title="Basculer entre vert phosphore et ambre Vault-Tec"
-      >
-        <span class="theme-toggle__icon" aria-hidden="true">▣</span>
-        <span class="theme-toggle__label">GREEN</span>
-      </button>
     </header>
 
     <main id="contenu">
       <section class="hero" id="accueil">
-        <div class="hero__glow" aria-hidden="true"></div>
+        <div class="hero__sunburst" aria-hidden="true"></div>
         <div class="hero__inner">
           <div class="hero__text">
-            <p class="hero__eyebrow">Browser game multijoueur coopératif</p>
+            <p class="hero__eyebrow">
+              <span class="hero__eyebrow-tag">Vault-Tec® approuvé</span>
+              Browser game multijoueur coopératif
+            </p>
             <h1 class="hero__title">
               La ville tiendra-t-elle<br />une nuit de plus&nbsp;?
             </h1>
@@ -134,25 +111,47 @@
               <a class="btn btn--ghost" href="#cycle">Découvrir le jeu</a>
             </div>
             <ul class="hero__meta" aria-label="Points clés">
-              <li><span aria-hidden="true">⚔</span> 40 citoyens par ville</li>
+              <li><span aria-hidden="true">★</span> 40 citoyens par ville</li>
               <li><span aria-hidden="true">☾</span> Une nuit, un assaut</li>
-              <li><span aria-hidden="true">∞</span> Gratuit, sans pay-to-win</li>
+              <li><span aria-hidden="true">♻</span> Gratuit, sans pay-to-win</li>
             </ul>
             <p class="hero__notice">
-              Build en développement. Le moteur de partie tourne, le terminal
-              joueur est connectable à une instance serveur locale (voir README).
+              Build en développement&nbsp;: le moteur de partie tourne et le
+              terminal joueur se connecte à une instance serveur locale (voir
+              README).
             </p>
-            <div class="hero__horde" aria-hidden="true">
-              <span></span><span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span>
-            </div>
           </div>
-          <div class="hero__badge" aria-hidden="true">
-            <div class="hero__badge__inner">
-              <span class="hero__badge__label">Vault</span>
-              <span class="hero__badge__number">84</span>
-              <span class="hero__badge__tag">Survival Trial</span>
+
+          <div class="hero__poster" aria-hidden="true">
+            <div class="vaultboy">
+              <svg viewBox="0 0 200 240" role="img" aria-label="Mascotte Vault-Tec">
+                <!-- Tête -->
+                <circle cx="100" cy="62" r="44" fill="#ffe2a8" stroke="#14213a" stroke-width="5"/>
+                <!-- Cheveux -->
+                <path d="M58 50 q8 -30 42 -30 q34 0 42 30 q-14 -12 -42 -12 q-28 0 -42 12 Z" fill="#14213a"/>
+                <!-- Oeil ouvert -->
+                <circle cx="84" cy="60" r="5" fill="#14213a"/>
+                <!-- Oeil clin -->
+                <path d="M108 60 q9 -7 18 0" fill="none" stroke="#14213a" stroke-width="5" stroke-linecap="round"/>
+                <!-- Sourire -->
+                <path d="M78 78 q22 26 44 0" fill="none" stroke="#14213a" stroke-width="5" stroke-linecap="round"/>
+                <!-- Joues -->
+                <circle cx="72" cy="76" r="6" fill="#ff9a8c" opacity="0.7"/>
+                <circle cx="128" cy="76" r="6" fill="#ff9a8c" opacity="0.7"/>
+                <!-- Corps / combinaison -->
+                <path d="M64 108 q36 22 72 0 l16 96 q-52 22 -104 0 Z" fill="#14387f" stroke="#14213a" stroke-width="5"/>
+                <!-- Col -->
+                <path d="M82 112 l18 18 l18 -18" fill="none" stroke="#ffc72c" stroke-width="5" stroke-linejoin="round"/>
+                <!-- Numéro de vault -->
+                <text x="100" y="178" text-anchor="middle" font-family="'Archivo Black',sans-serif" font-size="30" fill="#ffc72c">84</text>
+                <!-- Bras + pouce levé -->
+                <g stroke="#14213a" stroke-width="5" stroke-linejoin="round">
+                  <path d="M150 120 q34 -6 34 -36 q0 -10 -10 -10 q-12 0 -12 12 l0 8" fill="#ffe2a8"/>
+                  <path d="M162 78 q-2 -16 8 -18 q8 -1 8 8 q0 8 -6 12" fill="#ffe2a8"/>
+                </g>
+              </svg>
             </div>
+            <p class="hero__poster-stamp">Vault&nbsp;84 · Essai de survie</p>
           </div>
         </div>
       </section>
@@ -166,7 +165,7 @@
         <div class="cycle__grid">
           <article class="phase phase--day">
             <span class="phase__tag">Phase 1</span>
-            <h3 class="phase__title">☀ Le Jour</h3>
+            <h3 class="phase__title"><span aria-hidden="true">☀</span> Le Jour</h3>
             <p>
               Les citoyens s'aventurent dans le désert pour rapporter du bois,
               du métal et de l'eau, puis dressent les défenses de la ville. Le
@@ -175,7 +174,7 @@
           </article>
           <article class="phase phase--night">
             <span class="phase__tag">Phase 2</span>
-            <h3 class="phase__title">☾ La Nuit</h3>
+            <h3 class="phase__title"><span aria-hidden="true">☾</span> La Nuit</h3>
             <p>
               La horde assaille la ville. Ceux restés dans le désert sont
               dévorés&nbsp;; si l'attaque déborde la défense, des citoyens
