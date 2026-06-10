@@ -110,6 +110,63 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
     expect(body.bank.wood).toBeLessThan(before.bank.wood);
   });
 
+  it('construct : érige un bâtiment du catalogue et met à jour buildings + défense', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const before = (await ctx.store.getTown(ctx.townId as unknown as never))!.game.status();
+    const events: Array<{ type: string }> = [];
+    ctx.hub.subscribe(ctx.townId, (m) => events.push(m as { type: string }));
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'construct', buildingId: 'barricades' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      townDefense: number;
+      bank: { wood: number };
+      buildings: Record<string, number>;
+    };
+    // barricades : +4 défense de mur, coût 5 bois.
+    expect(body.townDefense).toBe(before.townDefense + 4);
+    expect(body.bank.wood).toBe(before.bank.wood - 5);
+    expect(body.buildings.barricades).toBe(1);
+    expect(events.some((e) => e.type === 'build.completed')).toBe(true);
+  });
+
+  it('construct : rejette un identifiant de bâtiment inconnu avec 400', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'construct', buildingId: 'teleporter' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect((res.json() as { error: { code: string } }).error.code).toBe('building-unknown');
+  });
+
+  it('GET /buildings/catalog expose le catalogue (public, sans auth)', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const res = await ctx.app.inject({ method: 'GET', url: '/buildings/catalog' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      buildings: Array<{ id: string; cost: { wood: number; metal: number }; maxCount: number }>;
+    };
+    expect(body.buildings.length).toBeGreaterThanOrEqual(4);
+    const ids = body.buildings.map((b) => b.id);
+    expect(ids).toContain('watchtower');
+    expect(ids).toContain('workshop');
+    expect(ids).toContain('well');
+    expect(ids).toContain('barricades');
+    const barricades = body.buildings.find((b) => b.id === 'barricades')!;
+    expect(barricades.cost.wood).toBeGreaterThan(0);
+    expect(barricades.maxCount).toBeGreaterThan(1);
+  });
+
   it('rejette une action sur le citoyen d\'un autre joueur', async () => {
     const ctx = await bootstrapTown();
     app = ctx.app;
