@@ -1393,11 +1393,17 @@
   function showNightReport(report) {
     var modal = $('night-modal');
     var body = $('night-modal-body');
-    var verdict = report.gameOver
-      ? '<p class="report-breach">☠ La ville est tombée. Tous vos citoyens sont morts.</p>'
-      : (report.breached
-          ? '<p class="report-breach">⚠ La horde a percé les défenses.</p>'
-          : '<p class="report-safe">✓ Les murs ont tenu.</p>');
+    var verdict;
+    if (report.outcome === 'victory') {
+      verdict = '<p class="report-victory">★ La ville a survécu ' + report.day +
+        ' nuits : la horde renonce. <strong>Victoire !</strong></p>';
+    } else if (report.outcome === 'defeat' || report.gameOver) {
+      verdict = '<p class="report-breach">☠ La ville est tombée. Tous vos citoyens sont morts.</p>';
+    } else if (report.breached) {
+      verdict = '<p class="report-breach">⚠ La horde a percé les défenses.</p>';
+    } else {
+      verdict = '<p class="report-safe">✓ Les murs ont tenu.</p>';
+    }
     var rows =
       '<div class="report-row"><span>Jour</span><strong>' + report.day + '</strong></div>' +
       '<div class="report-row"><span>Puissance de la horde</span><strong>' + report.hordePower + '</strong></div>' +
@@ -1543,6 +1549,15 @@
           msg.report.breached ? 'danger' : 'success');
         showNightReport(msg.report);
         // Le snapshot serveur arrivera ensuite et rafraîchira l'état complet.
+        break;
+      case 'game.over':
+        if (msg.outcome === 'victory') {
+          logEvent('★ Victoire ! La ville a survécu ' + msg.daysSurvived + ' nuits.', 'success');
+          toast('Victoire — la ville est sauvée !', 'success');
+        } else {
+          logEvent('☠ La ville est tombée après ' + msg.daysSurvived + ' nuits.', 'danger');
+          toast('Défaite — la ville est tombée.', 'error');
+        }
         break;
       case 'forum.thread.created':
         onForumThreadCreated(msg.thread);

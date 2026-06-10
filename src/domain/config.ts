@@ -39,6 +39,11 @@ export interface GameConfig {
   scavengeActionPointCost: number;
   /** Ressources rapportées par une action de fouille dans le désert. */
   scavengeYield: ResourceBank;
+  /**
+   * Nombre de nuits à survivre pour remporter la partie. La ville gagne dès
+   * qu'elle survit (au moins un citoyen en vie) à la nuit n°`survivalDays`.
+   */
+  survivalDays: number;
   /** Paramètres de la carte du désert (rayon, gourde, coûts d'exploration). */
   desert: DesertConfig;
 }
@@ -58,5 +63,6 @@ export const DEFAULT_CONFIG: GameConfig = {
   defensePerBuildAction: 6,
   scavengeActionPointCost: 2,
   scavengeYield: { wood: 4, metal: 2, water: 1 },
+  survivalDays: 7,
   desert: DEFAULT_DESERT_CONFIG,
 };

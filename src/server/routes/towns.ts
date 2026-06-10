@@ -40,6 +40,8 @@ function summarizeTown(town: TownRecord) {
     aliveCitizens: status.aliveCount,
     townDefense: status.townDefense,
     gameOver: status.gameOver,
+    outcome: status.outcome,
+    survivalDays: status.survivalDays,
     closed: town.closed,
   };
 }
@@ -75,6 +77,8 @@ function fullTownState(
     yourCitizenId: yourCitizenId ?? null,
     closed: town.closed,
     gameOver: status.gameOver,
+    outcome: status.outcome,
+    survivalDays: status.survivalDays,
     nextNightAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
     buildings: status.buildings,
     desert: status.desert,
@@ -83,6 +87,37 @@ function fullTownState(
 
 export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void {
   const { store, jwtSecret, hub, scheduler } = deps;
+
+  /* --------------------------- GET /leaderboard --------------------------- */
+  // Classement global des parties terminées. Public (pas d'auth) : la landing
+  // statique (GitHub Pages) le consomme en cross-origin, d'où l'en-tête CORS
+  // permissif (lecture seule, aucune donnée sensible, pas de cookies).
+  app.get('/leaderboard', async (request, reply) => {
+    const query = request.query as { limit?: string } | undefined;
+    let limit = 20;
+    if (typeof query?.limit === 'string') {
+      const parsed = Number.parseInt(query.limit, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        limit = Math.min(100, parsed);
+      }
+    }
+    const entries = await store.listLeaderboard(limit);
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Cache-Control', 'public, max-age=30');
+    return reply.code(200).send({
+      count: entries.length,
+      entries: entries.map((e) => ({
+        rank: e.rank,
+        townName: e.townName,
+        difficulty: e.difficulty,
+        outcome: e.outcome,
+        daysSurvived: e.daysSurvived,
+        survivors: e.survivors,
+        population: e.population,
+        endedAt: e.endedAt.toISOString(),
+      })),
+    });
+  });
 
   /* ------------------------------ GET /towns ------------------------------ */
   app.get('/towns', async (request, reply) => {

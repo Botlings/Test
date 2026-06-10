@@ -1534,6 +1534,13 @@ body.theme-day .roster__item.is-self {
   text-shadow: var(--glow-strong);
 }
 
+.modal__body .report-victory {
+  color: var(--gold);
+  font-weight: 400;
+  font-size: 1.1rem;
+  text-shadow: 0 0 10px rgba(255, 180, 58, 0.7);
+}
+
 /* ── Profil joueur ───────────────────────────────────────── */
 .modal__card--wide {
   max-width: 720px;

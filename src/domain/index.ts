@@ -20,6 +20,7 @@ export type {
   DeathSource,
   DeathsBySource,
   DefenseBreakdown,
+  GameOutcome,
   GameStatus,
   Location,
   NightReport,

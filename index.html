@@ -80,6 +80,7 @@
       <nav class="site-nav" aria-label="Navigation principale">
         <a href="#cycle">Le cycle</a>
         <a href="#cooperer">Coopérer</a>
+        <a href="#classement">Classement</a>
         <a href="#avancement">Avancement</a>
         <a href="#faq">FAQ</a>
         <a href="#newsletter">Newsletter</a>
@@ -277,6 +278,42 @@
               fatals. La banque d'eau se vide plus vite qu'on ne le croit.
             </p>
           </article>
+        </div>
+      </section>
+
+      <section class="leaderboard" id="classement">
+        <h2 class="section-title">Les villes de légende</h2>
+        <p class="section-intro">
+          Chaque partie laisse une trace. Voici les villes qui ont tenu le plus
+          longtemps face à la horde — et celles qui ont fini par la repousser.
+        </p>
+        <div class="leaderboard__panel">
+          <p
+            class="leaderboard__status"
+            id="leaderboard-status"
+            role="status"
+            aria-live="polite"
+          >
+            Chargement du classement…
+          </p>
+          <div class="leaderboard__scroll">
+            <table class="leaderboard__table" id="leaderboard-table" hidden>
+              <caption class="visually-hidden">
+                Classement des villes par issue et nuits survécues
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="leaderboard__rank">#</th>
+                  <th scope="col">Ville</th>
+                  <th scope="col">Issue</th>
+                  <th scope="col" class="leaderboard__num">Nuits</th>
+                  <th scope="col" class="leaderboard__num">Survivants</th>
+                  <th scope="col">Difficulté</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 

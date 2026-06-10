@@ -41,6 +41,9 @@ import {
   type ForumThreadSummary,
   type ForumVoteOption,
   type ForumVoteTally,
+  type GameResultInput,
+  type GameResultOutcome,
+  type LeaderboardEntry,
   type NightEventInput,
   type NightTrigger,
   type SessionRecord,
@@ -586,6 +589,69 @@ export class PgStore implements Store {
       trigger: row.trigger,
       storedAt: row.created_at,
       report: row.report,
+    }));
+  }
+
+  /* ---------------------------- Fin de partie ---------------------------- */
+
+  async recordGameResult(townId: Id, result: GameResultInput): Promise<void> {
+    const town = this.towns.get(townId);
+    await this.pool.query(
+      `INSERT INTO game_results
+         (town_id, town_name, difficulty, outcome, days_survived, survivors, population)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (town_id) DO UPDATE SET
+         town_name     = EXCLUDED.town_name,
+         difficulty    = EXCLUDED.difficulty,
+         outcome       = EXCLUDED.outcome,
+         days_survived = EXCLUDED.days_survived,
+         survivors     = EXCLUDED.survivors,
+         population    = EXCLUDED.population,
+         ended_at      = now()`,
+      [
+        townId,
+        town?.name ?? 'Ville inconnue',
+        result.difficulty,
+        result.outcome,
+        result.daysSurvived,
+        result.survivors,
+        result.population,
+      ],
+    );
+  }
+
+  async listLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
+    const safe = Math.max(0, Math.min(100, Math.trunc(limit)));
+    const res = await this.pool.query<{
+      town_id: Id;
+      town_name: string;
+      difficulty: Difficulty;
+      outcome: GameResultOutcome;
+      days_survived: number;
+      survivors: number;
+      population: number;
+      ended_at: Date;
+    }>(
+      `SELECT town_id, town_name, difficulty, outcome, days_survived,
+              survivors, population, ended_at
+         FROM game_results
+        ORDER BY (outcome = 'victory') DESC,
+                 days_survived DESC,
+                 survivors DESC,
+                 ended_at ASC
+        LIMIT $1`,
+      [safe],
+    );
+    return res.rows.map((row, idx) => ({
+      rank: idx + 1,
+      townId: row.town_id,
+      townName: row.town_name,
+      difficulty: row.difficulty,
+      outcome: row.outcome,
+      daysSurvived: row.days_survived,
+      survivors: row.survivors,
+      population: row.population,
+      endedAt: row.ended_at,
     }));
   }
 

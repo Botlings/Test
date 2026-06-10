@@ -31,6 +31,7 @@ import type {
   DefenseBreakdown,
   DeathsBySource,
   DesertSnapshot,
+  GameOutcome,
   GameStatus,
   Location,
   NightReport,
@@ -65,6 +66,12 @@ export interface GameSnapshot {
   readonly bank: ResourceBank;
   readonly citizens: ReadonlyArray<Citizen>;
   readonly gameOver: boolean;
+  /**
+   * Issue de la partie. Optionnel pour la rétro-compatibilité des snapshots
+   * antérieurs à l'introduction de la condition de victoire : déduit alors de
+   * `gameOver` et du nombre de survivants au chargement.
+   */
+  readonly outcome?: GameOutcome;
   readonly nextCitizenSeq: number;
   /**
    * Compteur d'instances par bâtiment construit. Optionnel pour la
@@ -97,6 +104,7 @@ export class Game {
   private readonly _bank: ResourceBank;
   private readonly _citizens: Citizen[] = [];
   private _gameOver = false;
+  private _outcome: GameOutcome = 'ongoing';
   private nextCitizenSeq = 1;
   /** Compteur d'instances par bâtiment construit (catalogue `buildings.ts`). */
   private _buildings: Partial<Record<BuildingId, number>> = {};
@@ -131,6 +139,14 @@ export class Game {
     game._bank.water = snapshot.bank.water;
     game._gameOver = snapshot.gameOver;
     game.nextCitizenSeq = snapshot.nextCitizenSeq;
+    if (snapshot.outcome) {
+      game._outcome = snapshot.outcome;
+    } else if (snapshot.gameOver) {
+      // Snapshot antérieur à la condition de victoire : une partie terminée
+      // est une défaite s'il ne reste personne, une victoire sinon.
+      const survivors = snapshot.citizens.filter((c) => c.alive).length;
+      game._outcome = survivors > 0 ? 'victory' : 'defeat';
+    }
     for (const c of snapshot.citizens) {
       const position =
         c.position && typeof c.position.x === 'number' && typeof c.position.y === 'number'
@@ -163,6 +179,7 @@ export class Game {
         position: c.position ? { x: c.position.x, y: c.position.y } : null,
       })),
       gameOver: this._gameOver,
+      outcome: this._outcome,
       nextCitizenSeq: this.nextCitizenSeq,
       buildings: { ...this._buildings },
       desert: cloneDesertMap(this._desert),
@@ -525,11 +542,15 @@ export class Game {
       }
     }
 
+    const nightDay = this._day;
     const survivorsAfterNight = this.aliveCount;
+
+    // Défaite : la ville est tombée, plus aucun citoyen en vie.
     if (survivorsAfterNight === 0) {
       this._gameOver = true;
+      this._outcome = 'defeat';
       return this.buildReport({
-        nightDay: this._day,
+        nightDay,
         hordePower,
         defense,
         waves,
@@ -538,16 +559,40 @@ export class Game {
         deaths,
         survivors: 0,
         gameOver: true,
+        outcome: 'defeat',
+        resolvedAt,
+      });
+    }
+
+    // Victoire : la ville a tenu le nombre de nuits requis. La partie s'arrête
+    // sur cette nuit résolue (pas d'aube suivante : la ville est sauvée).
+    if (nightDay >= this.config.survivalDays) {
+      this._gameOver = true;
+      this._outcome = 'victory';
+      return this.buildReport({
+        nightDay,
+        hordePower,
+        defense,
+        waves,
+        overflow,
+        breached,
+        deaths,
+        survivors: survivorsAfterNight,
+        gameOver: true,
+        outcome: 'victory',
         resolvedAt,
       });
     }
 
     // 5. L'aube se lève : nouveau jour, soif et recharge des points d'action.
-    const nightDay = this._day;
     this.dawn(deaths);
 
     const survivors = this.aliveCount;
-    this._gameOver = survivors === 0;
+    if (survivors === 0) {
+      // L'aube a été fatale (déshydratation) : la ville s'éteint.
+      this._gameOver = true;
+      this._outcome = 'defeat';
+    }
     return this.buildReport({
       nightDay,
       hordePower,
@@ -558,6 +603,7 @@ export class Game {
       deaths,
       survivors,
       gameOver: this._gameOver,
+      outcome: this._outcome,
       resolvedAt,
     });
   }
@@ -599,6 +645,7 @@ export class Game {
     deaths: Death[];
     survivors: number;
     gameOver: boolean;
+    outcome: GameOutcome;
     resolvedAt: string;
   }): NightReport {
     const counts: Record<DeathSource, number> = {
@@ -623,6 +670,7 @@ export class Game {
       deathsBySource,
       survivors: input.survivors,
       gameOver: input.gameOver,
+      outcome: input.outcome,
       resolvedAt: input.resolvedAt,
     };
   }
@@ -646,6 +694,8 @@ export class Game {
       aliveCount: this.aliveCount,
       hordePowerTonight: this.hordePower(this._day),
       gameOver: this._gameOver,
+      outcome: this._outcome,
+      survivalDays: this.config.survivalDays,
       buildings: { ...this._buildings } as Record<string, number>,
       desert: this.desertSnapshot(),
     };
@@ -703,6 +753,16 @@ export class Game {
 
   get gameOver(): boolean {
     return this._gameOver;
+  }
+
+  /** Issue de la partie : `ongoing`, `victory` ou `defeat`. */
+  get outcome(): GameOutcome {
+    return this._outcome;
+  }
+
+  /** Nombre de nuits à survivre pour gagner. */
+  get survivalDays(): number {
+    return this.config.survivalDays;
   }
 
   /** Nombre de citoyens actuellement en vie. */

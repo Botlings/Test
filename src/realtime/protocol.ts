@@ -10,7 +10,7 @@
  * quel par les deux côtés et doit rester sans dépendances.
  */
 
-import type { Location, NightReport } from '../domain/index.js';
+import type { GameOutcome, Location, NightReport } from '../domain/index.js';
 import type {
   ActivityEntry,
   ForumMessageRecord,
@@ -83,6 +83,22 @@ export interface NightReportMessage {
   readonly report: NightReport;
 }
 
+/**
+ * La partie est terminée : victoire (la ville a tenu le nombre de nuits
+ * requis) ou défaite (la ville est tombée). Émis juste après la résolution
+ * de la nuit décisive, en complément du `night.report`.
+ */
+export interface GameOverMessage {
+  readonly type: 'game.over';
+  readonly outcome: Exclude<GameOutcome, 'ongoing'>;
+  /** Nuit décisive (numéro de jour). */
+  readonly day: number;
+  /** Nuits effectivement survécues par la ville. */
+  readonly daysSurvived: number;
+  /** Citoyens encore en vie à la fin. */
+  readonly survivors: number;
+}
+
 /** Message de chat émis par un joueur. */
 export interface ChatBroadcastMessage {
   readonly type: 'chat.message';
@@ -138,6 +154,7 @@ export type ServerMessage =
   | NightStartMessage
   | NightScheduledMessage
   | NightReportMessage
+  | GameOverMessage
   | ChatBroadcastMessage
   | ForumThreadCreatedMessage
   | ForumThreadClosedMessage
@@ -181,6 +198,7 @@ const SERVER_TYPES = new Set<ServerMessage['type']>([
   'night.start',
   'night.scheduled',
   'night.report',
+  'game.over',
   'chat.message',
   'forum.thread.created',
   'forum.thread.closed',

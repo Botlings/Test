@@ -10,6 +10,14 @@
 /** Phase courante d'une journée de jeu. */
 export type Phase = 'day' | 'night';
 
+/**
+ * Issue d'une partie.
+ *   - `ongoing` : la partie continue.
+ *   - `victory` : la ville a survécu au nombre de nuits requis (`survivalDays`).
+ *   - `defeat`  : tous les citoyens sont morts (la ville est tombée).
+ */
+export type GameOutcome = 'ongoing' | 'victory' | 'defeat';
+
 /** Position d'un citoyen : à l'abri en ville, ou exposé dans le désert. */
 export type Location = 'town' | 'desert';
 
@@ -118,8 +126,14 @@ export interface NightReport {
   readonly deathsBySource: DeathsBySource;
   /** Nombre de citoyens encore en vie après la nuit et l'aube. */
   readonly survivors: number;
-  /** `true` si plus aucun citoyen n'est en vie : la partie est terminée. */
+  /** `true` si la partie est terminée (ville tombée OU survie complète). */
   readonly gameOver: boolean;
+  /**
+   * Issue de la partie après cette nuit : `ongoing` tant qu'elle continue,
+   * `victory` si la ville a tenu le nombre de nuits requis, `defeat` si elle
+   * est tombée.
+   */
+  readonly outcome: GameOutcome;
   /** Horodatage ISO de la résolution (utile au client pour trier l'historique). */
   readonly resolvedAt: string;
 }
@@ -151,6 +165,10 @@ export interface GameStatus {
   readonly aliveCount: number;
   readonly hordePowerTonight: number;
   readonly gameOver: boolean;
+  /** Issue de la partie (`ongoing` tant qu'elle n'est pas terminée). */
+  readonly outcome: GameOutcome;
+  /** Nombre de nuits à survivre pour gagner la partie. */
+  readonly survivalDays: number;
   /** Compteur d'instances par bâtiment construit (catalogue `buildings.ts`). */
   readonly buildings: Readonly<Record<string, number>>;
   /** Carte du désert (rayon + zones). */

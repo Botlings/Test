@@ -20,6 +20,7 @@ import {
   MAX_CITIZENS_PER_TOWN,
   REFRESH_TOKEN_TTL_MS,
   StoreError,
+  compareGameResults,
   type AccountRecord,
   type AccountTownEntry,
   type ActivityEntry,
@@ -33,6 +34,8 @@ import {
   type ForumVoteOption,
   type ForumVoteRecord,
   type ForumVoteTally,
+  type GameResultInput,
+  type LeaderboardEntry,
   type NightEventInput,
   type NightTrigger,
   type SessionRecord,
@@ -125,6 +128,8 @@ export class MemoryStore implements Store {
   private readonly nightLocks = new Set<Id>();
   private readonly nightEvents: Array<{ townId: Id; event: NightEventInput; at: Date }> = [];
   private readonly nightReports = new Map<Id, StoredNightReport[]>();
+  /** Résultat final par ville (clé : townId). Un seul résultat par partie. */
+  private readonly gameResults = new Map<Id, Omit<LeaderboardEntry, 'rank'>>();
   private readonly membershipJoinedAt = new Map<string, Date>();
   private readonly forumThreads = new Map<Id, ForumThreadRecord>();
   private readonly forumMessages = new Map<Id, ForumMessageRecord[]>();
@@ -317,6 +322,30 @@ export class MemoryStore implements Store {
   ): Promise<StoredNightReport[]> {
     const list = this.nightReports.get(townId) ?? [];
     return list.slice(0, Math.max(0, limit));
+  }
+
+  /* ---------------------------- Fin de partie ---------------------------- */
+
+  async recordGameResult(townId: Id, result: GameResultInput): Promise<void> {
+    const town = this.towns.get(townId);
+    this.gameResults.set(townId, {
+      townId,
+      townName: town?.name ?? 'Ville inconnue',
+      difficulty: result.difficulty,
+      outcome: result.outcome,
+      daysSurvived: result.daysSurvived,
+      survivors: result.survivors,
+      population: result.population,
+      endedAt: new Date(),
+    });
+  }
+
+  async listLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
+    const safe = Math.max(0, Math.min(100, Math.trunc(limit)));
+    return [...this.gameResults.values()]
+      .sort(compareGameResults)
+      .slice(0, safe)
+      .map((entry, idx) => ({ ...entry, rank: idx + 1 }));
   }
 
   /* ---------------------------- Forum ------------------------------------ */

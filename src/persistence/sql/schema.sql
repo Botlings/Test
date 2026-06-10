@@ -124,6 +124,23 @@ CREATE TABLE IF NOT EXISTS night_reports (
 CREATE INDEX IF NOT EXISTS night_reports_town_idx
   ON night_reports(town_id, created_at DESC);
 
+-- Résultat final d'une partie terminée (victoire ou défaite). Une ligne par
+-- ville ; alimente le classement global affiché sur la landing publique.
+CREATE TABLE IF NOT EXISTS game_results (
+  town_id        uuid         PRIMARY KEY REFERENCES towns(id) ON DELETE CASCADE,
+  town_name      text         NOT NULL,
+  difficulty     text         NOT NULL CHECK (difficulty IN ('normal','hard','hardcore')),
+  outcome        text         NOT NULL CHECK (outcome IN ('victory','defeat')),
+  days_survived  integer      NOT NULL,
+  survivors      integer      NOT NULL,
+  population     integer      NOT NULL,
+  ended_at       timestamptz  NOT NULL DEFAULT now()
+);
+-- Index de support pour le tri du classement (le ORDER BY exact de la requête
+-- combine outcome/jours/survivants : ce btree couvre l'essentiel du tri).
+CREATE INDEX IF NOT EXISTS game_results_rank_idx
+  ON game_results (days_survived DESC, survivors DESC, ended_at ASC);
+
 CREATE TABLE IF NOT EXISTS night_locks (
   town_id      uuid         PRIMARY KEY REFERENCES towns(id) ON DELETE CASCADE,
   acquired_at  timestamptz  NOT NULL DEFAULT now()

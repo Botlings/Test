@@ -81,12 +81,38 @@ export async function resolveNight(
     });
     await store.recordNightReport(townId, trigger, out);
 
+    // Fin de partie : enregistre le résultat pour le classement global.
+    const ended = out.gameOver && out.outcome !== 'ongoing';
+    // Nuits effectivement survécues : `out.day` en cas de victoire (la ville a
+    // tenu toutes les nuits requises), une de moins en cas de défaite (elle est
+    // tombée pendant la nuit `out.day`).
+    const daysSurvived =
+      out.outcome === 'victory' ? out.day : Math.max(0, out.day - 1);
+    if (ended) {
+      await store.recordGameResult(townId, {
+        outcome: out.outcome as 'victory' | 'defeat',
+        daysSurvived,
+        survivors: out.survivors,
+        population: current.game.status().citizens.length,
+        difficulty: current.difficulty,
+      });
+    }
+
     hub.publish(townId, {
       type: 'night.report',
       day: out.day,
       trigger,
       report: out,
     });
+    if (ended) {
+      hub.publish(townId, {
+        type: 'game.over',
+        outcome: out.outcome as 'victory' | 'defeat',
+        day: out.day,
+        daysSurvived,
+        survivors: out.survivors,
+      });
+    }
     publishTownSnapshot(hub, current);
 
     // Journal d'activité : la nuit elle-même + chaque décès individuel.
@@ -113,6 +139,20 @@ export async function resolveNight(
         citizenName: death.name,
         kind: 'citizen.died',
         details: { cause: death.cause, source: death.source, day: out.day },
+      });
+    }
+    if (ended) {
+      await publishActivity(store, hub, townId, {
+        accountId: null,
+        citizenId: null,
+        citizenName: null,
+        kind: 'game.over',
+        details: {
+          outcome: out.outcome,
+          day: out.day,
+          daysSurvived,
+          survivors: out.survivors,
+        },
       });
     }
     return out;

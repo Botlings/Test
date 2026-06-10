@@ -17,6 +17,9 @@ import type { Game } from '../domain/game.js';
 import type { NightReport, Phase } from '../domain/types.js';
 import type { Id } from './types.js';
 
+/** Issue finale enregistrée d'une partie (jamais `ongoing`). */
+export type GameResultOutcome = 'victory' | 'defeat';
+
 /** D'où vient la résolution d'une nuit : action joueur ou tic automatique. */
 export type NightTrigger = 'manual' | 'scheduler';
 
@@ -70,6 +73,39 @@ export interface NightEventInput {
   readonly defense: number;
   readonly breached: boolean;
   readonly deaths: number;
+}
+
+/* --------------------------- Fin de partie / classement ----------------- */
+
+/**
+ * Résultat final d'une partie, enregistré une seule fois quand la ville
+ * atteint la victoire ou la défaite. Alimente le classement global.
+ */
+export interface GameResultInput {
+  /** `victory` si la ville a tenu `survivalDays` nuits, sinon `defeat`. */
+  readonly outcome: GameResultOutcome;
+  /** Nombre de nuits effectivement survécues par la ville. */
+  readonly daysSurvived: number;
+  /** Citoyens encore en vie à la fin de la partie. */
+  readonly survivors: number;
+  /** Nombre total de citoyens ayant rejoint la ville sur la partie. */
+  readonly population: number;
+  /** Difficulté de la partie (sert au classement / affichage). */
+  readonly difficulty: Difficulty;
+}
+
+/** Une ligne du classement global des villes (partie terminée). */
+export interface LeaderboardEntry {
+  /** Rang 1-based dans le classement (1 = meilleur). */
+  readonly rank: number;
+  readonly townId: Id;
+  readonly townName: string;
+  readonly difficulty: Difficulty;
+  readonly outcome: GameResultOutcome;
+  readonly daysSurvived: number;
+  readonly survivors: number;
+  readonly population: number;
+  readonly endedAt: Date;
 }
 
 /* ------------------------------ Forum --------------------------------- */
@@ -161,6 +197,7 @@ export type ActivityKind =
   | 'citizen.fight'
   | 'citizen.died'
   | 'night.resolved'
+  | 'game.over'
   | 'forum.thread.created'
   | 'forum.vote.created'
   | 'forum.vote.cast'
@@ -265,6 +302,21 @@ export interface Store {
    */
   listNightReports(townId: Id, limit?: number): Promise<StoredNightReport[]>;
 
+  /* --------------------------- Fin de partie ---------------------------- */
+  /**
+   * Enregistre (ou met à jour) le résultat final d'une partie terminée.
+   * Idempotent par ville : un second appel pour la même ville écrase le
+   * résultat précédent (le moteur ne termine une partie qu'une fois).
+   */
+  recordGameResult(townId: Id, result: GameResultInput): Promise<void>;
+
+  /**
+   * Classement global des parties terminées, de la meilleure à la moins
+   * bonne : victoires d'abord, puis par nuits survécues décroissantes, puis
+   * survivants décroissants, puis date de fin croissante. Limite par défaut : 20.
+   */
+  listLeaderboard(limit?: number): Promise<LeaderboardEntry[]>;
+
   /* ------------------------------ Forum -------------------------------- */
   /**
    * Crée un nouveau sujet du forum. Pour `kind: 'vote'`, `options` doit
@@ -339,6 +391,27 @@ export interface Store {
 
   /** Libère toutes les ressources (pool de connexion, etc.). */
   close(): Promise<void>;
+}
+
+/**
+ * Ordre canonique du classement entre deux résultats de partie. Renvoie un
+ * nombre négatif si `a` est mieux classé que `b`. Mutualisé par le store
+ * mémoire (tri JS) ; le store Postgres reproduit la même logique en SQL.
+ *
+ * Critères, par priorité : victoire avant défaite, puis nuits survécues
+ * décroissantes, survivants décroissants, et enfin date de fin la plus
+ * ancienne (premier à accomplir l'exploit).
+ */
+export function compareGameResults(
+  a: Omit<LeaderboardEntry, 'rank'>,
+  b: Omit<LeaderboardEntry, 'rank'>,
+): number {
+  const aWin = a.outcome === 'victory' ? 1 : 0;
+  const bWin = b.outcome === 'victory' ? 1 : 0;
+  if (aWin !== bWin) return bWin - aWin;
+  if (a.daysSurvived !== b.daysSurvived) return b.daysSurvived - a.daysSurvived;
+  if (a.survivors !== b.survivors) return b.survivors - a.survivors;
+  return a.endedAt.getTime() - b.endedAt.getTime();
 }
 
 /** Erreur métier émise par le store. Le `code` est stable et utilisable côté API. */
