@@ -98,6 +98,17 @@ h1, h2, h3 {
 }
 
 /* ── Utilitaires ───────────────────────────────────────────── */
+/* L'attribut HTML `hidden` doit TOUJOURS gagner : sans cette règle, tout
+   composant qui pose son propre `display` (ex. game.css : .modal{display:flex},
+   .screen--auth{display:flex}) écrase la règle UA `[hidden]{display:none}`.
+   Résultat sans ce correctif : toutes les modales et tous les écrans marqués
+   `hidden` s'affichent empilés au chargement, et leurs overlays plein écran
+   (z-index 150) interceptent les clics → « popups non fermables » et bouton
+   « Rejoindre » inopérant. Ne jamais retirer. */
+[hidden] {
+  display: none !important;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -458,7 +469,7 @@ h1, h2, h3 {
 }
 
 .hero__poster::before {
-  content: 'VAULT-TEC';
+  content: 'CITÉ 84';
   position: absolute;
   top: -16px;
   left: 50%;

@@ -866,7 +866,7 @@
     plain: '🌾',
     ruins: '🏚',
     highway: '🛣',
-    wasteland: '☢',
+    wasteland: '⚠',
   };
   var TERRAIN_LABELS = {
     plain: 'Plaine',

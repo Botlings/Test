@@ -152,7 +152,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .api-banner::before {
-  content: '>>> ROBCO LINK :: REMOTE TERMINAL NOT FOUND';
+  content: '>>> LIAISON SERVEUR :: TERMINAL DISTANT INTROUVABLE';
   display: block;
   font-family: 'VT323', monospace;
   font-size: 1rem;
@@ -335,7 +335,7 @@ body.theme-day .card__header {
 }
 
 .auth-card::before {
-  content: '>>> ROBCO INDUSTRIES — VAULT-TEC SECURE LOGIN';
+  content: '>>> TERMINAL SÉCURISÉ — ACCÈS CITOYEN';
   display: block;
   font-family: 'VT323', monospace;
   font-size: 0.95rem;
@@ -616,7 +616,7 @@ body.theme-day .card__header {
   text-shadow: var(--glow-strong);
 }
 
-.town-header__title h1::before { content: '☢ '; color: var(--gold); }
+.town-header__title h1::before { content: '▣ '; color: var(--gold); }
 
 .town-header__sub {
   display: flex;
@@ -1451,7 +1451,7 @@ body.theme-day .roster__item.is-self {
 }
 
 .modal__card::before {
-  content: '>>> ROBCO INDUSTRIES — DIALOG';
+  content: '>>> TERMINAL — DIALOGUE';
   display: block;
   font-family: 'VT323', monospace;
   font-size: 0.9rem;
