@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hordes Revival — État des services</title>
+    <meta
+      name="description"
+      content="État en temps réel des services de Hordes Revival : serveur de jeu, base de données, classement et site. Page de statut publique."
+    />
+    <meta name="theme-color" content="#14387f" />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://botlings.github.io/Test/status.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Hordes Revival" />
+    <meta property="og:title" content="Hordes Revival — État des services" />
+    <meta
+      property="og:description"
+      content="État en temps réel des services de Hordes Revival."
+    />
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2210%22%20fill%3D%22%2314387f%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2222%22%20fill%3D%22none%22%20stroke%3D%22%23ffc72c%22%20stroke-width%3D%224%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%229%22%20fill%3D%22%23ffc72c%22%2F%3E%3C%2Fsvg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600;700&family=Bungee&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+
+    <style>
+      /* Styles propres à la page de statut. Scopés sous .status pour ne pas
+         fuir vers les composants partagés (.card, etc.). Hérite des tokens
+         Vault-Tec 60's de styles.css (:root). */
+      .status {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 2.4rem 1.4rem 4rem;
+      }
+
+      .status__top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem 1.2rem;
+        margin-bottom: 1.6rem;
+      }
+
+      .status__brand {
+        font-family: 'Bungee', 'Archivo Black', sans-serif;
+        font-size: clamp(1.5rem, 4vw, 2.2rem);
+        color: var(--vt-blue);
+        letter-spacing: 0.5px;
+        line-height: 1;
+      }
+      .status__brand a {
+        color: inherit;
+      }
+      .status__home {
+        font-family: 'Oswald', sans-serif;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.95rem;
+      }
+
+      h1.status__title {
+        font-family: 'Archivo Black', sans-serif;
+        font-size: clamp(1.6rem, 5vw, 2.6rem);
+        color: var(--vt-ink);
+        text-transform: uppercase;
+        line-height: 1.05;
+        margin: 0.2rem 0 1.4rem;
+      }
+
+      /* Bannière globale */
+      .global {
+        border: 3px solid var(--vt-line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.4rem 1.6rem;
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+        background: var(--vt-paper);
+      }
+      .global[data-state='up'] {
+        background: #e7f6e9;
+        border-color: #1f7a35;
+        box-shadow: 6px 6px 0 rgba(31, 122, 53, 0.55);
+      }
+      .global[data-state='degraded'] {
+        background: #fdf3d6;
+        border-color: var(--vt-yellow-deep);
+        box-shadow: 6px 6px 0 rgba(232, 162, 0, 0.5);
+      }
+      .global[data-state='down'] {
+        background: #f8e0e1;
+        border-color: var(--vt-red);
+        box-shadow: 6px 6px 0 rgba(151, 21, 25, 0.5);
+      }
+      .global__badge {
+        flex: 0 0 auto;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 3px solid var(--vt-line);
+        display: grid;
+        place-items: center;
+        font-family: 'Bungee', sans-serif;
+        font-size: 1.5rem;
+        background: var(--vt-cream);
+      }
+      .global[data-state='up'] .global__badge { background: #1f7a35; color: #fff; border-color: #155523; }
+      .global[data-state='degraded'] .global__badge { background: var(--vt-yellow); color: var(--vt-ink); }
+      .global[data-state='down'] .global__badge { background: var(--vt-red); color: #fff; border-color: var(--vt-red-deep); }
+      .global__label {
+        font-family: 'Archivo Black', sans-serif;
+        font-size: clamp(1.05rem, 3vw, 1.4rem);
+        text-transform: uppercase;
+        line-height: 1.1;
+      }
+      .global__sub {
+        font-size: 0.95rem;
+        color: var(--vt-ink-soft);
+      }
+
+      .status__controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem 1rem;
+        margin: 1.4rem 0 0.8rem;
+        font-size: 0.92rem;
+        color: var(--vt-ink-soft);
+      }
+      .status__controls code {
+        font-family: 'Oswald', monospace;
+        background: var(--vt-cream-2);
+        border: 1px solid var(--vt-line);
+        padding: 0.1rem 0.5rem;
+        border-radius: 5px;
+        color: var(--vt-ink);
+      }
+      .status__refresh {
+        font-family: 'Oswald', sans-serif;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: var(--vt-yellow);
+        color: var(--vt-ink);
+        border: 2.5px solid var(--vt-line);
+        border-radius: 7px;
+        padding: 0.45rem 1rem;
+        box-shadow: var(--shadow-soft);
+        transition: transform 0.08s ease;
+      }
+      .status__refresh:hover { transform: translate(-1px, -1px); }
+      .status__refresh:active { transform: translate(2px, 2px); box-shadow: none; }
+
+      /* Grille de services */
+      .status__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.1rem;
+        margin-top: 1.1rem;
+      }
+      .status-card {
+        background: var(--vt-paper);
+        border: 3px solid var(--vt-line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-soft);
+        padding: 1.1rem 1.2rem;
+      }
+      .status-card__head {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.55rem;
+      }
+      .status-card__dot {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        border: 2px solid var(--vt-line);
+        flex: 0 0 auto;
+        background: var(--vt-ink-soft);
+      }
+      .status-card__dot[data-state='up'] { background: #2bd14e; box-shadow: 0 0 0 3px rgba(43, 209, 78, 0.25); }
+      .status-card__dot[data-state='degraded'] { background: var(--vt-yellow); box-shadow: 0 0 0 3px rgba(255, 199, 44, 0.3); }
+      .status-card__dot[data-state='down'] { background: var(--vt-red); box-shadow: 0 0 0 3px rgba(200, 38, 44, 0.25); }
+      .status-card__dot[data-state='pending'] { background: var(--vt-ink-soft); animation: blink 1s steps(2, start) infinite; }
+      @keyframes blink { 50% { opacity: 0.3; } }
+
+      .status-card__name {
+        font-family: 'Archivo Black', sans-serif;
+        font-size: 1.02rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .status-card__desc {
+        font-size: 0.88rem;
+        color: var(--vt-ink-soft);
+        margin-bottom: 0.7rem;
+        min-height: 2.4em;
+      }
+      .status-card__foot {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+        border-top: 1.5px dashed var(--vt-line);
+        padding-top: 0.55rem;
+      }
+      .status-card__state {
+        font-family: 'Oswald', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.95rem;
+      }
+      .status-card[data-state='up'] .status-card__state { color: #1f7a35; }
+      .status-card[data-state='degraded'] .status-card__state { color: var(--vt-yellow-deep); }
+      .status-card[data-state='down'] .status-card__state { color: var(--vt-red); }
+      .status-card__meta {
+        font-family: 'Oswald', monospace;
+        font-size: 0.82rem;
+        color: var(--vt-ink-soft);
+      }
+
+      .status__foot {
+        margin-top: 2.4rem;
+        font-size: 0.85rem;
+        color: var(--vt-ink-soft);
+        text-align: center;
+        line-height: 1.7;
+      }
+      .status__foot a { font-weight: 600; }
+    </style>
+  </head>
+
+  <body>
+    <main class="status">
+      <div class="status__top">
+        <div class="status__brand"><a href="index.html">HORDES REVIVAL</a></div>
+        <a class="status__home" href="index.html">← Retour au site</a>
+      </div>
+
+      <h1 class="status__title">État des services</h1>
+
+      <div class="global" id="global-banner" data-state="pending">
+        <div class="global__badge" aria-hidden="true">◉</div>
+        <div>
+          <div class="global__label">Vérification des systèmes…</div>
+          <div class="global__sub" id="global-sub">Interrogation des sondes en cours.</div>
+        </div>
+      </div>
+
+      <div class="status__controls">
+        <span>Cible API : <code id="api-target">—</code></span>
+        <span id="last-checked">Dernière vérification : —</span>
+        <button type="button" class="status__refresh" id="refresh-btn">↻ Rafraîchir</button>
+      </div>
+
+      <section class="status__grid" aria-label="Services surveillés">
+        <article class="status-card" id="svc-site" data-state="pending">
+          <div class="status-card__head">
+            <span class="status-card__dot" data-state="pending"></span>
+            <span class="status-card__name">Site vitrine</span>
+          </div>
+          <p class="status-card__desc">La page d'accueil et la liste d'attente sont accessibles.</p>
+          <div class="status-card__foot">
+            <span class="status-card__state">Vérification…</span>
+            <span class="status-card__meta">…</span>
+          </div>
+        </article>
+
+        <article class="status-card" id="svc-live" data-state="pending">
+          <div class="status-card__head">
+            <span class="status-card__dot" data-state="pending"></span>
+            <span class="status-card__name">Serveur de jeu</span>
+          </div>
+          <p class="status-card__desc">Le processus du serveur répond aux requêtes (sonde <code>/health/live</code>).</p>
+          <div class="status-card__foot">
+            <span class="status-card__state">Vérification…</span>
+            <span class="status-card__meta">…</span>
+          </div>
+        </article>
+
+        <article class="status-card" id="svc-ready" data-state="pending">
+          <div class="status-card__head">
+            <span class="status-card__dot" data-state="pending"></span>
+            <span class="status-card__name">Base de données</span>
+          </div>
+          <p class="status-card__desc">Le serveur joint la base : parties et comptes sont persistés (sonde <code>/health/ready</code>).</p>
+          <div class="status-card__foot">
+            <span class="status-card__state">Vérification…</span>
+            <span class="status-card__meta">…</span>
+          </div>
+        </article>
+
+        <article class="status-card" id="svc-leaderboard" data-state="pending">
+          <div class="status-card__head">
+            <span class="status-card__dot" data-state="pending"></span>
+            <span class="status-card__name">Classement</span>
+          </div>
+          <p class="status-card__desc">Le classement public des villes répond (lecture métier réelle).</p>
+          <div class="status-card__foot">
+            <span class="status-card__state">Vérification…</span>
+            <span class="status-card__meta">…</span>
+          </div>
+        </article>
+      </section>
+
+      <p class="status__foot">
+        Cette page interroge les services toutes les 30&nbsp;secondes, directement depuis votre navigateur.<br />
+        Un incident&nbsp;? Écrivez-nous depuis le <a href="index.html">site principal</a>.
+      </p>
+    </main>
+
+    <script src="status.js"></script>
+  </body>
+</html>

@@ -61,12 +61,23 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   //   - /health/ready : le process est prêt à servir (DB joignable)
   //   - /health       : alias de /health/live (rétro-compat)
   const startedAt = new Date();
-  app.get('/health', async () => ({ status: 'ok', uptimeMs: Date.now() - startedAt.getTime() }));
-  app.get('/health/live', async () => ({
-    status: 'ok',
-    uptimeMs: Date.now() - startedAt.getTime(),
-  }));
+  // Les sondes sont publiques et consommées en cross-origin par la page de
+  // statut statique (GitHub Pages → hordesrevival.com/status). On expose donc
+  // `Access-Control-Allow-Origin: *` à la main, comme `GET /leaderboard` ;
+  // lecture seule, aucune donnée sensible, pas de cookies.
+  app.get('/health', async (_request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    return { status: 'ok', uptimeMs: Date.now() - startedAt.getTime() };
+  });
+  app.get('/health/live', async (_request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    return {
+      status: 'ok',
+      uptimeMs: Date.now() - startedAt.getTime(),
+    };
+  });
   app.get('/health/ready', async (_request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
     try {
       await store.ping();
       return { status: 'ok', store: 'ready' };
