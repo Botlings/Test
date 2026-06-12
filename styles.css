@@ -1,52 +1,64 @@
 /* Hordes Revival — feuille de styles partagée.
    ───────────────────────────────────────────────────────────────
-   DEUX ESTHÉTIQUES, UNE DÉCISION FIGÉE (2026-06-09) :
+   DEUX ESTHÉTIQUES, UNE DÉCISION FIGÉE (2026-06-12) :
 
-   1. VAULT-TEC 60's = thème PAR DÉFAUT (`:root`).
-      Affiche public + landing : crème, bleu/jaune/rouge, VaultBoy,
-      posters rétro Vault-Tec. Police Archivo Black / Oswald / Bungee.
+   1. RÉCLAME 60's APOCALYPTIQUE — SABLONNEUSE = thème PAR DÉFAUT
+      (`:root`). Public + landing + ville : palette désert irradié
+      (sable / ocre / rouille), mascotte rétro originale, posters
+      délavés par le soleil. JOUR = ocre/rouille, soleil écrasant ;
+      NUIT = noir profond + rouge sang, ombres dures, terreur palpable
+      (voile d'ambiance piloté par l'heure locale, cf. plus bas).
+      Police Archivo Black / Oswald / Bungee. AUCUNE mention de marque.
 
-   2. PIPBOY (vert phosphore + CRT) = SKIN RÉSERVÉ, scopé sous
-      `body.game-body`. Le terminal de jeu garde son look terminal ;
-      la carte du désert et le rapport de nuit y vivent. NE PAS
-      réintroduire le PipBoy sur les pages publiques.
+   2. PIPBOY (vert phosphore + CRT) = SKIN RÉSERVÉ aux interfaces
+      « informatiques » (classe `.terminal`) : carte du désert, stats,
+      inventaire/défense, journaux et rapport de nuit. NE PAS
+      réintroduire le PipBoy sur les pages/zones non informatiques.
 
    game.css ne fait QU'AJOUTER des composants de jeu et hérite des
-   variables redéclarées sous `body.game-body` plus bas. */
+   tokens --vt-* ci-dessous (mêmes NOMS qu'à l'époque Vault-Tec, VALEURS
+   repalettées en désert irradié — la cascade suffit, rien à renommer). */
 
 /* ════════════════════════════════════════════════════════════════
-   VAULT-TEC 60's — TOKENS PAR DÉFAUT
+   DÉSERT IRRADIÉ 60's — TOKENS PAR DÉFAUT (mode JOUR de référence)
+   ────────────────────────────────────────────────────────────────
+   On conserve les NOMS hérités (--vt-cream/blue/yellow/red/ink) pour
+   que tout game.css cascade sans réécriture ; seules les VALEURS
+   changent : sable blanchi par le soleil, structure rouille/oxyde,
+   accent ocre, alerte rouge sang séché, encre brun calciné.
    ════════════════════════════════════════════════════════════════ */
 :root {
-  --vt-cream: #f3e6c4;
-  --vt-cream-2: #ecdcb4;
-  --vt-paper: #fbf3df;
-  --vt-blue: #14387f;
-  --vt-blue-deep: #0c2657;
-  --vt-blue-bright: #2f63bd;
-  --vt-yellow: #ffc72c;
-  --vt-yellow-deep: #e8a200;
-  --vt-red: #c8262c;
-  --vt-red-deep: #971519;
-  --vt-ink: #16213a;
-  --vt-ink-soft: #41506b;
-  --vt-line: #14213a;
+  --vt-cream: #ddc792;   /* sable blanchi — surface principale */
+  --vt-cream-2: #cbb073; /* sable plus profond */
+  --vt-paper: #e9d4a1;   /* papier d'affiche délavé — cartes */
+  --vt-blue: #9c4322;    /* rouille / oxyde — structure, titres, marque */
+  --vt-blue-deep: #5e2410;
+  --vt-blue-bright: #c25f2a;
+  --vt-yellow: #e0a32e;  /* ocre / ambre — accent, surlignage */
+  --vt-yellow-deep: #b9781a;
+  --vt-red: #a72817;     /* rouge sang séché — alerte, CTA */
+  --vt-red-deep: #6d1209;
+  --vt-ink: #2a1b10;     /* brun calciné — encre, bordures */
+  --vt-ink-soft: #5a4128;
+  --vt-line: #2a1b10;
 
   --maxw: 1080px;
   --radius: 10px;
-  --shadow: 6px 6px 0 rgba(22, 33, 58, 0.92);
-  --shadow-soft: 4px 4px 0 rgba(22, 33, 58, 0.18);
+  /* Ombres dures et chaudes (brun calciné, pas de bleu). */
+  --shadow: 6px 6px 0 rgba(34, 20, 10, 0.92);
+  --shadow-soft: 4px 4px 0 rgba(34, 20, 10, 0.22);
 
-  /* Fond crème vieilli + léger grain (texture papier d'affiche) */
+  /* Fond sable scorché : soleil écrasant en haut, brume de rouille au
+     fond, grain de poussière, dégradé de dune. */
   --bg-gradient:
-    radial-gradient(circle at 18% 12%, rgba(255, 199, 44, 0.16), transparent 42%),
-    radial-gradient(circle at 84% 84%, rgba(20, 56, 127, 0.10), transparent 46%),
+    radial-gradient(circle at 50% -8%, rgba(255, 184, 74, 0.34), transparent 55%),
+    radial-gradient(circle at 86% 92%, rgba(120, 48, 18, 0.18), transparent 52%),
     repeating-linear-gradient(
-      45deg,
-      rgba(22, 33, 58, 0.015) 0 2px,
-      transparent 2px 7px
+      28deg,
+      rgba(60, 38, 18, 0.028) 0 2px,
+      transparent 2px 6px
     ),
-    linear-gradient(180deg, var(--vt-paper) 0%, var(--vt-cream) 55%, var(--vt-cream-2) 100%);
+    linear-gradient(180deg, var(--vt-paper) 0%, var(--vt-cream) 52%, var(--vt-cream-2) 100%);
 }
 
 * {
@@ -178,7 +190,7 @@ h1, h2, h3 {
   padding: 0.7rem clamp(1rem, 4vw, 2.5rem);
   background: var(--vt-cream);
   border-bottom: 3px solid var(--vt-blue);
-  box-shadow: 0 3px 0 rgba(22, 33, 58, 0.12);
+  box-shadow: 0 3px 0 rgba(34, 20, 10, 0.12);
 }
 
 .brand {
@@ -255,7 +267,7 @@ h1, h2, h3 {
   background: var(--vt-red-deep);
   color: #fff !important;
   transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 rgba(22, 33, 58, 0.25);
+  box-shadow: 5px 5px 0 rgba(34, 20, 10, 0.25);
 }
 
 /* ── Boutons ──────────────────────────────────────────────── */
@@ -288,7 +300,7 @@ h1, h2, h3 {
 
 .btn:active {
   transform: translate(0, 0);
-  box-shadow: 2px 2px 0 rgba(22, 33, 58, 0.6);
+  box-shadow: 2px 2px 0 rgba(34, 20, 10, 0.6);
 }
 
 .btn--primary {
@@ -492,7 +504,7 @@ h1, h2, h3 {
   display: block;
   width: 100%;
   height: auto;
-  filter: drop-shadow(3px 4px 0 rgba(22, 33, 58, 0.35));
+  filter: drop-shadow(3px 4px 0 rgba(34, 20, 10, 0.35));
 }
 
 .hero__poster-stamp {
@@ -735,7 +747,7 @@ section {
 
 .leaderboard__table tbody td {
   padding: 0.6rem 0.7rem;
-  border-bottom: 1px solid rgba(22, 33, 58, 0.16);
+  border-bottom: 1px solid rgba(34, 20, 10, 0.16);
   color: var(--vt-ink);
 }
 
@@ -1249,11 +1261,14 @@ section {
   text-shadow: none;
 }
 
-/* Voile d'ambiance jour/nuit (présent dans game.html). En journée : léger
-   halo chaud. La nuit : vignette froide plus marquée. Les scanlines CRT ne
-   sont PLUS globales — elles vivent désormais sur les panneaux `.terminal`
-   (voir game.css), conformément à la décision « CRT réservé à l'informatique ».*/
-.crt-overlay {
+/* Vignette d'ambiance jour/nuit — UNIVERSELLE (public + ville + statut), sans
+   toucher au HTML : pseudo-élément `body::before`. JOUR : liseré de sable brûlé
+   très léger. NUIT : vignette ROUGE SANG lourde qui resserre la scène (terreur),
+   couplée au voile multiply de body::after. Les scanlines CRT ne sont PLUS
+   globales — elles vivent sur les panneaux `.terminal` (voir game.css),
+   conformément à « CRT réservé à l'informatique ». */
+body::before {
+  content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -1261,8 +1276,8 @@ section {
   background:
     radial-gradient(
       ellipse 130% 120% at 50% 50%,
-      transparent 60%,
-      var(--veil-edge, rgba(22, 33, 58, 0.16)) 100%
+      transparent 58%,
+      var(--veil-edge, rgba(34, 20, 10, 0.16)) 100%
     );
   transition: background 0.6s ease;
 }
@@ -1371,28 +1386,34 @@ section {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   CYCLE JOUR / NUIT (décision 2026-06-12)
+   CYCLE JOUR / NUIT (décision figée 2026-06-12)
    ────────────────────────────────────────────────────────────────
    Piloté par l'heure locale du joueur + bascule manuelle (data-daytime
-   sur <body>, posé par main.js / game.js). Partagé public + ville.
-   Parti pris « contraste sûr » : on ne dévoie PAS les affiches crème
-   (cartes lisibles de jour comme de nuit) ; on superpose un voile
-   d'ambiance (multiply) — chaud et léger le jour, indigo crépusculaire
-   la nuit — qui assombrit et refroidit toute la scène de façon homogène.
-   Les panneaux .terminal (vert phosphore) sont indépendants du cycle. */
+   sur <body>, posé par daynight.js). Partagé public + ville.
+
+   JOUR  : soleil écrasant sur le désert irradié — voile ocre chaud très
+           léger, vignette de sable brûlé. La scène reste claire et lisible.
+   NUIT  : noir profond + ROUGE SANG, ombres dures, terreur palpable — voile
+           multiply quasi-noir teinté de sang qui éteint la scène, vignette
+           cramoisie lourde qui « respire » (dread-pulse). Affiches et cartes
+           restent juste assez lisibles (parti pris contraste sûr), mais
+           l'ambiance bascule franchement dans l'horreur.
+   Les panneaux .terminal (vert phosphore) déclarent leurs propres tokens
+   et restent indépendants du cycle. */
 body[data-daytime='day'] {
-  --daynight-tint: rgba(255, 206, 102, 0.05);
-  --veil-edge: rgba(22, 33, 58, 0.14);
+  --daynight-tint: rgba(255, 176, 74, 0.06);
+  --veil-edge: rgba(60, 30, 10, 0.18);
 }
 
 body[data-daytime='night'] {
-  --daynight-tint: rgba(26, 36, 92, 0.34);
-  --veil-edge: rgba(7, 12, 38, 0.55);
+  --daynight-tint: rgba(28, 3, 4, 0.62);
+  --veil-edge: rgba(78, 0, 5, 0.82);
 }
 
 /* Voile d'ambiance plein écran, présent sur les deux pages (public + ville),
    sans toucher au HTML : pseudo-élément de <body>. pointer-events:none → les
-   clics passent ; z-index sous les modales (150) pour garder les dialogues nets. */
+   clics passent ; z-index sous les modales (150) pour garder les dialogues nets.
+   multiply → la nuit éteint la scène vers le noir/rouge sans cacher le contenu. */
 body::after {
   content: '';
   position: fixed;
@@ -1401,12 +1422,27 @@ body::after {
   z-index: 90;
   background: var(--daynight-tint, transparent);
   mix-blend-mode: multiply;
-  transition: background 0.7s ease;
+  transition: background 0.8s ease;
 }
 
-/* La nuit : on baisse l'éclat du soleil-rayons du hero (devient soleil couchant). */
+/* La nuit : la vignette cramoisie (body::before) respire — terreur palpable. */
+body[data-daytime='night']::before {
+  animation: dread-pulse 7.5s ease-in-out infinite;
+}
+
+@keyframes dread-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.66; }
+}
+
+/* La nuit : le soleil-rayons du hero devient un astre mourant rouge sang. */
 body[data-daytime='night'] .hero__sunburst {
-  opacity: 0.22;
+  opacity: 0.3;
+  background: repeating-conic-gradient(
+    from 0deg at 70% 40%,
+    rgba(167, 40, 23, 0.55) 0deg 7deg,
+    transparent 7deg 14deg
+  );
 }
 
 /* ── Bascule jour / nuit (bouton injecté dans l'en-tête) ───── */
@@ -1433,7 +1469,7 @@ body[data-daytime='night'] .hero__sunburst {
 .daynight-toggle:hover,
 .daynight-toggle:focus-visible {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 rgba(22, 33, 58, 0.3);
+  box-shadow: 4px 4px 0 rgba(34, 20, 10, 0.3);
   outline: none;
 }
 
@@ -1467,5 +1503,6 @@ body[data-daytime='night'] .daynight-toggle {
 
 @media (prefers-reduced-motion: reduce) {
   body::after,
-  .crt-overlay { transition: none; }
+  body::before { transition: none; }
+  body[data-daytime='night']::before { animation: none; }
 }
