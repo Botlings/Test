@@ -275,8 +275,8 @@
         </header>
 
         <div class="town-grid">
-          <!-- Carte du désert -->
-          <article class="card card--map">
+          <!-- Carte du désert (interface « informatique » → terminal vert) -->
+          <article class="card card--map terminal">
             <header class="card__header">
               <h2 class="card__title">Carte du désert</h2>
               <p class="card__sub" id="map-hint">
@@ -314,8 +314,8 @@
             </div>
           </article>
 
-          <!-- Inventaire / Banque -->
-          <article class="card card--bank">
+          <!-- Inventaire / Banque + défense (relevé « informatique » → terminal vert) -->
+          <article class="card card--bank terminal">
             <header class="card__header">
               <h2 class="card__title">Inventaire de la ville</h2>
             </header>
@@ -364,7 +364,7 @@
             <header class="card__header">
               <h2 class="card__title">Mon citoyen</h2>
             </header>
-            <div class="citizen-card" id="citizen-card">
+            <div class="citizen-card terminal" id="citizen-card">
               <p class="citizen-card__placeholder">Citoyen non identifié.</p>
             </div>
 
@@ -456,8 +456,8 @@
             <ul class="roster" id="roster-list"></ul>
           </article>
 
-          <!-- Journal -->
-          <article class="card card--log">
+          <!-- Journal (flux « informatique » temps réel → terminal vert) -->
+          <article class="card card--log terminal">
             <header class="card__header">
               <h2 class="card__title">Journal</h2>
               <p class="card__sub">Flux temps réel de la ville.</p>
@@ -551,9 +551,9 @@
       </section>
     </main>
 
-    <!-- =================== Modale fin de nuit =================== -->
+    <!-- =================== Modale fin de nuit (rapport « informatique » → terminal vert) =================== -->
     <div
-      class="modal"
+      class="modal terminal"
       id="night-modal"
       role="dialog"
       aria-modal="true"
@@ -574,9 +574,9 @@
       </div>
     </div>
 
-    <!-- =================== Modale profil joueur =================== -->
+    <!-- =================== Modale profil joueur (relevé de stats « informatique » → terminal vert) =================== -->
     <div
-      class="modal"
+      class="modal terminal"
       id="profile-modal"
       role="dialog"
       aria-modal="true"
@@ -771,6 +771,7 @@
       hidden
     ></div>
 
+    <script src="daynight.js"></script>
     <script src="game.js"></script>
   </body>
 </html>

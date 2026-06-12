@@ -1155,13 +1155,17 @@ section {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PIPBOY SKIN — RÉSERVÉ AU TERMINAL DE JEU (`body.game-body`)
+   PIPBOY SKIN — RÉSERVÉ AUX INTERFACES « INFORMATIQUES » (`.terminal`)
    ────────────────────────────────────────────────────────────────
-   Vert phosphore + CRT. game.css hérite de ces variables et y ajoute
-   ses composants (carte du désert, rapport de nuit, banque…).
-   Tout est scopé sous body.game-body : aucune fuite vers le public.
+   DÉCISION FIGÉE (2026-06-12) : la ville et tout le public sont en
+   Réclame Vault-Tec 60's (thème par défaut). Le vert phosphore + CRT
+   n'habille QUE les surfaces de données calculées par le jeu — carte
+   du désert, inventaire/défense, constantes du citoyen, journal et
+   rapport de nuit. On les marque d'une classe `.terminal` : les tokens
+   verts ci-dessous sont hérités par leurs descendants uniquement.
+   game.css y ajoute les composants. AUCUNE fuite vers la ville/public.
    ════════════════════════════════════════════════════════════════ */
-body.game-body {
+.terminal {
   /* PipBoy GREEN MODE */
   --crt: #2eff6b;
   --crt-bright: #b6ffd1;
@@ -1213,106 +1217,54 @@ body.game-body {
   animation: crt-flicker 6s infinite;
 }
 
-/* AMBER MODE (réservé : ex. rapport de nuit / bascule terminal) */
-body.game-body.theme-day {
-  --crt: #ffb43a;
-  --crt-bright: #fff0c8;
-  --crt-soft: #e08f1e;
-  --crt-dim: #8c5710;
-  --crt-faint: #5a3608;
-  --crt-shadow: rgba(255, 180, 58, 0.18);
-
-  --bg: #0b0703;
-  --bg-elev: #150c04;
-  --bg-card: #100904;
-  --gold: #2eff6b;
-
-  --shadow: 0 0 28px rgba(255, 180, 58, 0.12);
-
-  --glow-strong: 0 0 6px rgba(255, 180, 58, 0.85),
-                 0 0 18px rgba(255, 180, 58, 0.55);
-  --glow-soft:   0 0 4px rgba(255, 180, 58, 0.55),
-                 0 0 12px rgba(255, 180, 58, 0.28);
-
-  --bg-gradient:
-    radial-gradient(
-      ellipse 90% 70% at 50% -10%,
-      rgba(255, 180, 58, 0.12),
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 60% 40% at 50% 110%,
-      rgba(255, 180, 58, 0.08),
-      transparent 65%
-    ),
-    linear-gradient(180deg, #0c0703 0%, #08050a 60%, #06030a 100%);
-}
-
-/* Les règles de skin descendantes sont enveloppées dans :where(body.game-body)
-   afin de conserver EXACTEMENT la spécificité qu'avaient les anciennes règles
-   top-level de styles.css. game.css (chargé après) garde donc le dernier mot,
-   à l'identique d'avant la refonte — aucune régression de spécificité. */
-:where(body.game-body) h1,
-:where(body.game-body) h2,
-:where(body.game-body) h3 {
+/* Les règles de skin descendantes sont enveloppées dans :where(.terminal) :
+   spécificité nulle pour que game.css garde le dernier mot, et portée limitée
+   aux sous-arbres marqués `.terminal` (jamais la ville ni le public). */
+:where(.terminal) h1,
+:where(.terminal) h2,
+:where(.terminal) h3 {
   font-family: 'Bungee', 'Bungee Inline', 'Impact', sans-serif;
   letter-spacing: 0.04em;
   color: var(--crt-bright);
   text-shadow: var(--glow-strong);
 }
 
-:where(body.game-body) a {
+:where(.terminal) a {
   color: var(--crt-bright);
   text-shadow: var(--glow-soft);
 }
 
-:where(body.game-body) a:hover {
+:where(.terminal) a:hover {
   color: var(--crt-bright);
   text-shadow: var(--glow-strong);
 }
 
-:where(body.game-body) p {
+:where(.terminal) p {
   color: var(--ink-soft);
 }
 
-:where(body.game-body) ::selection {
+:where(.terminal) ::selection {
   background: var(--crt);
   color: var(--bg);
   text-shadow: none;
 }
 
-/* CRT overlay (scanlines + vignette + flicker) — n'existe que dans le jeu */
+/* Voile d'ambiance jour/nuit (présent dans game.html). En journée : léger
+   halo chaud. La nuit : vignette froide plus marquée. Les scanlines CRT ne
+   sont PLUS globales — elles vivent désormais sur les panneaux `.terminal`
+   (voir game.css), conformément à la décision « CRT réservé à l'informatique ».*/
 .crt-overlay {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 100;
-}
-
-.crt-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.18) 0px,
-    rgba(0, 0, 0, 0.18) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  mix-blend-mode: multiply;
-}
-
-.crt-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
   background:
     radial-gradient(
-      ellipse 120% 120% at 50% 50%,
-      transparent 55%,
-      rgba(0, 0, 0, 0.55) 100%
+      ellipse 130% 120% at 50% 50%,
+      transparent 60%,
+      var(--veil-edge, rgba(22, 33, 58, 0.16)) 100%
     );
+  transition: background 0.6s ease;
 }
 
 @keyframes crt-flicker {
@@ -1323,7 +1275,7 @@ body.game-body.theme-day {
 }
 
 /* Skip-link version PipBoy */
-:where(body.game-body) .skip-link:focus {
+:where(.terminal) .skip-link:focus {
   background: var(--crt);
   color: var(--bg);
   border-radius: 0;
@@ -1331,7 +1283,7 @@ body.game-body.theme-day {
 }
 
 /* Brand version PipBoy */
-:where(body.game-body) .brand {
+:where(.terminal) .brand {
   color: var(--crt-bright);
   font-family: 'Bungee', sans-serif;
   font-size: 1.1rem;
@@ -1339,7 +1291,7 @@ body.game-body.theme-day {
   text-shadow: var(--glow-strong);
 }
 
-:where(body.game-body) .brand__mark {
+:where(.terminal) .brand__mark {
   width: 28px;
   height: 28px;
   border-radius: 0;
@@ -1353,7 +1305,7 @@ body.game-body.theme-day {
 /* Boutons version PipBoy (terminal). :where() garde la spécificité d'un
    simple .btn pour que les variantes de game.css (--danger, :disabled…)
    continuent de l'emporter, exactement comme avant la refonte. */
-:where(body.game-body) .btn {
+:where(.terminal) .btn {
   padding: 0.7rem 1.3rem;
   border-radius: 0;
   border: 1px solid var(--crt);
@@ -1368,11 +1320,11 @@ body.game-body.theme-day {
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.2s ease;
 }
 
-:where(body.game-body) .btn::before { content: '[ '; }
-:where(body.game-body) .btn::after  { content: ' ]'; }
+:where(.terminal) .btn::before { content: '[ '; }
+:where(.terminal) .btn::after  { content: ' ]'; }
 
-:where(body.game-body) .btn:hover,
-:where(body.game-body) .btn:focus-visible {
+:where(.terminal) .btn:hover,
+:where(.terminal) .btn:focus-visible {
   transform: none;
   background: var(--crt);
   color: var(--bg);
@@ -1380,12 +1332,12 @@ body.game-body.theme-day {
   box-shadow: var(--glow-strong);
 }
 
-:where(body.game-body) .btn:active {
+:where(.terminal) .btn:active {
   transform: none;
   box-shadow: var(--glow-strong);
 }
 
-:where(body.game-body) .btn--primary {
+:where(.terminal) .btn--primary {
   background: rgba(46, 255, 107, 0.08);
   border-width: 2px;
   color: var(--crt-bright);
@@ -1395,25 +1347,125 @@ body.game-body.theme-day {
   background: rgba(255, 180, 58, 0.08);
 }
 
-:where(body.game-body) .btn--primary:hover,
-:where(body.game-body) .btn--primary:focus-visible {
+:where(.terminal) .btn--primary:hover,
+:where(.terminal) .btn--primary:focus-visible {
   background: var(--crt);
   color: var(--bg);
 }
 
-:where(body.game-body) .btn--ghost {
+:where(.terminal) .btn--ghost {
   border-style: dashed;
   background: transparent;
   color: var(--crt-bright);
 }
 
-:where(body.game-body) .btn--ghost:hover,
-:where(body.game-body) .btn--ghost:focus-visible {
+:where(.terminal) .btn--ghost:hover,
+:where(.terminal) .btn--ghost:focus-visible {
   background: var(--crt);
   color: var(--bg);
 }
 
-:where(body.game-body) .btn:focus-visible {
+:where(.terminal) .btn:focus-visible {
   outline: 2px dashed var(--gold);
   outline-offset: 3px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CYCLE JOUR / NUIT (décision 2026-06-12)
+   ────────────────────────────────────────────────────────────────
+   Piloté par l'heure locale du joueur + bascule manuelle (data-daytime
+   sur <body>, posé par main.js / game.js). Partagé public + ville.
+   Parti pris « contraste sûr » : on ne dévoie PAS les affiches crème
+   (cartes lisibles de jour comme de nuit) ; on superpose un voile
+   d'ambiance (multiply) — chaud et léger le jour, indigo crépusculaire
+   la nuit — qui assombrit et refroidit toute la scène de façon homogène.
+   Les panneaux .terminal (vert phosphore) sont indépendants du cycle. */
+body[data-daytime='day'] {
+  --daynight-tint: rgba(255, 206, 102, 0.05);
+  --veil-edge: rgba(22, 33, 58, 0.14);
+}
+
+body[data-daytime='night'] {
+  --daynight-tint: rgba(26, 36, 92, 0.34);
+  --veil-edge: rgba(7, 12, 38, 0.55);
+}
+
+/* Voile d'ambiance plein écran, présent sur les deux pages (public + ville),
+   sans toucher au HTML : pseudo-élément de <body>. pointer-events:none → les
+   clics passent ; z-index sous les modales (150) pour garder les dialogues nets. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  background: var(--daynight-tint, transparent);
+  mix-blend-mode: multiply;
+  transition: background 0.7s ease;
+}
+
+/* La nuit : on baisse l'éclat du soleil-rayons du hero (devient soleil couchant). */
+body[data-daytime='night'] .hero__sunburst {
+  opacity: 0.22;
+}
+
+/* ── Bascule jour / nuit (bouton injecté dans l'en-tête) ───── */
+.daynight-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.8rem;
+  border: 3px solid var(--vt-ink);
+  border-radius: 999px;
+  background: var(--vt-yellow);
+  color: var(--vt-blue-deep);
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+}
+
+.daynight-toggle:hover,
+.daynight-toggle:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 rgba(22, 33, 58, 0.3);
+  outline: none;
+}
+
+.daynight-toggle:focus-visible {
+  outline: 3px dashed var(--vt-red);
+  outline-offset: 3px;
+}
+
+.daynight-toggle__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+body[data-daytime='night'] .daynight-toggle {
+  background: var(--vt-blue-deep);
+  color: var(--vt-yellow);
+  border-color: var(--vt-yellow);
+}
+
+/* Variante PipBoy du bouton si jamais placé dans un en-tête .terminal. */
+:where(.terminal) .daynight-toggle {
+  border-radius: 0;
+  border: 1px solid var(--crt);
+  background: rgba(46, 255, 107, 0.08);
+  color: var(--crt-bright);
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  text-shadow: var(--glow-soft);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after,
+  .crt-overlay { transition: none; }
 }
