@@ -1,8 +1,10 @@
 /**
  * Cycle jour / nuit — Hordes Revival (décision figée 2026-06-12).
  *
- * Pose l'attribut `data-daytime` ("day" | "night") sur <body>. La palette
- * d'ambiance correspondante vit dans styles.css (voile multiply + tokens).
+ * Pose l'attribut `data-daytime` ("day" | "night") sur <body>. Ce seul
+ * attribut commute DEUX THÈMES radicalement distincts (pas un assombrissement) :
+ * JOUR = désert brûlant 60's, NUIT = invasion zombie. Tout vit dans styles.css
+ * (palette, typographie, illustrations et textures réécrites par thème).
  * Partagé entre la landing publique (main.js) et le terminal de ville
  * (game.js) : un seul comportement, une seule clé de préférence.
  *
@@ -18,8 +20,8 @@
 
 (function () {
   var PREF_KEY = 'hordes-revival:daytime'; // '' / absent = auto ; sinon 'day' | 'night'
-  var DAY_START = 7; // 07:00 → jour
-  var NIGHT_START = 20; // 20:00 → nuit
+  var DAY_START = 6; // 06:00 → jour (désert brûlant)
+  var NIGHT_START = 20; // 20:00 → nuit (invasion zombie) ; nuit = 20 h → 6 h
 
   /** Phase d'ambiance déduite de l'heure locale du joueur. */
   function clockDaytime() {

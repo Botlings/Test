@@ -37,7 +37,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600;700&family=Bungee&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600;700&family=Bungee&family=Creepster&family=Special+Elite&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -124,7 +124,7 @@
           </div>
 
           <div class="hero__poster" aria-hidden="true">
-            <div class="hero-emblem">
+            <div class="hero-emblem hero-emblem--day">
               <svg viewBox="0 0 200 240" role="img" aria-label="Affiche de propagande : la cité fortifiée tient bon face à la horde">
                 <!-- Ciel ocre brûlé -->
                 <rect x="0" y="0" width="200" height="240" fill="#e0a32e"/>
@@ -164,6 +164,59 @@
                 </g>
                 <!-- Cadre d'affiche -->
                 <rect x="3" y="3" width="194" height="234" fill="none" stroke="#2a1b10" stroke-width="5"/>
+              </svg>
+            </div>
+            <div class="hero-emblem hero-emblem--night">
+              <svg viewBox="0 0 200 240" role="img" aria-label="Affiche d'alerte : la horde déferle sur la cité sous une lune de sang">
+                <defs>
+                  <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#3a0608"/>
+                    <stop offset="0.55" stop-color="#190406"/>
+                    <stop offset="1" stop-color="#080203"/>
+                  </linearGradient>
+                </defs>
+                <!-- Ciel rouge sang -->
+                <rect x="0" y="0" width="200" height="240" fill="url(#nsky)"/>
+                <!-- Halo + lune de sang -->
+                <circle cx="142" cy="56" r="46" fill="#7a0b0c" opacity="0.45"/>
+                <circle cx="142" cy="56" r="30" fill="#c11a1c"/>
+                <circle cx="142" cy="56" r="30" fill="none" stroke="#2a0204" stroke-width="2"/>
+                <circle cx="133" cy="49" r="7" fill="#8c1012" opacity="0.75"/>
+                <circle cx="152" cy="63" r="5" fill="#8c1012" opacity="0.6"/>
+                <circle cx="148" cy="46" r="3.5" fill="#8c1012" opacity="0.6"/>
+                <!-- Cité fortifiée lointaine, lueur d'incendie -->
+                <g stroke="#120203" stroke-width="2" stroke-linejoin="round">
+                  <rect x="68" y="150" width="64" height="36" fill="#1f0d10"/>
+                  <path d="M68 150 l0 -6 7 0 0 6 7 0 0 -6 7 0 0 6 7 0 0 -6 7 0 0 6 7 0 0 -6 7 0 0 6 7 0 0 -6 7 0 0 6" fill="#1f0d10"/>
+                  <rect x="92" y="130" width="16" height="56" fill="#160a0c"/>
+                  <rect x="96" y="142" width="8" height="9" fill="#ff7a1a"/>
+                </g>
+                <!-- Lueurs d'incendie derrière les remparts -->
+                <path d="M74 150 q6 -12 12 0 z" fill="#ff6a18" opacity="0.8"/>
+                <path d="M112 152 q5 -10 10 0 z" fill="#ff8a22" opacity="0.7"/>
+                <!-- Sol calciné -->
+                <path d="M0 172 q50 -12 100 -2 q50 10 100 -4 L200 240 L0 240 Z" fill="#0b0304"/>
+                <!-- HORDE au premier plan : silhouettes massives, bras tendus -->
+                <g fill="#040102">
+                  <g transform="translate(22,182) scale(1.05)">
+                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 64 h-32 z"/>
+                    <path d="M-11 22 l-22 -10 4 -8 24 9 z"/><path d="M11 20 l23 -16 5 7 -24 17 z"/>
+                  </g>
+                  <g transform="translate(62,196) scale(1.25)">
+                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 60 h-32 z"/>
+                    <path d="M-11 24 l-24 8 3 9 24 -9 z"/><path d="M11 22 l22 -12 5 8 -23 12 z"/>
+                  </g>
+                  <g transform="translate(112,190) scale(1.15)">
+                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 62 h-32 z"/>
+                    <path d="M-11 20 l-23 -14 5 -7 23 14 z"/><path d="M11 24 l24 6 -3 9 -24 -7 z"/>
+                  </g>
+                  <g transform="translate(158,198) scale(1.3)">
+                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 58 h-32 z"/>
+                    <path d="M-11 22 l-22 -8 3 -9 23 9 z"/><path d="M11 20 l23 -16 5 7 -24 17 z"/>
+                  </g>
+                </g>
+                <!-- Cadre d'affiche sanglant -->
+                <rect x="3" y="3" width="194" height="234" fill="none" stroke="#7a0b0c" stroke-width="5"/>
               </svg>
             </div>
             <p class="hero__poster-stamp">Cité&nbsp;84 · Tenez la nuit</p>

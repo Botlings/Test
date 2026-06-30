@@ -737,13 +737,13 @@ body[data-phase='night'] .status-pill--phase {
 .modal.terminal::after { display: none; }
 
 /* CYCLE JOUR/NUIT — protection du terminal (cf. styles.css, body[data-daytime]).
-   La nuit, le voile multiply plein écran (body::after, z-90) éteint la scène
-   en noir/rouge sang : c'est voulu pour la VILLE post-apo. Mais les panneaux
-   verts « informatiques » doivent rester indépendants du cycle et lisibles.
-   On remonte donc les panneaux terminal EN FLUX au-dessus du voile (z-95),
-   toujours sous la vignette (body::before, z-100) et les modales (z-150, qui
-   sont déjà protégées). Résultat : la ville bascule dans l'horreur, le terminal
-   garde son éclat phosphore. */
+   La nuit, la ville bascule dans une scène d'horreur (palette cendre/sang) et
+   une brume cramoisie plein écran monte de l'horizon (body::after, screen, z-90).
+   Les panneaux verts « informatiques » doivent rester indépendants du cycle et
+   ne PAS être teintés de rouge : on les remonte EN FLUX au-dessus de la brume
+   (z-95), toujours sous la vignette (body::before, z-100) et les modales (z-150,
+   déjà protégées). Résultat : la ville bascule dans l'horreur, le terminal garde
+   son éclat phosphore. */
 .card--map,
 .card--bank,
 .card--log,
