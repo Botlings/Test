@@ -5,8 +5,8 @@
  * - Capture des inscriptions newsletter : validation client, anti-doublon
  *   et stockage local des emails capturés en attendant un vrai backend.
  *
- * Note : la landing publique est en thème Vault-Tec 60's (pas de bascule
- * CRT vert/ambre). Le skin PipBoy est réservé au terminal de jeu.
+ * Note : la landing publique est en thème horreur post-apo 60's (pas de
+ * bascule CRT vert/ambre). Le terminal vert phosphore est réservé au jeu.
  */
 'use strict';
 

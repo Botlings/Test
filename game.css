@@ -1,9 +1,9 @@
 /* Hordes Revival — Tableau de bord de la ville.
    ───────────────────────────────────────────────────────────────
-   DÉCISION FIGÉE (2026-06-12) :
-   • La VILLE et tout le public sont en RÉCLAME VAULT-TEC 60's
-     (crème / bleu / jaune / rouge, Archivo Black + Oswald). C'est le
-     thème par défaut : ces composants utilisent les tokens --vt-*.
+   DÉCISION FIGÉE (DA horreur post-apo 60's) :
+   • La VILLE et tout le public sont en HORREUR POST-APO 60's SABLONNEUSE
+     (sable / rouille / ocre / rouge sang, Archivo Black + Oswald). C'est
+     le thème par défaut : ces composants utilisent les tokens --pa-*.
    • Le TERMINAL VERT PHOSPHORE + CRT n'habille QUE les interfaces
      « informatiques » : carte du désert, inventaire + défense,
      constantes du citoyen, journal de la ville et rapport de nuit
@@ -39,7 +39,7 @@
 }
 
 /* ════════════════════════════════════════════════════════════════
-   EN-TÊTE DE LA VILLE (Vault-Tec)
+   EN-TÊTE DE LA VILLE (réclame post-apo)
    ════════════════════════════════════════════════════════════════ */
 .game-header {
   position: sticky;
@@ -49,8 +49,8 @@
   align-items: center;
   gap: 1rem;
   padding: 0.65rem clamp(0.9rem, 4vw, 2.5rem);
-  background: var(--vt-cream);
-  border-bottom: 3px solid var(--vt-blue);
+  background: var(--pa-sand);
+  border-bottom: 3px solid var(--pa-rust);
   box-shadow: 0 3px 0 rgba(34, 20, 10, 0.12);
   flex-wrap: wrap;
 }
@@ -68,9 +68,9 @@
   gap: 0.35rem;
   padding: 0.2rem 0.7rem;
   border-radius: 999px;
-  background: var(--vt-paper);
-  border: 2px solid var(--vt-ink);
-  color: var(--vt-ink);
+  background: var(--pa-paper);
+  border: 2px solid var(--pa-ink);
+  color: var(--pa-ink);
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   font-size: 0.85rem;
@@ -79,25 +79,25 @@
 }
 
 .status-pill--day {
-  color: var(--vt-yellow-deep);
-  border-color: var(--vt-yellow-deep);
+  color: var(--pa-ochre-deep);
+  border-color: var(--pa-ochre-deep);
 }
 
 .status-pill--phase {
-  color: var(--vt-blue);
-  border-color: var(--vt-blue);
+  color: var(--pa-rust);
+  border-color: var(--pa-rust);
 }
 
 body[data-phase='night'] .status-pill--phase {
-  background: var(--vt-blue-deep);
-  color: var(--vt-yellow);
-  border-color: var(--vt-yellow);
+  background: var(--pa-rust-deep);
+  color: var(--pa-ochre);
+  border-color: var(--pa-ochre);
 }
 
 .status-pill--threat {
   color: #fff;
-  background: var(--vt-red);
-  border-color: var(--vt-red-deep);
+  background: var(--pa-blood);
+  border-color: var(--pa-blood-deep);
 }
 
 .game-header__account {
@@ -112,7 +112,7 @@ body[data-phase='night'] .status-pill--phase {
   font-family: 'Oswald', sans-serif;
   font-size: 0.92rem;
   font-weight: 600;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   letter-spacing: 0.03em;
 }
 
@@ -133,14 +133,14 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .btn--danger {
-  background: var(--vt-red);
+  background: var(--pa-blood);
   color: #fff;
-  border-color: var(--vt-ink);
+  border-color: var(--pa-ink);
 }
 
 .btn--danger:hover,
 .btn--danger:focus-visible {
-  background: var(--vt-red-deep);
+  background: var(--pa-blood-deep);
   color: #fff;
 }
 
@@ -153,10 +153,10 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   BANDEAU DE CONFIG API (Vault-Tec — alerte)
+   BANDEAU DE CONFIG API (réclame post-apo — alerte)
    ════════════════════════════════════════════════════════════════ */
 .api-banner {
-  border: 3px solid var(--vt-red);
+  border: 3px solid var(--pa-blood);
   background: rgba(200, 38, 44, 0.08);
   border-radius: var(--radius);
   padding: 1rem 1.2rem;
@@ -169,7 +169,7 @@ body[data-phase='night'] .status-pill--phase {
   font-family: 'Archivo Black', sans-serif;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
-  color: var(--vt-red);
+  color: var(--pa-blood);
   text-transform: uppercase;
   margin-bottom: 0.6rem;
 }
@@ -180,17 +180,17 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .api-banner p {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-size: 0.95rem;
 }
 
 .api-banner code {
-  background: var(--vt-blue);
+  background: var(--pa-rust);
   padding: 0.05rem 0.45rem;
   border-radius: 4px;
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.92rem;
-  color: var(--vt-yellow);
+  color: var(--pa-ochre);
 }
 
 .api-banner__form {
@@ -206,7 +206,7 @@ body[data-phase='night'] .status-pill--phase {
   font-size: 0.9rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -216,8 +216,8 @@ body[data-phase='night'] .status-pill--phase {
 .api-banner__form input {
   padding: 0.55rem 0.75rem;
   background: #fff;
-  color: var(--vt-ink);
-  border: 3px solid var(--vt-ink);
+  color: var(--pa-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   font-family: 'Oswald', sans-serif;
   font-size: 1rem;
@@ -229,18 +229,18 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
 }
 
-.api-banner__hint[data-state='error'] { color: var(--vt-red); }
-.api-banner__hint[data-state='success'] { color: var(--vt-blue); }
+.api-banner__hint[data-state='error'] { color: var(--pa-blood); }
+.api-banner__hint[data-state='success'] { color: var(--pa-rust); }
 
 /* ════════════════════════════════════════════════════════════════
-   CARTES — base Vault-Tec (affiche), surcharge `.terminal` (verte)
+   CARTES — base réclame post-apo (affiche), surcharge `.terminal` (verte)
    ════════════════════════════════════════════════════════════════ */
 .card {
-  background: var(--vt-paper);
-  border: 3px solid var(--vt-ink);
+  background: var(--pa-paper);
+  border: 3px solid var(--pa-ink);
   border-radius: var(--radius);
   padding: 0;
   box-shadow: var(--shadow-soft);
@@ -258,15 +258,15 @@ body[data-phase='night'] .status-pill--phase {
   gap: 0.6rem;
   flex-wrap: wrap;
   padding: 0.6rem 1rem;
-  background: var(--vt-cream-2);
-  border-bottom: 3px solid var(--vt-ink);
+  background: var(--pa-sand-deep);
+  border-bottom: 3px solid var(--pa-ink);
 }
 
 .card__title {
   font-family: 'Archivo Black', 'Oswald', sans-serif;
   font-size: 1rem;
   font-weight: 400;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   letter-spacing: 0.01em;
   text-transform: uppercase;
 }
@@ -276,7 +276,7 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-transform: uppercase;
 }
 
@@ -285,8 +285,8 @@ body[data-phase='night'] .status-pill--phase {
   min-width: 1.6rem;
   padding: 0 0.45rem;
   border-radius: 999px;
-  background: var(--vt-blue);
-  color: var(--vt-yellow);
+  background: var(--pa-rust);
+  color: var(--pa-ochre);
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
@@ -351,7 +351,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ÉCRAN AUTH (Vault-Tec)
+   ÉCRAN AUTH (réclame post-apo)
    ════════════════════════════════════════════════════════════════ */
 .screen--auth {
   flex: 1;
@@ -362,8 +362,8 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .auth-card {
-  background: var(--vt-paper);
-  border: 4px solid var(--vt-ink);
+  background: var(--pa-paper);
+  border: 4px solid var(--pa-ink);
   border-radius: var(--radius);
   padding: 1.8rem clamp(1.4rem, 3vw, 2.5rem);
   box-shadow: var(--shadow);
@@ -382,7 +382,7 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.14em;
-  color: var(--vt-red);
+  color: var(--pa-blood);
   text-align: center;
   text-transform: uppercase;
 }
@@ -390,15 +390,15 @@ body[data-phase='night'] .status-pill--phase {
 .auth-card__title {
   font-family: 'Archivo Black', Impact, sans-serif;
   font-size: 1.6rem;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.01em;
-  text-shadow: 2px 2px 0 var(--vt-yellow);
+  text-shadow: 2px 2px 0 var(--pa-ochre);
 }
 
 .auth-card__lead {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-align: center;
   font-size: 1rem;
   margin-top: -0.5rem;
@@ -406,8 +406,8 @@ body[data-phase='night'] .status-pill--phase {
 
 .auth-tabs {
   display: flex;
-  background: var(--vt-cream-2);
-  border: 3px solid var(--vt-ink);
+  background: var(--pa-sand-deep);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   padding: 0;
   overflow: hidden;
@@ -417,8 +417,8 @@ body[data-phase='night'] .status-pill--phase {
   flex: 1;
   background: transparent;
   border: none;
-  border-right: 3px solid var(--vt-ink);
-  color: var(--vt-ink-soft);
+  border-right: 3px solid var(--pa-ink);
+  color: var(--pa-ink-soft);
   padding: 0.55rem 0.8rem;
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
@@ -432,8 +432,8 @@ body[data-phase='night'] .status-pill--phase {
 .auth-tab:last-child { border-right: none; }
 
 .auth-tab.is-active {
-  background: var(--vt-blue);
-  color: var(--vt-yellow);
+  background: var(--pa-rust);
+  color: var(--pa-ochre);
 }
 
 .auth-form {
@@ -442,7 +442,7 @@ body[data-phase='night'] .status-pill--phase {
   gap: 0.95rem;
 }
 
-/* ── Champs de formulaire (Vault-Tec) ───────────────────────── */
+/* ── Champs de formulaire (réclame post-apo) ───────────────────────── */
 .field {
   display: flex;
   flex-direction: column;
@@ -454,7 +454,7 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-transform: uppercase;
 }
 
@@ -463,8 +463,8 @@ body[data-phase='night'] .status-pill--phase {
 .field textarea {
   padding: 0.6rem 0.75rem;
   background: #fff;
-  color: var(--vt-ink);
-  border: 3px solid var(--vt-ink);
+  color: var(--pa-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   font-family: 'Oswald', sans-serif;
   font-size: 1rem;
@@ -476,12 +476,12 @@ body[data-phase='night'] .status-pill--phase {
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: var(--vt-blue);
+  border-color: var(--pa-rust);
   box-shadow: var(--shadow-soft);
 }
 
 .field input[aria-invalid='true'] {
-  border-color: var(--vt-red);
+  border-color: var(--pa-blood);
   background: #fff2f1;
 }
 
@@ -492,26 +492,26 @@ body[data-phase='night'] .status-pill--phase {
   font-size: 0.9rem;
   letter-spacing: 0.02em;
   padding: 0.5rem 0.75rem;
-  background: var(--vt-red);
-  border: 2px solid var(--vt-red-deep);
+  background: var(--pa-blood);
+  border: 2px solid var(--pa-blood-deep);
   border-radius: 6px;
 }
 
 .form-error::before { content: '⚠ '; }
 
 /* ════════════════════════════════════════════════════════════════
-   ÉCRAN LOBBY (Vault-Tec)
+   ÉCRAN LOBBY (réclame post-apo)
    ════════════════════════════════════════════════════════════════ */
 .screen__header h1 {
   font-family: 'Archivo Black', Impact, sans-serif;
   font-size: clamp(1.6rem, 4vw, 2.2rem);
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--vt-yellow);
+  text-shadow: 2px 2px 0 var(--pa-ochre);
 }
 
 .screen__header p {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   margin-top: 0.4rem;
   max-width: 60ch;
   font-size: 1rem;
@@ -551,9 +551,9 @@ body[data-phase='night'] .status-pill--phase {
   gap: 0.8rem;
   padding: 0.75rem 0.95rem;
   background: rgba(255, 255, 255, 0.5);
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-left-width: 8px;
-  border-left-color: var(--vt-blue);
+  border-left-color: var(--pa-rust);
   border-radius: 0 8px 8px 0;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
@@ -573,7 +573,7 @@ body[data-phase='night'] .status-pill--phase {
 .town-row__name {
   font-family: 'Archivo Black', 'Oswald', sans-serif;
   font-weight: 400;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   font-size: 1.05rem;
   text-transform: uppercase;
   letter-spacing: 0.01em;
@@ -584,7 +584,7 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
@@ -592,7 +592,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .town-row__meta strong {
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   font-weight: 700;
 }
 
@@ -605,18 +605,18 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: var(--vt-cream-2);
-  border: 2px solid var(--vt-ink);
-  color: var(--vt-ink);
+  background: var(--pa-sand-deep);
+  border: 2px solid var(--pa-ink);
+  color: var(--pa-ink);
 }
 
-.badge--normal   { background: var(--vt-blue);   color: #fff; border-color: var(--vt-blue-deep); }
-.badge--hard     { background: var(--vt-yellow); color: var(--vt-ink); border-color: var(--vt-yellow-deep); }
-.badge--hardcore { background: var(--vt-red);    color: #fff; border-color: var(--vt-red-deep); }
+.badge--normal   { background: var(--pa-rust);   color: #fff; border-color: var(--pa-rust-deep); }
+.badge--hard     { background: var(--pa-ochre); color: var(--pa-ink); border-color: var(--pa-ochre-deep); }
+.badge--hardcore { background: var(--pa-blood);    color: #fff; border-color: var(--pa-blood-deep); }
 
 .lobby-empty {
   padding: 1rem 0.8rem 1.4rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-align: center;
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
@@ -638,14 +638,14 @@ body[data-phase='night'] .status-pill--phase {
 .town-header__title h1 {
   font-family: 'Archivo Black', Impact, sans-serif;
   font-size: clamp(1.6rem, 4vw, 2.2rem);
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--vt-yellow);
+  text-shadow: 2px 2px 0 var(--pa-ochre);
 }
 
 .town-header__title h1::before {
   content: '⌂ ';
-  color: var(--vt-red);
+  color: var(--pa-blood);
 }
 
 .town-header__sub {
@@ -657,7 +657,7 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-transform: uppercase;
   flex-wrap: wrap;
 }
@@ -738,7 +738,7 @@ body[data-phase='night'] .status-pill--phase {
 
 /* CYCLE JOUR/NUIT — protection du terminal (cf. styles.css, body[data-daytime]).
    La nuit, le voile multiply plein écran (body::after, z-90) éteint la scène
-   en noir/rouge sang : c'est voulu pour la VILLE Vault-Tec. Mais les panneaux
+   en noir/rouge sang : c'est voulu pour la VILLE post-apo. Mais les panneaux
    verts « informatiques » doivent rester indépendants du cycle et lisibles.
    On remonte donc les panneaux terminal EN FLUX au-dessus du voile (z-95),
    toujours sous la vignette (body::before, z-100) et les modales (z-150, qui
@@ -969,7 +969,7 @@ body[data-phase='night'] .status-pill--phase {
   color: var(--danger);
 }
 
-/* ── Inventaire de la ville (jauges PipBoy) ──────────────── */
+/* ── Inventaire de la ville (jauges terminal) ──────────────── */
 .bank {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1205,13 +1205,13 @@ body[data-phase='night'] .status-pill--phase {
 .stat--danger  .stat__value { color: var(--danger); text-shadow: 0 0 6px rgba(255, 90, 71, 0.55); }
 
 /* ════════════════════════════════════════════════════════════════
-   ACTIONS DU JOUR (Vault-Tec — surface d'action)
+   ACTIONS DU JOUR (réclame post-apo — surface d'action)
    ════════════════════════════════════════════════════════════════ */
 .actions__title {
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-top: 0.4rem;
@@ -1224,9 +1224,9 @@ body[data-phase='night'] .status-pill--phase {
   content: '';
   flex: 1;
   height: 3px;
-  background: var(--vt-yellow);
-  border-top: 1px solid var(--vt-blue);
-  border-bottom: 1px solid var(--vt-blue);
+  background: var(--pa-ochre);
+  border-top: 1px solid var(--pa-rust);
+  border-bottom: 1px solid var(--pa-rust);
 }
 
 .actions {
@@ -1249,9 +1249,9 @@ body[data-phase='night'] .status-pill--phase {
   gap: 0.15rem 0.7rem;
   padding: 0.6rem 0.8rem;
   background: rgba(255, 255, 255, 0.55);
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -1262,7 +1262,7 @@ body[data-phase='night'] .status-pill--phase {
 .action:focus-visible {
   transform: translate(-2px, -2px);
   box-shadow: var(--shadow-soft);
-  background: var(--vt-yellow);
+  background: var(--pa-ochre);
   outline: none;
 }
 
@@ -1279,10 +1279,10 @@ body[data-phase='night'] .status-pill--phase {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--vt-blue);
-  border: 2px solid var(--vt-ink);
+  background: var(--pa-rust);
+  border: 2px solid var(--pa-ink);
   border-radius: 6px;
-  color: var(--vt-yellow);
+  color: var(--pa-ochre);
 }
 
 .action__label {
@@ -1291,14 +1291,14 @@ body[data-phase='night'] .status-pill--phase {
   font-size: 1rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
 }
 
 .action__cost {
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -1306,14 +1306,14 @@ body[data-phase='night'] .status-pill--phase {
 .actions__hint {
   font-family: 'Oswald', sans-serif;
   font-size: 0.9rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   letter-spacing: 0.01em;
 }
 
-.actions__hint::before { content: 'ℹ '; color: var(--vt-blue); }
+.actions__hint::before { content: 'ℹ '; color: var(--pa-rust); }
 
 /* ════════════════════════════════════════════════════════════════
-   ROSTER — citoyens de la ville (Vault-Tec)
+   ROSTER — citoyens de la ville (réclame post-apo)
    ════════════════════════════════════════════════════════════════ */
 .roster {
   list-style: none;
@@ -1333,12 +1333,12 @@ body[data-phase='night'] .status-pill--phase {
   gap: 0.55rem;
   padding: 0.5rem 0.65rem;
   background: rgba(255, 255, 255, 0.5);
-  border: 2px solid var(--vt-ink);
+  border: 2px solid var(--pa-ink);
   border-radius: 6px;
 }
 
 .roster__item.is-self {
-  border-color: var(--vt-blue);
+  border-color: var(--pa-rust);
   background: rgba(255, 199, 44, 0.2);
 }
 
@@ -1352,7 +1352,7 @@ body[data-phase='night'] .status-pill--phase {
   font-weight: 600;
   font-size: 0.98rem;
   letter-spacing: 0.01em;
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1363,14 +1363,14 @@ body[data-phase='night'] .status-pill--phase {
   font-family: 'Oswald', sans-serif;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-transform: uppercase;
 }
 
 .roster__ap {
   font-family: 'Archivo Black', sans-serif;
   font-weight: 400;
-  color: var(--vt-yellow-deep);
+  color: var(--pa-ochre-deep);
   font-size: 0.9rem;
   min-width: 2.4rem;
   text-align: right;
@@ -1381,16 +1381,16 @@ body[data-phase='night'] .status-pill--phase {
   width: 0.65rem;
   height: 0.65rem;
   border-radius: 50%;
-  background: var(--vt-blue);
-  border: 1px solid var(--vt-ink);
+  background: var(--pa-rust);
+  border: 1px solid var(--pa-ink);
 }
 
 .roster__item.is-desert .roster__dot {
-  background: var(--vt-yellow);
+  background: var(--pa-ochre);
 }
 
 .roster__item.is-dead .roster__dot {
-  background: var(--vt-ink-soft);
+  background: var(--pa-ink-soft);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1447,17 +1447,17 @@ body[data-phase='night'] .status-pill--phase {
 .log__empty::before { content: '// '; color: var(--crt-dim); }
 
 /* ════════════════════════════════════════════════════════════════
-   TOAST (Vault-Tec)
+   TOAST (réclame post-apo)
    ════════════════════════════════════════════════════════════════ */
 .toast {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--vt-blue);
-  color: var(--vt-yellow);
+  background: var(--pa-rust);
+  color: var(--pa-ochre);
   padding: 0.7rem 1.2rem;
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   box-shadow: var(--shadow);
   z-index: 200;
@@ -1471,14 +1471,14 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .toast[data-state='error'] {
-  background: var(--vt-red);
+  background: var(--pa-blood);
   color: #fff;
-  border-color: var(--vt-red-deep);
+  border-color: var(--pa-blood-deep);
 }
 
 .toast[data-state='success'] {
-  background: var(--vt-blue);
-  color: var(--vt-yellow);
+  background: var(--pa-rust);
+  color: var(--pa-ochre);
 }
 
 @keyframes toast-in {
@@ -1487,7 +1487,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MODALES — coque Vault-Tec, surcharge `.terminal` (rapport / profil)
+   MODALES — coque réclame post-apo, surcharge `.terminal` (rapport / profil)
    ════════════════════════════════════════════════════════════════ */
 .modal {
   position: fixed;
@@ -1509,8 +1509,8 @@ body[data-phase='night'] .status-pill--phase {
 
 .modal__card {
   position: relative;
-  background: var(--vt-paper);
-  border: 4px solid var(--vt-ink);
+  background: var(--pa-paper);
+  border: 4px solid var(--pa-ink);
   border-radius: var(--radius);
   padding: 1.5rem clamp(1.2rem, 3vw, 2rem);
   box-shadow: var(--shadow);
@@ -1530,13 +1530,13 @@ body[data-phase='night'] .status-pill--phase {
 .modal__title {
   font-family: 'Archivo Black', Impact, sans-serif;
   font-size: 1.3rem;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--vt-yellow);
+  text-shadow: 2px 2px 0 var(--pa-ochre);
 }
 
 .modal__body {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-size: 1rem;
   display: flex;
   flex-direction: column;
@@ -1852,7 +1852,7 @@ body[data-phase='night'] .desert-grid {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   FORUM DE VILLE (Vault-Tec — surface sociale)
+   FORUM DE VILLE (réclame post-apo — surface sociale)
    ════════════════════════════════════════════════════════════════ */
 .card--forum {
   grid-column: span 2;
@@ -1875,8 +1875,8 @@ body[data-phase='night'] .desert-grid {
 
 .forum-tabs {
   display: inline-flex;
-  background: var(--vt-paper);
-  border: 2px solid var(--vt-ink);
+  background: var(--pa-paper);
+  border: 2px solid var(--pa-ink);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -1884,8 +1884,8 @@ body[data-phase='night'] .desert-grid {
 .forum-tab {
   background: transparent;
   border: 0;
-  border-right: 2px solid var(--vt-ink);
-  color: var(--vt-ink-soft);
+  border-right: 2px solid var(--pa-ink);
+  color: var(--pa-ink-soft);
   padding: 0.3rem 0.85rem;
   cursor: pointer;
   font-family: 'Oswald', sans-serif;
@@ -1899,8 +1899,8 @@ body[data-phase='night'] .desert-grid {
 .forum-tab:last-child { border-right: none; }
 
 .forum-tab.is-active {
-  color: var(--vt-yellow);
-  background: var(--vt-blue);
+  color: var(--pa-ochre);
+  background: var(--pa-rust);
 }
 
 .forum-panel {
@@ -1918,13 +1918,13 @@ body[data-phase='night'] .desert-grid {
 }
 
 .forum-toolbar__hint {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
 }
 
-.forum-toolbar__hint::before { content: 'ℹ '; color: var(--vt-blue); }
+.forum-toolbar__hint::before { content: 'ℹ '; color: var(--pa-rust); }
 
 .forum-threads,
 .activity-feed {
@@ -1940,7 +1940,7 @@ body[data-phase='night'] .desert-grid {
 
 .forum-threads__empty,
 .activity-feed__empty {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   font-size: 0.92rem;
@@ -1949,9 +1949,9 @@ body[data-phase='night'] .desert-grid {
 
 .thread-row {
   padding: 0.6rem 0.8rem;
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-left-width: 8px;
-  border-left-color: var(--vt-blue);
+  border-left-color: var(--pa-rust);
   border-radius: 0 8px 8px 0;
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
@@ -1967,7 +1967,7 @@ body[data-phase='night'] .desert-grid {
 
 .thread-row.is-closed {
   opacity: 0.7;
-  border-left-color: var(--vt-ink-soft);
+  border-left-color: var(--pa-ink-soft);
 }
 
 .thread-row__head {
@@ -1984,20 +1984,20 @@ body[data-phase='night'] .desert-grid {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 0.1rem 0.5rem;
-  border: 2px solid var(--vt-ink);
+  border: 2px solid var(--pa-ink);
   border-radius: 999px;
 }
 
-.thread-row__badge--discussion { color: var(--vt-ink); background: var(--vt-yellow); border-color: var(--vt-yellow-deep); }
-.thread-row__badge--vote       { color: #fff; background: var(--vt-blue); border-color: var(--vt-blue-deep); }
-.thread-row__badge--closed     { color: var(--vt-ink-soft); background: var(--vt-cream-2); }
+.thread-row__badge--discussion { color: var(--pa-ink); background: var(--pa-ochre); border-color: var(--pa-ochre-deep); }
+.thread-row__badge--vote       { color: #fff; background: var(--pa-rust); border-color: var(--pa-rust-deep); }
+.thread-row__badge--closed     { color: var(--pa-ink-soft); background: var(--pa-sand-deep); }
 
 .thread-row__title {
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.01em;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   flex: 1 1 auto;
 }
 
@@ -2006,7 +2006,7 @@ body[data-phase='night'] .desert-grid {
   flex-wrap: wrap;
   gap: 0.3rem 0.9rem;
   margin-top: 0.3rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
@@ -2014,7 +2014,7 @@ body[data-phase='night'] .desert-grid {
 }
 
 .thread-row__meta strong {
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   font-weight: 700;
 }
 
@@ -2024,7 +2024,7 @@ body[data-phase='night'] .desert-grid {
   gap: 0.5rem 0.75rem;
   align-items: baseline;
   padding: 0.45rem 0.4rem;
-  border-bottom: 2px solid var(--vt-cream-2);
+  border-bottom: 2px solid var(--pa-sand-deep);
 }
 
 .activity-feed__item:last-child {
@@ -2035,29 +2035,29 @@ body[data-phase='night'] .desert-grid {
   font-size: 1rem;
   width: 1.3rem;
   text-align: center;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
 }
 
 .activity-feed__text {
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   font-family: 'Oswald', sans-serif;
   font-size: 0.92rem;
   letter-spacing: 0.01em;
 }
 
 .activity-feed__text strong {
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   font-weight: 700;
 }
 
 .activity-feed__time {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Modales forum (création + lecture) — Vault-Tec ──────── */
+/* ── Modales forum (création + lecture) — réclame post-apo ──────── */
 .vote-options {
   display: flex;
   flex-direction: column;
@@ -2070,10 +2070,10 @@ body[data-phase='night'] .desert-grid {
 #thread-create-form textarea {
   width: 100%;
   padding: 0.55rem 0.7rem;
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   background: #fff;
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   font-family: 'Oswald', sans-serif;
   font-size: 1rem;
 }
@@ -2086,13 +2086,13 @@ body[data-phase='night'] .desert-grid {
 .vote-option-input:focus,
 .thread-view__reply-form textarea:focus,
 #thread-create-form textarea:focus {
-  border-color: var(--vt-blue);
+  border-color: var(--pa-rust);
   outline: none;
   box-shadow: var(--shadow-soft);
 }
 
 .thread-view__meta {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
@@ -2103,7 +2103,7 @@ body[data-phase='night'] .desert-grid {
 .thread-view__vote {
   margin-bottom: 0.8rem;
   padding: 0.7rem 0.8rem;
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   background: rgba(255, 199, 44, 0.15);
 }
@@ -2113,12 +2113,12 @@ body[data-phase='night'] .desert-grid {
   font-size: 1rem;
   letter-spacing: 0.02em;
   font-weight: 700;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-transform: uppercase;
   margin-bottom: 0.55rem;
 }
 
-.thread-view__vote-title::before { content: '☑ '; color: var(--vt-red); }
+.thread-view__vote-title::before { content: '☑ '; color: var(--pa-blood); }
 
 .vote-option-row {
   display: grid;
@@ -2135,21 +2135,21 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Oswald', sans-serif;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
-  color: var(--vt-ink);
+  color: var(--pa-ink);
 }
 
 .vote-option-row__radio {
   width: 16px;
   height: 16px;
-  accent-color: var(--vt-blue);
+  accent-color: var(--pa-rust);
 }
 
 .vote-option-row__bar {
   position: relative;
   flex: 1 1 auto;
   height: 10px;
-  background: var(--vt-cream-2);
-  border: 2px solid var(--vt-ink);
+  background: var(--pa-sand-deep);
+  border: 2px solid var(--pa-ink);
   border-radius: 999px;
   overflow: hidden;
   margin-left: 0.4rem;
@@ -2160,12 +2160,12 @@ body[data-phase='night'] .desert-grid {
   left: 0;
   top: 0;
   bottom: 0;
-  background: var(--vt-blue);
+  background: var(--pa-rust);
   transition: width 0.25s ease;
 }
 
 .vote-option-row__count {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
@@ -2173,7 +2173,7 @@ body[data-phase='night'] .desert-grid {
 }
 
 .vote-option-row.is-my-choice .vote-option-row__label {
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   font-weight: 700;
 }
 
@@ -2183,7 +2183,7 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Oswald', sans-serif;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-transform: uppercase;
 }
 
@@ -2200,7 +2200,7 @@ body[data-phase='night'] .desert-grid {
 
 .thread-view__message {
   padding: 0.55rem 0.7rem;
-  border: 2px solid var(--vt-ink);
+  border: 2px solid var(--pa-ink);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.55);
 }
@@ -2212,13 +2212,13 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Oswald', sans-serif;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-transform: uppercase;
   margin-bottom: 0.3rem;
 }
 
 .thread-view__message-head strong {
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   font-weight: 700;
 }
 
@@ -2227,26 +2227,26 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Oswald', sans-serif;
   font-size: 1rem;
   letter-spacing: 0.01em;
-  color: var(--vt-ink);
+  color: var(--pa-ink);
   line-height: 1.5;
 }
 
 .thread-view__messages-empty {
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   padding: 0.5rem 0;
 }
 
 .thread-view__closed-hint {
   margin: 0.5rem 0 0;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   text-align: center;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   CONSTRUCTIONS / catalogue de bâtiments (Vault-Tec — blueprints)
+   CONSTRUCTIONS / catalogue de bâtiments (réclame post-apo — blueprints)
    ════════════════════════════════════════════════════════════════ */
 .buildings {
   list-style: none;
@@ -2272,19 +2272,19 @@ body[data-phase='night'] .desert-grid {
 .buildings__empty {
   grid-column: 1 / -1;
   padding: 0.9rem;
-  border: 3px dashed var(--vt-ink);
+  border: 3px dashed var(--pa-ink);
   border-radius: 8px;
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   font-size: 1rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   text-align: center;
   letter-spacing: 0.02em;
 }
 
 .building {
   position: relative;
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.55);
   padding: 0.8rem 0.85rem 0.9rem;
@@ -2304,7 +2304,7 @@ body[data-phase='night'] .desert-grid {
 }
 
 .building.is-maxed {
-  border-color: var(--vt-yellow-deep);
+  border-color: var(--pa-ochre-deep);
   background:
     repeating-linear-gradient(
       45deg,
@@ -2319,7 +2319,7 @@ body[data-phase='night'] .desert-grid {
   align-items: center;
   gap: 0.55rem;
   padding-bottom: 0.35rem;
-  border-bottom: 2px solid var(--vt-cream-2);
+  border-bottom: 2px solid var(--pa-sand-deep);
 }
 
 .building__icon {
@@ -2331,7 +2331,7 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Archivo Black', 'Oswald', sans-serif;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
-  color: var(--vt-blue);
+  color: var(--pa-rust);
   text-transform: uppercase;
 }
 
@@ -2339,11 +2339,11 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
-  color: var(--vt-yellow);
+  color: var(--pa-ochre);
   letter-spacing: 0.03em;
   padding: 0.05rem 0.45rem;
   border-radius: 999px;
-  background: var(--vt-blue);
+  background: var(--pa-rust);
   white-space: nowrap;
 }
 
@@ -2351,7 +2351,7 @@ body[data-phase='night'] .desert-grid {
   margin: 0;
   font-family: 'Oswald', sans-serif;
   font-size: 0.86rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   line-height: 1.45;
 }
 
@@ -2365,12 +2365,12 @@ body[data-phase='night'] .desert-grid {
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--vt-ink);
+  color: var(--pa-ink);
 }
 
 .building__effects li::before {
   content: '▸ ';
-  color: var(--vt-red);
+  color: var(--pa-blood);
 }
 
 .building__cost {
@@ -2379,7 +2379,7 @@ body[data-phase='night'] .desert-grid {
   gap: 0.35rem 0.5rem;
   font-family: 'Oswald', sans-serif;
   font-size: 0.86rem;
-  color: var(--vt-ink-soft);
+  color: var(--pa-ink-soft);
   letter-spacing: 0.01em;
 }
 
@@ -2388,23 +2388,23 @@ body[data-phase='night'] .desert-grid {
   align-items: center;
   gap: 0.2rem;
   padding: 0.05rem 0.45rem;
-  border: 2px solid var(--vt-ink);
+  border: 2px solid var(--pa-ink);
   border-radius: 999px;
-  background: var(--vt-cream-2);
+  background: var(--pa-sand-deep);
 }
 
 .building__cost-item.is-missing {
   color: #fff;
-  background: var(--vt-red);
-  border-color: var(--vt-red-deep);
+  background: var(--pa-blood);
+  border-color: var(--pa-blood-deep);
 }
 
 .building__action {
   appearance: none;
-  border: 3px solid var(--vt-ink);
+  border: 3px solid var(--pa-ink);
   border-radius: 8px;
-  background: var(--vt-blue);
-  color: var(--vt-yellow);
+  background: var(--pa-rust);
+  color: var(--pa-ochre);
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
@@ -2419,19 +2419,19 @@ body[data-phase='night'] .desert-grid {
 .building__action:hover:not(:disabled) {
   transform: translate(-2px, -2px);
   box-shadow: var(--shadow);
-  background: var(--vt-blue-deep);
+  background: var(--pa-rust-deep);
 }
 
 .building__action:focus-visible {
-  outline: 3px dashed var(--vt-red);
+  outline: 3px dashed var(--pa-blood);
   outline-offset: 2px;
 }
 
 .building__action:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-  background: var(--vt-cream-2);
-  color: var(--vt-ink-soft);
+  background: var(--pa-sand-deep);
+  color: var(--pa-ink-soft);
 }
 
 .building__action.is-just-built {
@@ -2439,8 +2439,8 @@ body[data-phase='night'] .desert-grid {
 }
 
 @keyframes building-flash {
-  0%   { background: var(--vt-yellow); color: var(--vt-ink); box-shadow: var(--shadow); }
-  100% { background: var(--vt-blue); color: var(--vt-yellow); box-shadow: var(--shadow-soft); }
+  0%   { background: var(--pa-ochre); color: var(--pa-ink); box-shadow: var(--shadow); }
+  100% { background: var(--pa-rust); color: var(--pa-ochre); box-shadow: var(--shadow-soft); }
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -2451,7 +2451,7 @@ body[data-phase='night'] .desert-grid {
 .activity-feed,
 .thread-view__messages {
   scrollbar-width: thin;
-  scrollbar-color: var(--vt-ink-soft) transparent;
+  scrollbar-color: var(--pa-ink-soft) transparent;
 }
 
 .roster::-webkit-scrollbar,
@@ -2465,7 +2465,7 @@ body[data-phase='night'] .desert-grid {
 .forum-threads::-webkit-scrollbar-thumb,
 .activity-feed::-webkit-scrollbar-thumb,
 .thread-view__messages::-webkit-scrollbar-thumb {
-  background: var(--vt-ink-soft);
+  background: var(--pa-ink-soft);
   border-radius: 999px;
 }
 
@@ -2473,7 +2473,7 @@ body[data-phase='night'] .desert-grid {
 .forum-threads::-webkit-scrollbar-thumb:hover,
 .activity-feed::-webkit-scrollbar-thumb:hover,
 .thread-view__messages::-webkit-scrollbar-thumb:hover {
-  background: var(--vt-blue);
+  background: var(--pa-rust);
 }
 
 /* Scrollbars des panneaux terminal (vert) */

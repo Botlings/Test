@@ -37,7 +37,7 @@
     <style>
       /* Styles propres à la page de statut. Scopés sous .status pour ne pas
          fuir vers les composants partagés (.card, etc.). Hérite des tokens
-         Vault-Tec 60's de styles.css (:root). */
+         désert irradié 60's de styles.css (:root). */
       .status {
         max-width: var(--maxw);
         margin: 0 auto;
@@ -56,7 +56,7 @@
       .status__brand {
         font-family: 'Bungee', 'Archivo Black', sans-serif;
         font-size: clamp(1.5rem, 4vw, 2.2rem);
-        color: var(--vt-blue);
+        color: var(--pa-rust);
         letter-spacing: 0.5px;
         line-height: 1;
       }
@@ -74,7 +74,7 @@
       h1.status__title {
         font-family: 'Archivo Black', sans-serif;
         font-size: clamp(1.6rem, 5vw, 2.6rem);
-        color: var(--vt-ink);
+        color: var(--pa-ink);
         text-transform: uppercase;
         line-height: 1.05;
         margin: 0.2rem 0 1.4rem;
@@ -82,14 +82,14 @@
 
       /* Bannière globale */
       .global {
-        border: 3px solid var(--vt-line);
+        border: 3px solid var(--pa-line);
         border-radius: var(--radius);
         box-shadow: var(--shadow);
         padding: 1.4rem 1.6rem;
         display: flex;
         align-items: center;
         gap: 1.1rem;
-        background: var(--vt-paper);
+        background: var(--pa-paper);
       }
       .global[data-state='up'] {
         background: #e7f6e9;
@@ -98,12 +98,12 @@
       }
       .global[data-state='degraded'] {
         background: #fdf3d6;
-        border-color: var(--vt-yellow-deep);
+        border-color: var(--pa-ochre-deep);
         box-shadow: 6px 6px 0 rgba(232, 162, 0, 0.5);
       }
       .global[data-state='down'] {
         background: #f8e0e1;
-        border-color: var(--vt-red);
+        border-color: var(--pa-blood);
         box-shadow: 6px 6px 0 rgba(151, 21, 25, 0.5);
       }
       .global__badge {
@@ -111,16 +111,16 @@
         width: 46px;
         height: 46px;
         border-radius: 50%;
-        border: 3px solid var(--vt-line);
+        border: 3px solid var(--pa-line);
         display: grid;
         place-items: center;
         font-family: 'Bungee', sans-serif;
         font-size: 1.5rem;
-        background: var(--vt-cream);
+        background: var(--pa-sand);
       }
       .global[data-state='up'] .global__badge { background: #1f7a35; color: #fff; border-color: #155523; }
-      .global[data-state='degraded'] .global__badge { background: var(--vt-yellow); color: var(--vt-ink); }
-      .global[data-state='down'] .global__badge { background: var(--vt-red); color: #fff; border-color: var(--vt-red-deep); }
+      .global[data-state='degraded'] .global__badge { background: var(--pa-ochre); color: var(--pa-ink); }
+      .global[data-state='down'] .global__badge { background: var(--pa-blood); color: #fff; border-color: var(--pa-blood-deep); }
       .global__label {
         font-family: 'Archivo Black', sans-serif;
         font-size: clamp(1.05rem, 3vw, 1.4rem);
@@ -129,7 +129,7 @@
       }
       .global__sub {
         font-size: 0.95rem;
-        color: var(--vt-ink-soft);
+        color: var(--pa-ink-soft);
       }
 
       .status__controls {
@@ -140,15 +140,15 @@
         gap: 0.6rem 1rem;
         margin: 1.4rem 0 0.8rem;
         font-size: 0.92rem;
-        color: var(--vt-ink-soft);
+        color: var(--pa-ink-soft);
       }
       .status__controls code {
         font-family: 'Oswald', monospace;
-        background: var(--vt-cream-2);
-        border: 1px solid var(--vt-line);
+        background: var(--pa-sand-deep);
+        border: 1px solid var(--pa-line);
         padding: 0.1rem 0.5rem;
         border-radius: 5px;
-        color: var(--vt-ink);
+        color: var(--pa-ink);
       }
       .status__refresh {
         font-family: 'Oswald', sans-serif;
@@ -157,9 +157,9 @@
         letter-spacing: 1px;
         font-size: 0.85rem;
         cursor: pointer;
-        background: var(--vt-yellow);
-        color: var(--vt-ink);
-        border: 2.5px solid var(--vt-line);
+        background: var(--pa-ochre);
+        color: var(--pa-ink);
+        border: 2.5px solid var(--pa-line);
         border-radius: 7px;
         padding: 0.45rem 1rem;
         box-shadow: var(--shadow-soft);
@@ -176,8 +176,8 @@
         margin-top: 1.1rem;
       }
       .status-card {
-        background: var(--vt-paper);
-        border: 3px solid var(--vt-line);
+        background: var(--pa-paper);
+        border: 3px solid var(--pa-line);
         border-radius: var(--radius);
         box-shadow: var(--shadow-soft);
         padding: 1.1rem 1.2rem;
@@ -192,14 +192,14 @@
         width: 15px;
         height: 15px;
         border-radius: 50%;
-        border: 2px solid var(--vt-line);
+        border: 2px solid var(--pa-line);
         flex: 0 0 auto;
-        background: var(--vt-ink-soft);
+        background: var(--pa-ink-soft);
       }
       .status-card__dot[data-state='up'] { background: #2bd14e; box-shadow: 0 0 0 3px rgba(43, 209, 78, 0.25); }
-      .status-card__dot[data-state='degraded'] { background: var(--vt-yellow); box-shadow: 0 0 0 3px rgba(255, 199, 44, 0.3); }
-      .status-card__dot[data-state='down'] { background: var(--vt-red); box-shadow: 0 0 0 3px rgba(200, 38, 44, 0.25); }
-      .status-card__dot[data-state='pending'] { background: var(--vt-ink-soft); animation: blink 1s steps(2, start) infinite; }
+      .status-card__dot[data-state='degraded'] { background: var(--pa-ochre); box-shadow: 0 0 0 3px rgba(255, 199, 44, 0.3); }
+      .status-card__dot[data-state='down'] { background: var(--pa-blood); box-shadow: 0 0 0 3px rgba(200, 38, 44, 0.25); }
+      .status-card__dot[data-state='pending'] { background: var(--pa-ink-soft); animation: blink 1s steps(2, start) infinite; }
       @keyframes blink { 50% { opacity: 0.3; } }
 
       .status-card__name {
@@ -210,7 +210,7 @@
       }
       .status-card__desc {
         font-size: 0.88rem;
-        color: var(--vt-ink-soft);
+        color: var(--pa-ink-soft);
         margin-bottom: 0.7rem;
         min-height: 2.4em;
       }
@@ -219,7 +219,7 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 0.6rem;
-        border-top: 1.5px dashed var(--vt-line);
+        border-top: 1.5px dashed var(--pa-line);
         padding-top: 0.55rem;
       }
       .status-card__state {
@@ -230,18 +230,18 @@
         font-size: 0.95rem;
       }
       .status-card[data-state='up'] .status-card__state { color: #1f7a35; }
-      .status-card[data-state='degraded'] .status-card__state { color: var(--vt-yellow-deep); }
-      .status-card[data-state='down'] .status-card__state { color: var(--vt-red); }
+      .status-card[data-state='degraded'] .status-card__state { color: var(--pa-ochre-deep); }
+      .status-card[data-state='down'] .status-card__state { color: var(--pa-blood); }
       .status-card__meta {
         font-family: 'Oswald', monospace;
         font-size: 0.82rem;
-        color: var(--vt-ink-soft);
+        color: var(--pa-ink-soft);
       }
 
       .status__foot {
         margin-top: 2.4rem;
         font-size: 0.85rem;
-        color: var(--vt-ink-soft);
+        color: var(--pa-ink-soft);
         text-align: center;
         line-height: 1.7;
       }
