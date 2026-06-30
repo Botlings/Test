@@ -1560,6 +1560,103 @@ body[data-daytime='night'] .daynight-toggle {
   box-shadow: none;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   TEXTURE MÉTAL USÉ — « VIEILLE CARAVANE DU DÉSERT » (mode JOUR)
+   ────────────────────────────────────────────────────────────────
+   DÉCISION HUMAINE (2026-06-12) : affiner le thème JOUR avec de la tôle
+   oxydée façon vieille caravane abandonnée — tôle ondulée, plaques de
+   rouille, peinture écaillée, rivets apparents, reflet de chaleur — en
+   COMPLÉMENT des affiches de propagande craquelées et de la typographie
+   vintage condensée (qui restent inchangées).
+
+   Implémentation 100 % cohérente avec le système de tokens : un seul
+   token `--metal-sheet` (empilement de dégradés, pur CSS, aucune image
+   externe — comme la horde nocturne en data-URI SVG) appliqué en
+   `background-image` PAR-DESSUS la couleur de base sable des panneaux.
+   Les dégradés sont en rgba → le sable/papier transparaît dessous, ce qui
+   produit la tôle peinte+écaillée sans masquer le contenu.
+
+   ⚠ NUIT : `--metal-sheet` repasse à `none` → la scène d'invasion cendre/
+   sang reste strictement inchangée (la tôle est une affaire de plein jour).
+   ⚠ Aucune fuite vers le terminal vert : on ne cible que des classes de la
+   landing publique (vérifié : absentes de game.html).
+   ════════════════════════════════════════════════════════════════ */
+:root {
+  /* Tôle de caravane oxydée. Ordre des couches = avant → arrière :
+       1. rivets bombés aux 4 coins (bossage clair + anneau d'ombre) ;
+       2. reflet de chaleur diagonal qui glisse sur la tôle ;
+       3. éclats de peinture sable encore accrochés (peinture écaillée) ;
+       4. plaques de rouille mouchetées (oxyde affleurant) ;
+       5. nervures verticales de tôle ondulée ;
+       6. grain de tôle brossée. */
+  --metal-sheet:
+    radial-gradient(circle at 12px 12px, rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
+    radial-gradient(circle at calc(100% - 12px) 12px, rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
+    radial-gradient(circle at 12px calc(100% - 12px), rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
+    linear-gradient(108deg, transparent 0%, rgba(255, 244, 208, 0.11) 16%, transparent 34%),
+    radial-gradient(ellipse 13% 9% at 34% 64%, rgba(233, 212, 161, 0.34), transparent 70%),
+    radial-gradient(ellipse 9% 13% at 73% 27%, rgba(221, 199, 146, 0.30), transparent 72%),
+    radial-gradient(ellipse 40% 30% at 16% 22%, rgba(120, 48, 18, 0.24), transparent 60%),
+    radial-gradient(ellipse 34% 44% at 84% 76%, rgba(94, 36, 16, 0.22), transparent 62%),
+    radial-gradient(ellipse 24% 19% at 60% 42%, rgba(156, 67, 34, 0.17), transparent 65%),
+    repeating-linear-gradient(90deg, rgba(255, 247, 224, 0.05) 0 2px, rgba(40, 24, 12, 0.07) 2px 5px, rgba(0, 0, 0, 0.05) 5px 8px),
+    repeating-linear-gradient(90deg, rgba(40, 24, 12, 0.045) 0 1px, transparent 1px 3px);
+
+  /* Couture de rivets (caravane) : une rangée de bossages bombés tuilée
+     horizontalement, posée en bord haut/bas des grands panneaux carrosserie. */
+  --metal-seam:
+    radial-gradient(circle, rgba(255, 240, 210, 0.5) 0 1px, rgba(38, 22, 10, 0.66) 1px 2.4px, transparent 3px)
+    0 50% / 24px 100% repeat-x;
+}
+
+/* NUIT : pas de tôle — l'invasion zombie reste cendre/sang, intacte. */
+body[data-daytime='night'] {
+  --metal-sheet: none;
+}
+
+/* Carrosserie en tôle oxydée : la texture se superpose à la couleur de base
+   sable déjà posée par chaque règle (background-color conservé, on ne touche
+   qu'à background-image). Affiches (.hero__poster), boutons et terminal exclus. */
+.site-header,
+.site-footer,
+.phase,
+.feature,
+.survive .card,
+.faq-item,
+.milestone,
+.leaderboard__panel,
+.newsletter__inner,
+.hero__meta li {
+  background-image: var(--metal-sheet);
+}
+
+/* Couture de rivets le long des arêtes du bandeau de tête et du pied —
+   la « tôle » de la caravane boulonnée sur son châssis. */
+.site-header::after,
+.site-footer::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--metal-seam);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.site-header { position: sticky; } /* (déjà sticky : ancre le ::after de rivets) */
+.site-header::after { bottom: 0; }
+
+.site-footer { position: relative; }
+.site-footer::before { top: 0; }
+
+/* La nuit, plus de rivets : la couture disparaît avec la tôle. */
+body[data-daytime='night'] .site-header::after,
+body[data-daytime='night'] .site-footer::before {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   body::after,
   body::before { transition: none; }
