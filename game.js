@@ -730,6 +730,9 @@
     $('zone-fight-btn').addEventListener('click', function () {
       sendAction({ type: 'fight' });
     });
+    $('zone-loot-event-btn').addEventListener('click', function () {
+      sendAction({ type: 'loot-event' });
+    });
     $('zone-return-btn').addEventListener('click', function () {
       sendAction({ type: 'move-zone', x: 0, y: 0 });
     });
@@ -909,6 +912,18 @@
     highway: 'Route',
     wasteland: 'Friche radioactive',
   };
+  var EVENT_ICONS = {
+    'survivor-cache': '🎁',
+    'abandoned-vehicle': '🚚',
+    'zombie-nest': '🕸',
+    'sandstorm': '🌪',
+  };
+  var EVENT_LABELS = {
+    'survivor-cache': 'Cache de survivant',
+    'abandoned-vehicle': 'Véhicule abandonné',
+    'zombie-nest': 'Nid de zombies',
+    'sandstorm': 'Tempête de sable',
+  };
 
   function isAdjacentCell(ax, ay, bx, by) {
     if (ax === bx && ay === by) return false;
@@ -970,7 +985,8 @@
           && self.position.x === x && self.position.y === y;
         var fromX = selfInTown ? 0 : selfX;
         var fromY = selfInTown ? 0 : selfY;
-        var accessible = canMove && !isCurrent
+        var stormBound = !!zone.event && zone.event.kind === 'sandstorm';
+        var accessible = canMove && !isCurrent && !stormBound
           && isAdjacentCell(fromX, fromY, x, y);
         html += renderDesertCell(zone, { isCurrent: isCurrent, accessible: accessible, citizens: here, selfId: state.yourCitizenId });
       }
@@ -1033,12 +1049,20 @@
     if (zone.zombies > 0) classes += ' desert-cell--has-zombies';
     if (zone.distance === 2) classes += ' desert-cell--danger-2';
     if (zone.distance >= 3) classes += ' desert-cell--danger-3';
+    var event = zone.event || null;
+    if (event) classes += ' desert-cell--event desert-cell--event-' + event.kind;
 
     var icon = TERRAIN_ICONS[zone.terrain] || '·';
     var lootCount = (zone.loot.wood || 0) + (zone.loot.metal || 0) + (zone.loot.water || 0);
     var lootLine = zone.discovered ? (lootCount + ' obj.') : '?';
     var zombiesLine = zone.discovered && zone.zombies > 0 ? '🧟 × ' + zone.zombies : '';
     var label = 'Zone (' + zone.x + ',' + zone.y + ') — ' + (TERRAIN_LABELS[zone.terrain] || zone.terrain);
+    if (event) label += ' — ' + (EVENT_LABELS[event.kind] || event.kind);
+    // Le badge d'événement est visible même sur une zone non découverte (une
+    // tempête de sable ou une épave se repèrent de loin) : c'est un appât.
+    var eventBadge = event
+      ? '<span class="desert-cell__event" title="' + escapeHtml(EVENT_LABELS[event.kind] || event.kind) + '" aria-hidden="true">' + (EVENT_ICONS[event.kind] || '❔') + '</span>'
+      : '';
 
     var here = opts.citizens || [];
     var selfPresent = here.some(function (c) { return c.id === opts.selfId; });
@@ -1058,6 +1082,7 @@
       '  <span class="desert-cell__terrain" aria-hidden="true">' + icon + '</span>' +
       '  <span class="desert-cell__loot">' + escapeHtml(lootLine) + '</span>' +
          (zombiesLine ? '  <span class="desert-cell__zombies">' + zombiesLine + '</span>' : '') +
+         eventBadge +
          tokensHtml +
       '</div>'
     );
@@ -1094,23 +1119,61 @@
     var ap = self.actionPoints || 0;
     var canteen = self.waterCanteen || 0;
     var loot = (zone.loot.wood || 0) + (zone.loot.metal || 0) + (zone.loot.water || 0);
+    var event = zone.event || null;
+    var storm = !!event && event.kind === 'sandstorm';
+    var lootable = !!event && (event.kind === 'survivor-cache' || event.kind === 'abandoned-vehicle');
+
+    renderZoneEvent(event);
 
     var scavBtn = $('zone-scavenge-btn');
-    scavBtn.disabled = !(canPlay && zone.zombies === 0 && canteen > 0 && ap >= 2 && loot > 0);
-    if (zone.zombies > 0) scavBtn.textContent = '🔎 Fouille bloquée (zombies)';
+    scavBtn.disabled = !(canPlay && !storm && zone.zombies === 0 && canteen > 0 && ap >= 2 && loot > 0);
+    if (storm) scavBtn.textContent = '🌪 Fouille impossible (tempête)';
+    else if (zone.zombies > 0) scavBtn.textContent = '🔎 Fouille bloquée (zombies)';
     else if (canteen <= 0) scavBtn.textContent = '🔎 Fouille bloquée (gourde vide)';
     else if (loot === 0) scavBtn.textContent = '🔎 Zone vide';
     else scavBtn.textContent = '🔎 Fouiller (2 PA + 1 gourde)';
 
+    var lootBtn = $('zone-loot-event-btn');
+    lootBtn.hidden = !lootable;
+    if (lootable) {
+      var stash = event.stash || { wood: 0, metal: 0, water: 0 };
+      var stashTotal = (stash.wood || 0) + (stash.metal || 0) + (stash.water || 0);
+      lootBtn.disabled = !(canPlay && zone.zombies === 0 && ap >= 2);
+      if (zone.zombies > 0) lootBtn.textContent = '🎁 Butin gardé (zombies)';
+      else lootBtn.textContent = (EVENT_ICONS[event.kind] || '🎁') + ' Récupérer le butin (' + stashTotal + ' obj., 2 PA)';
+    }
+
     var fightBtn = $('zone-fight-btn');
     fightBtn.hidden = zone.zombies === 0;
     fightBtn.disabled = !(canPlay && zone.zombies > 0 && ap >= 1);
-    fightBtn.textContent = '⚔ Chasser un zombie (' + zone.zombies + ' restant)';
+    var nestTag = event && event.kind === 'zombie-nest' ? ' du nid' : '';
+    fightBtn.textContent = '⚔ Chasser un zombie' + nestTag + ' (' + zone.zombies + ' restant)';
 
     var returnBtn = $('zone-return-btn');
     var canReturn = canPlay && Math.max(Math.abs(zone.x), Math.abs(zone.y)) === 1 && ap >= 1;
     returnBtn.disabled = !canReturn;
     returnBtn.textContent = canReturn ? '🏛 Rentrer en ville (1 PA)' : '🏛 Trop loin de la ville';
+  }
+
+  var EVENT_DESCRIPTIONS = {
+    'survivor-cache': 'Un magot de survivant vous attend — récupérez-le d\'un bloc.',
+    'abandoned-vehicle': 'Une épave à dépouiller, riche en métal.',
+    'zombie-nest': 'Un nid grouillant : éradiquez toute la nuée pour le détruire et rafler son trophée.',
+    'sandstorm': 'Le sable fouette la zone : ni fouille ni passage tant qu\'elle souffle.',
+  };
+
+  function renderZoneEvent(event) {
+    var wrap = $('zone-detail-event');
+    if (!wrap) return;
+    if (!event) {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    wrap.className = 'zone-detail__event zone-detail__event--' + event.kind;
+    $('zone-event-icon').textContent = EVENT_ICONS[event.kind] || '❔';
+    $('zone-event-title').textContent = EVENT_LABELS[event.kind] || event.kind;
+    $('zone-event-desc').textContent = EVENT_DESCRIPTIONS[event.kind] || '';
   }
 
   function hideZoneDetail() {
@@ -1841,6 +1904,7 @@
     'citizen.explore':       { icon: '🧭', label: 'a exploré une zone' },
     'citizen.scavenge-zone': { icon: '🔎', label: 'a fouillé une zone' },
     'citizen.fight':         { icon: '⚔', label: 'a chassé un zombie' },
+    'citizen.loot-event':    { icon: '🎁', label: 'a récupéré un butin' },
     'citizen.died':          { icon: '☠', label: 'est mort' },
     'night.resolved':        { icon: '☾', label: 'Nuit résolue' },
     'forum.thread.created':  { icon: '💬', label: 'a ouvert une discussion' },
@@ -2132,6 +2196,23 @@
       }
       case 'citizen.build':
         return typeof d.defense === 'number' ? ' (défense ' + d.defense + ')' : '';
+      case 'citizen.fight': {
+        if (d.nestDestroyed) {
+          var rw = d.reward ? ' (+' + translateResource(String(d.reward)) + ')' : '';
+          return ' — nid détruit !' + rw;
+        }
+        return typeof d.remainingZombies === 'number' ? ' (' + d.remainingZombies + ' restant)' : '';
+      }
+      case 'citizen.loot-event': {
+        var evLabel = d.event ? (EVENT_LABELS[String(d.event)] || String(d.event)) : 'butin';
+        var gains = [];
+        ['wood', 'metal', 'water'].forEach(function (k) {
+          if (typeof d[k] === 'number' && d[k] > 0) {
+            gains.push('+' + d[k] + ' ' + translateResource(k));
+          }
+        });
+        return ' — ' + escapeHtml(evLabel) + (gains.length ? ' (' + gains.join(', ') + ')' : '');
+      }
       case 'citizen.died':
         return d.cause ? ' — ' + escapeHtml(String(d.cause)) : '';
       case 'night.resolved': {

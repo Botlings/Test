@@ -15,6 +15,7 @@ import {
   generateDesertMap,
   getZone,
   isAdjacent,
+  isLootableEvent,
   isTown,
   mulberry32,
   sanitizeDesertMap,
@@ -22,6 +23,7 @@ import {
   takeFromZone,
   type DesertMap,
   type DesertZone,
+  type ZoneEventKind,
 } from './desert.js';
 import type {
   AttackWave,
@@ -279,6 +281,11 @@ export class Game {
     if (!zone) {
       throw new GameRuleError('Cette case n\'existe pas (hors carte).');
     }
+    if (zone.event && zone.event.kind === 'sandstorm') {
+      throw new GameRuleError(
+        'Une tempête de sable balaie cette zone : impossible de s\'y engager avant qu\'elle se dissipe.',
+      );
+    }
     this.spendActionPoints(citizen, this.config.desert.moveActionPointCost);
     return this.enterZone(citizen, zone);
   }
@@ -419,6 +426,9 @@ export class Game {
     if (!zone) {
       throw new GameRuleError('La zone du citoyen est introuvable sur la carte.');
     }
+    if (zone.event && zone.event.kind === 'sandstorm') {
+      throw new GameRuleError('Une tempête de sable rend toute fouille impossible ici.');
+    }
     if (zone.zombies > 0) {
       throw new GameRuleError('Des zombies errants empêchent toute fouille ici — chassez-les.');
     }
@@ -444,7 +454,12 @@ export class Game {
    * probabilité `fightFatalityChance` (déterministe via Rng seedé), le combat
    * tourne mal et le citoyen périt.
    */
-  fightZombie(citizenId: string): { remainingZombies: number; citizenAlive: boolean } {
+  fightZombie(citizenId: string): {
+    remainingZombies: number;
+    citizenAlive: boolean;
+    nestDestroyed: boolean;
+    reward?: ResourceKind;
+  } {
     this.assertPlayable();
     const citizen = this.requireAliveCitizen(citizenId);
     if (citizen.location !== 'desert' || !citizen.position) {
@@ -468,7 +483,58 @@ export class Game {
         citizenAlive = false;
       }
     }
-    return { remainingZombies: zone.zombies, citizenAlive };
+    // Nid de zombies éradiqué : la zone est nettoyée et livre son trophée.
+    let nestDestroyed = false;
+    let reward: ResourceKind | undefined;
+    if (citizenAlive && zone.zombies === 0 && zone.event && zone.event.kind === 'zombie-nest') {
+      zone.event = null;
+      nestDestroyed = true;
+      // Récompense : le butin caché sous le nid — dépend du terrain.
+      reward = zone.terrain === 'ruins' ? 'metal' : zone.terrain === 'highway' ? 'water' : 'wood';
+      this._bank[reward] += 2 + Math.max(0, zone.distance - 1);
+    }
+    return {
+      remainingZombies: zone.zombies,
+      citizenAlive,
+      nestDestroyed,
+      ...(reward ? { reward } : {}),
+    };
+  }
+
+  /**
+   * Pille l'événement ramassable (cache de survivant / véhicule abandonné) de
+   * la zone où se tient le citoyen : verse d'un bloc le magot à la banque et
+   * consomme l'événement. Coûte `desert.scavengeZoneActionPointCost` PA. Interdit
+   * si des zombies rôdent encore (il faut les chasser d'abord). Renvoie la nature
+   * de l'événement pillé et le détail des ressources gagnées.
+   */
+  lootEvent(citizenId: string): {
+    kind: ZoneEventKind;
+    gained: { wood: number; metal: number; water: number };
+  } {
+    this.assertPlayable();
+    const citizen = this.requireAliveCitizen(citizenId);
+    if (citizen.location !== 'desert' || !citizen.position) {
+      throw new GameRuleError('Il faut être dans une zone du désert pour fouiller un événement.');
+    }
+    const zone = getZone(this._desert, citizen.position.x, citizen.position.y);
+    if (!zone) {
+      throw new GameRuleError('Zone introuvable.');
+    }
+    if (!isLootableEvent(zone.event)) {
+      throw new GameRuleError('Aucun butin à récupérer dans cette zone.');
+    }
+    if (zone.zombies > 0) {
+      throw new GameRuleError('Des zombies errants gardent le butin — chassez-les d\'abord.');
+    }
+    this.spendActionPoints(citizen, this.config.desert.scavengeZoneActionPointCost);
+    const { kind, stash } = zone.event;
+    const gained = { wood: stash.wood, metal: stash.metal, water: stash.water };
+    this._bank.wood += gained.wood;
+    this._bank.metal += gained.metal;
+    this._bank.water += gained.water;
+    zone.event = null;
+    return { kind, gained };
   }
 
   /**
@@ -727,6 +793,9 @@ export class Game {
         loot: { ...z.loot },
         zombies: z.zombies,
         discovered: z.discovered,
+        event: z.event
+          ? { kind: z.event.kind, stash: { ...z.event.stash } }
+          : null,
       }));
     return { radius: this._desert.radius, zones };
   }

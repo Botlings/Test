@@ -85,6 +85,37 @@ export interface ZoneLoot {
   water: number;
 }
 
+/**
+ * Nature d'un événement de zone (Jalon 4). Chaque zone peut porter au plus un
+ * événement actif, tiré de façon déterministe par jour de partie :
+ *   - `survivor-cache`    : cache de survivant — magot ramassable d'un coup ;
+ *   - `abandoned-vehicle` : véhicule abandonné — épave à fouiller (métal) ;
+ *   - `zombie-nest`       : nid de zombies — pond une nuée à chasser avant tout ;
+ *   - `sandstorm`         : tempête de sable — bloque entrée et fouille de la
+ *                           zone tant qu'elle souffle (se dissipe à l'aube).
+ */
+export type ZoneEventKind =
+  | 'survivor-cache'
+  | 'abandoned-vehicle'
+  | 'zombie-nest'
+  | 'sandstorm';
+
+/** Événement actif sur une zone du désert. */
+export interface ZoneEvent {
+  readonly kind: ZoneEventKind;
+  /**
+   * Butin propre à l'événement, ramassable d'un bloc via `lootEvent` (cache de
+   * survivant / véhicule abandonné). Nul pour les événements non pillables
+   * (`{ wood: 0, metal: 0, water: 0 }`).
+   */
+  stash: ZoneLoot;
+}
+
+/** `true` si l'événement se pille (cache de survivant ou véhicule abandonné). */
+export function isLootableEvent(event: ZoneEvent | null | undefined): event is ZoneEvent {
+  return !!event && (event.kind === 'survivor-cache' || event.kind === 'abandoned-vehicle');
+}
+
 /** Une zone du désert. La ville n'est pas une zone : elle reste implicite à (0, 0). */
 export interface DesertZone {
   readonly x: number;
@@ -95,6 +126,8 @@ export interface DesertZone {
   loot: ZoneLoot;
   zombies: number;
   discovered: boolean;
+  /** Événement actif sur la zone (Jalon 4), ou `null`. */
+  event: ZoneEvent | null;
 }
 
 /** État sérialisable d'une carte. */
@@ -119,6 +152,12 @@ export interface DesertConfig {
   readonly fightActionPointCost: number;
   /** Probabilité (0..1) qu'un combat tue le citoyen — déterministe (Rng seedé). */
   readonly fightFatalityChance: number;
+  /**
+   * Probabilité de base (0..1) qu'un événement apparaisse sur une zone donnée à
+   * chaque tirage journalier. Elle est multipliée par la distance à la ville :
+   * les confins du désert sont bien plus mouvementés que les abords.
+   */
+  readonly eventBaseChance: number;
 }
 
 /** Configuration par défaut du désert. */
@@ -129,6 +168,7 @@ export const DEFAULT_DESERT_CONFIG: DesertConfig = {
   scavengeZoneActionPointCost: 2,
   fightActionPointCost: 1,
   fightFatalityChance: 0.0,
+  eventBaseChance: 0.08,
 };
 
 /** Index canonique d'une coordonnée (clé de la map des zones). */
@@ -177,10 +217,14 @@ export function generateDesertMap(
         loot,
         zombies,
         discovered: false,
+        event: null,
       };
     }
   }
-  return { seed, radius: config.radius, zones };
+  const map: DesertMap = { seed, radius: config.radius, zones };
+  // Premier jour de partie : la carte porte déjà quelques événements.
+  assignZoneEvents(map, 1, config);
+  return map;
 }
 
 /**
@@ -228,6 +272,7 @@ function sanitizeZone(raw: unknown, x: number, y: number): DesertZone | null {
       loot: rollLoot(rng, 'plain', distance),
       zombies: 0,
       discovered: false,
+      event: null,
     };
   }
   const r = raw as {
@@ -235,6 +280,7 @@ function sanitizeZone(raw: unknown, x: number, y: number): DesertZone | null {
     loot?: unknown;
     zombies?: unknown;
     discovered?: unknown;
+    event?: unknown;
   };
   const terrain = isZoneTerrain(r.terrain) ? r.terrain : rollTerrain(rng, distance);
   const lootRaw = r.loot && typeof r.loot === 'object' ? (r.loot as Record<string, unknown>) : {};
@@ -245,7 +291,30 @@ function sanitizeZone(raw: unknown, x: number, y: number): DesertZone | null {
   };
   const zombies = clampNonNegInt(r.zombies);
   const discovered = r.discovered === true;
-  return { x, y, distance, terrain, loot, zombies, discovered };
+  const event = sanitizeEvent(r.event);
+  return { x, y, distance, terrain, loot, zombies, discovered, event };
+}
+
+function sanitizeEvent(raw: unknown): ZoneEvent | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as { kind?: unknown; stash?: unknown };
+  if (!isZoneEventKind(r.kind)) return null;
+  const stashRaw = r.stash && typeof r.stash === 'object' ? (r.stash as Record<string, unknown>) : {};
+  const stash: ZoneLoot = {
+    wood: clampNonNegInt(stashRaw.wood),
+    metal: clampNonNegInt(stashRaw.metal),
+    water: clampNonNegInt(stashRaw.water),
+  };
+  return { kind: r.kind, stash };
+}
+
+function isZoneEventKind(v: unknown): v is ZoneEventKind {
+  return (
+    v === 'survivor-cache' ||
+    v === 'abandoned-vehicle' ||
+    v === 'zombie-nest' ||
+    v === 'sandstorm'
+  );
 }
 
 function isZoneTerrain(v: unknown): v is ZoneTerrain {
@@ -261,7 +330,11 @@ function clampNonNegInt(v: unknown): number {
 export function cloneDesertMap(map: DesertMap): DesertMap {
   const zones: Record<string, DesertZone> = {};
   for (const [key, z] of Object.entries(map.zones)) {
-    zones[key] = { ...z, loot: { ...z.loot } };
+    zones[key] = {
+      ...z,
+      loot: { ...z.loot },
+      event: z.event ? { kind: z.event.kind, stash: { ...z.event.stash } } : null,
+    };
   }
   return { seed: map.seed, radius: map.radius, zones };
 }
@@ -361,6 +434,92 @@ export function dawnTickDesert(map: DesertMap, day: number): void {
       if (zone.loot[kind] < cap) zone.loot[kind] += 1;
     }
   }
+  // La carte vit aussi au rythme des événements (Jalon 4).
+  assignZoneEvents(map, day);
+}
+
+/**
+ * (Ré)assigne les événements de zone pour le jour de partie donné (Jalon 4).
+ * Déterministe : le tirage dépend uniquement de la seed de carte et du jour.
+ *
+ * Règles :
+ *   - Les **tempêtes de sable** sont éphémères : elles se dissipent à chaque
+ *     nouvel appel (nouveau jour), libérant la zone pour un nouveau tirage.
+ *   - Les événements **persistants** (cache, véhicule, nid) sont conservés tant
+ *     qu'ils n'ont pas été consommés par les joueurs (`lootEvent` vide la cache
+ *     / le véhicule ; chasser tous les zombies détruit le nid — voir `Game`).
+ *     Une zone qui en porte encore un est donc *sautée* (pas de re-tirage), ce
+ *     qui évite l'empilement et le farm involontaire.
+ *   - Une zone libre tire un événement avec une probabilité croissante avec la
+ *     distance à la ville (`eventBaseChance × distance`).
+ *   - Un **nid** engendre immédiatement sa nuée de zombies ; il n'apparaît
+ *     jamais aux abords immédiats de la ville (distance 1, cohérent avec la
+ *     génération de zombies).
+ */
+export function assignZoneEvents(
+  map: DesertMap,
+  day: number,
+  config: DesertConfig = DEFAULT_DESERT_CONFIG,
+): void {
+  const rng = mulberry32(seedFromString(`events-${map.seed}-${day}`));
+  for (const zone of listZones(map)) {
+    // 1. Dissipation des tempêtes (événement transitoire).
+    if (zone.event && zone.event.kind === 'sandstorm') {
+      zone.event = null;
+    }
+    // 2. Un événement persistant occupe encore la zone : on n'y touche pas.
+    if (zone.event) continue;
+    // 3. Tirage d'un nouvel événement.
+    const chance = Math.min(0.6, config.eventBaseChance * zone.distance);
+    if (rng.next() >= chance) continue;
+    const kind = rollEventKind(rng, zone.distance);
+    zone.event = createEvent(rng, kind, zone.distance);
+    if (kind === 'zombie-nest') {
+      // Le nid pond sa nuée : ces zombies devront être chassés avant toute
+      // fouille (et leur extinction détruit le nid, côté moteur de jeu).
+      zone.zombies += 2 + Math.max(0, zone.distance - 1);
+    }
+  }
+}
+
+/** Choisit la nature d'un événement, pondérée par la distance à la ville. */
+function rollEventKind(rng: Rng, distance: number): ZoneEventKind {
+  return rng.weighted([
+    { value: 'survivor-cache' as ZoneEventKind, weight: 3 },
+    { value: 'abandoned-vehicle' as ZoneEventKind, weight: 1 + distance },
+    { value: 'sandstorm' as ZoneEventKind, weight: 2 },
+    // Pas de nid aux abords immédiats (distance 1) : cohérent avec l'absence de
+    // zombies errants générés à cette distance.
+    { value: 'zombie-nest' as ZoneEventKind, weight: distance >= 2 ? distance : 0 },
+  ]);
+}
+
+/** Construit l'événement (et son éventuel magot) pour une nature donnée. */
+function createEvent(rng: Rng, kind: ZoneEventKind, distance: number): ZoneEvent {
+  if (kind === 'survivor-cache') {
+    // Cache de survivant : réserves équilibrées, tournées vers la survie (eau).
+    return {
+      kind,
+      stash: {
+        wood: rng.nextInt(1, 3 + distance),
+        metal: rng.nextInt(1, 2 + distance),
+        water: rng.nextInt(2, 4 + distance),
+      },
+    };
+  }
+  if (kind === 'abandoned-vehicle') {
+    // Véhicule abandonné : épave riche en métal, peu en eau.
+    return {
+      kind,
+      stash: {
+        wood: rng.nextInt(1, 3),
+        metal: rng.nextInt(3, 6 + distance),
+        water: rng.nextInt(0, 2),
+      },
+    };
+  }
+  // Nid / tempête : aucun magot direct.
+  return { kind, stash: { wood: 0, metal: 0, water: 0 } };
 }
 
 /**

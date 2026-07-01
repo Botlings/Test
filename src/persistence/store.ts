@@ -263,6 +263,7 @@ export type ActivityKind =
   | 'citizen.explore'
   | 'citizen.scavenge-zone'
   | 'citizen.fight'
+  | 'citizen.loot-event'
   | 'citizen.died'
   | 'night.resolved'
   | 'game.over'

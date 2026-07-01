@@ -27,4 +27,8 @@ export type {
   Phase,
   ResourceBank,
   ResourceKind,
+  ZoneEventKind,
+  ZoneEventSnapshot,
+  DesertZoneSnapshot,
+  DesertSnapshot,
 } from './types.js';

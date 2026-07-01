@@ -138,6 +138,19 @@ export interface NightReport {
   readonly resolvedAt: string;
 }
 
+/** Nature d'un événement de zone (Jalon 4). */
+export type ZoneEventKind =
+  | 'survivor-cache'
+  | 'abandoned-vehicle'
+  | 'zombie-nest'
+  | 'sandstorm';
+
+/** Événement de zone exposé à l'API publique. */
+export interface ZoneEventSnapshot {
+  readonly kind: ZoneEventKind;
+  readonly stash: { readonly wood: number; readonly metal: number; readonly water: number };
+}
+
 /** Une zone du désert exposée à l'API publique (forme allégée). */
 export interface DesertZoneSnapshot {
   readonly x: number;
@@ -147,6 +160,8 @@ export interface DesertZoneSnapshot {
   readonly loot: { readonly wood: number; readonly metal: number; readonly water: number };
   readonly zombies: number;
   readonly discovered: boolean;
+  /** Événement actif sur la zone, ou `null`. */
+  readonly event: ZoneEventSnapshot | null;
 }
 
 /** Vue publique de la carte du désert. */

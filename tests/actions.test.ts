@@ -135,6 +135,66 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
     expect(events.some((e) => e.type === 'build.completed')).toBe(true);
   });
 
+  it('loot-event : pille une cache de survivant et verse le magot à la banque', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    // Envoie le citoyen dans le désert.
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'move', to: 'desert' },
+    });
+    // Injecte une cache déterministe sur la zone courante du citoyen.
+    const town = (await ctx.store.getTown(ctx.townId as unknown as never))!;
+    const pos = town.game.status().citizens[0]!.position!;
+    const zone = town.game.getDesertZone(pos.x, pos.y)!;
+    zone.zombies = 0;
+    zone.event = { kind: 'survivor-cache', stash: { wood: 2, metal: 1, water: 3 } };
+    await ctx.store.saveTown(town);
+    const before = town.game.status().bank;
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'loot-event' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      bank: { wood: number; metal: number; water: number };
+      desert: { zones: Array<{ x: number; y: number; event: unknown }> };
+    };
+    expect(body.bank.wood).toBe(before.wood + 2);
+    expect(body.bank.metal).toBe(before.metal + 1);
+    expect(body.bank.water).toBe(before.water + 3);
+    const looted = body.desert.zones.find((z) => z.x === pos.x && z.y === pos.y)!;
+    expect(looted.event).toBeNull();
+  });
+
+  it('loot-event : refuse une zone sans butin avec 409 rule-violation', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'move', to: 'desert' },
+    });
+    const town = (await ctx.store.getTown(ctx.townId as unknown as never))!;
+    const pos = town.game.status().citizens[0]!.position!;
+    town.game.getDesertZone(pos.x, pos.y)!.event = null;
+    await ctx.store.saveTown(town);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/towns/${ctx.townId}/citizens/${ctx.citizenId}/action`,
+      headers: bearer(ctx.accessToken),
+      payload: { type: 'loot-event' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect((res.json() as { error: { code: string } }).error.code).toBe('rule-violation');
+  });
+
   it('construct : rejette un identifiant de bâtiment inconnu avec 400', async () => {
     const ctx = await bootstrapTown();
     app = ctx.app;

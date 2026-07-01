@@ -881,6 +881,33 @@ body[data-phase='night'] .status-pill--phase {
   color: var(--crt-soft);
 }
 
+/* Événements de zone (Jalon 4) : pastille en haut à droite + halo de la case */
+.desert-cell__event {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
+  animation: event-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes event-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
+.desert-cell--event { border-style: solid; }
+.desert-cell--event-survivor-cache { border-color: var(--gold); box-shadow: inset 0 0 10px rgba(255, 200, 60, 0.18); }
+.desert-cell--event-abandoned-vehicle { border-color: var(--crt-soft); box-shadow: inset 0 0 10px rgba(120, 220, 160, 0.15); }
+.desert-cell--event-zombie-nest { border-color: rgba(255, 60, 60, 0.7); box-shadow: inset 0 0 12px rgba(255, 40, 40, 0.22); }
+.desert-cell--event-sandstorm {
+  border-color: rgba(214, 176, 96, 0.75);
+  background-image: repeating-linear-gradient(115deg, rgba(214, 176, 96, 0.12) 0 4px, transparent 4px 9px);
+}
+/* Une case en tempête n'est pas cliquable : curseur explicite */
+.desert-cell--event-sandstorm:not(.desert-cell--current) { cursor: not-allowed; }
+
 /* Panneau de détail de la zone courante */
 .zone-detail {
   margin-top: 0.7rem;
@@ -918,6 +945,48 @@ body[data-phase='night'] .status-pill--phase {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* Bandeau d'événement dans le détail de zone */
+.zone-detail__event {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--crt-faint);
+  border-left-width: 3px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.zone-detail__event-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.zone-detail__event-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.zone-detail__event-body strong {
+  font-family: 'Bungee', 'VT323', monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--crt-bright);
+}
+
+.zone-detail__event-desc {
+  font-family: 'VT323', 'Share Tech Mono', monospace;
+  font-size: 0.92rem;
+  color: var(--crt-soft);
+  line-height: 1.25;
+}
+
+.zone-detail__event--survivor-cache { border-left-color: var(--gold); }
+.zone-detail__event--abandoned-vehicle { border-left-color: var(--crt-soft); }
+.zone-detail__event--zombie-nest { border-left-color: rgba(255, 60, 60, 0.85); }
+.zone-detail__event--sandstorm { border-left-color: rgba(214, 176, 96, 0.85); }
 
 .zone-detail__stock {
   list-style: none;

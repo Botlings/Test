@@ -10,6 +10,7 @@
  *   { type: 'scavenge' }                                  — fouille zone courante
  *   { type: 'scavenge-zone' }                             — alias explicite
  *   { type: 'fight' }                                     — chasse un zombie
+ *   { type: 'loot-event' }                                — pille l'événement de zone
  *   { type: 'build'        }                              — renfort générique (legacy)
  *   { type: 'construct',    buildingId: BuildingId }      — bâtiment du catalogue
  *
@@ -269,6 +270,26 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             details: {
               remainingZombies: result.remainingZombies,
               survived: result.citizenAlive,
+              nestDestroyed: result.nestDestroyed,
+              reward: result.reward ?? null,
+            },
+          });
+          break;
+        }
+        case 'loot-event': {
+          const result = town.game.lootEvent(citizenId);
+          await store.saveTown(town);
+          publishTownSnapshot(hub, town);
+          await publishActivity(store, hub, townId, {
+            accountId,
+            citizenId,
+            citizenName,
+            kind: 'citizen.loot-event',
+            details: {
+              event: result.kind,
+              wood: result.gained.wood,
+              metal: result.gained.metal,
+              water: result.gained.water,
             },
           });
           break;
@@ -277,7 +298,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           return reply.code(400).send({
             error: {
               code: 'action-unknown',
-              message: 'Type d\'action inconnu (move, move-zone, scavenge, scavenge-zone, fight, build, construct)',
+              message: 'Type d\'action inconnu (move, move-zone, scavenge, scavenge-zone, fight, loot-event, build, construct)',
             },
           });
       }

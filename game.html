@@ -290,6 +290,13 @@
                 <h3 class="zone-detail__title" id="zone-detail-title">—</h3>
                 <span class="zone-detail__terrain" id="zone-detail-terrain">—</span>
               </header>
+              <div class="zone-detail__event" id="zone-detail-event" hidden>
+                <span class="zone-detail__event-icon" id="zone-event-icon" aria-hidden="true">❔</span>
+                <div class="zone-detail__event-body">
+                  <strong id="zone-event-title">—</strong>
+                  <span class="zone-detail__event-desc" id="zone-event-desc">—</span>
+                </div>
+              </div>
               <ul class="zone-detail__stock" id="zone-detail-stock">
                 <li><span aria-hidden="true">🪵</span> <span id="zone-stock-wood">0</span> bois</li>
                 <li><span aria-hidden="true">⚙</span> <span id="zone-stock-metal">0</span> métal</li>
@@ -300,6 +307,9 @@
                 </li>
               </ul>
               <div class="zone-detail__actions">
+                <button type="button" class="btn btn--ghost btn--sm" id="zone-loot-event-btn" disabled hidden>
+                  🎁 Récupérer le butin
+                </button>
                 <button type="button" class="btn btn--ghost btn--sm" id="zone-scavenge-btn" disabled>
                   🔎 Fouiller la zone
                 </button>
