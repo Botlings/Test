@@ -22,7 +22,8 @@ import type { NightScheduler } from './night-scheduler.js';
 import type { Store } from '../persistence/store.js';
 import type { Id } from '../persistence/types.js';
 import { RealtimeHub } from '../realtime/hub.js';
-import type { ServerMessage } from '../realtime/protocol.js';
+import { PresenceRegistry } from '../realtime/presence.js';
+import type { ClientMessage, ServerMessage } from '../realtime/protocol.js';
 
 export interface AppDeps {
   readonly store: Store;
@@ -32,12 +33,15 @@ export interface AppDeps {
   readonly secureCookies?: boolean;
   readonly logger?: boolean;
   readonly scheduler?: NightScheduler;
+  /** Registre de présence temps réel. Créé par défaut si non fourni. */
+  readonly presence?: PresenceRegistry;
 }
 
 export interface BuiltApp {
   readonly app: FastifyInstance;
   readonly store: Store;
   readonly hub: RealtimeHub;
+  readonly presence: PresenceRegistry;
   readonly scheduler?: NightScheduler;
 }
 
@@ -50,6 +54,7 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
     secureCookies = false,
     logger = false,
     scheduler,
+    presence = new PresenceRegistry(),
   } = deps;
 
   const app = Fastify({ logger });
@@ -92,7 +97,7 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   });
 
   registerAuthRoutes(app, { store, jwtSecret, accessTokenTtlSeconds, secureCookies });
-  registerTownRoutes(app, { store, jwtSecret, hub, scheduler });
+  registerTownRoutes(app, { store, jwtSecret, hub, scheduler, presence });
   registerActionRoutes(app, { store, jwtSecret, hub, scheduler });
   registerForumRoutes(app, { store, jwtSecret, hub });
 
@@ -139,8 +144,11 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
         socket.close();
         return;
       }
+      const citizenId = town.membership.get(accountId) ?? null;
+      const citizenName =
+        town.game.status().citizens.find((c) => c.id === citizenId)?.name ?? null;
 
-      // Snapshot initial
+      // Snapshot initial de l'état de la ville.
       const status = town.game.status();
       socket.send(
         JSON.stringify({
@@ -157,15 +165,79 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
         } satisfies ServerMessage),
       );
 
+      // Instantané de présence : qui est connecté en ce moment.
+      socket.send(
+        JSON.stringify({
+          type: 'presence.snapshot',
+          online: presence.online(townId).map((id) => ({
+            accountId: id,
+            citizenId: town.membership.get(id) ?? null,
+          })),
+          onlineCount: presence.onlineCount(townId),
+        } satisfies ServerMessage),
+      );
+
       const unsubscribe = hub.subscribe(townId, (msg) => {
         if (socket.readyState === socket.OPEN) {
           socket.send(JSON.stringify(msg));
         }
       });
-      socket.on('close', unsubscribe);
-      socket.on('error', unsubscribe);
+
+      // Enregistre la connexion et notifie les autres si c'est le premier onglet.
+      const arrival = presence.connect(townId, accountId);
+      if (arrival.changed) {
+        hub.publish(townId, {
+          type: 'presence.update',
+          accountId,
+          citizenId,
+          present: true,
+          onlineCount: arrival.onlineCount,
+        });
+      }
+
+      // Messages montants : chat de ville + heartbeat applicatif.
+      socket.on('message', (raw: unknown) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(String(raw));
+        } catch {
+          return;
+        }
+        if (typeof parsed !== 'object' || parsed === null) return;
+        const msg = parsed as ClientMessage;
+        if (msg.type === 'chat.send') {
+          const text = typeof msg.text === 'string' ? msg.text.trim() : '';
+          if (text.length === 0 || text.length > 500) return;
+          hub.publish(townId, {
+            type: 'chat.message',
+            from: citizenName ?? 'Inconnu',
+            text,
+            at: new Date().toISOString(),
+          });
+        }
+        // 'ping' / 'auth' : no-op (auth déjà faite via la query string).
+      });
+
+      let released = false;
+      const release = () => {
+        if (released) return;
+        released = true;
+        unsubscribe();
+        const departure = presence.disconnect(townId, accountId);
+        if (departure.changed) {
+          hub.publish(townId, {
+            type: 'presence.update',
+            accountId,
+            citizenId,
+            present: false,
+            onlineCount: departure.onlineCount,
+          });
+        }
+      };
+      socket.on('close', release);
+      socket.on('error', release);
     })();
   });
 
-  return { app, store, hub, scheduler };
+  return { app, store, hub, presence, scheduler };
 }

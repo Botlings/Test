@@ -139,6 +139,41 @@ export interface ActivityRecordedMessage {
   readonly entry: ActivityEntry;
 }
 
+/** Un membre présent dans la liste de présence temps réel. */
+export interface PresenceMember {
+  readonly accountId: string;
+  /** Citoyen contrôlé par ce compte dans la ville (null si non encore résolu). */
+  readonly citizenId: string | null;
+}
+
+/**
+ * Instantané de présence envoyé à la connexion : qui est connecté en ce
+ * moment dans la ville. Complète le `town.snapshot` (qui liste tous les
+ * citoyens, présents ou non).
+ */
+export interface PresenceSnapshotMessage {
+  readonly type: 'presence.snapshot';
+  readonly online: ReadonlyArray<PresenceMember>;
+  readonly onlineCount: number;
+}
+
+/** Un habitant vient de se connecter ou de se déconnecter. */
+export interface PresenceUpdateMessage {
+  readonly type: 'presence.update';
+  readonly accountId: string;
+  readonly citizenId: string | null;
+  readonly present: boolean;
+  readonly onlineCount: number;
+}
+
+/** Le régime d'accès à la banque commune a changé. */
+export interface BankPolicyMessage {
+  readonly type: 'bank.policy';
+  readonly policy: 'open' | 'restricted';
+  /** Nom du citoyen qui a changé le régime. */
+  readonly by: string;
+}
+
 /** Erreur applicative renvoyée suite à une action invalide. */
 export interface ServerErrorMessage {
   readonly type: 'error';
@@ -161,6 +196,9 @@ export type ServerMessage =
   | ForumMessagePostedMessage
   | ForumVoteCastMessage
   | ActivityRecordedMessage
+  | PresenceSnapshotMessage
+  | PresenceUpdateMessage
+  | BankPolicyMessage
   | ServerErrorMessage;
 
 /* -------------------------------------------------------------------------- */
@@ -205,6 +243,9 @@ const SERVER_TYPES = new Set<ServerMessage['type']>([
   'forum.message.posted',
   'forum.vote.cast',
   'activity.recorded',
+  'presence.snapshot',
+  'presence.update',
+  'bank.policy',
   'error',
 ]);
 

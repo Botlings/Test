@@ -637,23 +637,58 @@
       var diffClass = 'badge badge--' + (town.difficulty || 'normal');
       var diffLabel = DIFFICULTY_LABELS[town.difficulty] || town.difficulty;
       var phaseLabel = town.phase === 'night' ? '☾ nuit' : '☀ jour';
+      var isFull = town.full || (town.citizens >= town.capacity);
+      var onlineLabel = typeof town.online === 'number'
+        ? '<span title="Habitants en ligne">● <strong>' + town.online + '</strong> en ligne</span>'
+        : '';
+      var queuedLabel = town.queued
+        ? '<span title="File d\'attente">⏳ ' + town.queued + ' en attente</span>'
+        : '';
+      var btnLabel = isFull ? 'File d\'attente' : 'Rejoindre';
+      var btnClass = isFull ? 'btn btn--ghost btn--sm' : 'btn btn--primary btn--sm';
       li.innerHTML =
         '<div class="town-row__main">' +
-        '  <span class="town-row__name">' + escapeHtml(town.name) + '</span>' +
+        '  <span class="town-row__name">' + escapeHtml(town.name) +
+        (isFull ? ' <span class="badge badge--full">complète</span>' : '') + '</span>' +
         '  <span class="town-row__meta">' +
         '    <span class="' + diffClass + '">' + escapeHtml(diffLabel) + '</span>' +
         '    <span>Jour <strong>' + town.day + '</strong></span>' +
         '    <span>' + phaseLabel + '</span>' +
         '    <span><strong>' + town.aliveCitizens + '</strong>/' + town.capacity + ' citoyens</span>' +
+        '    ' + onlineLabel +
+        '    ' + queuedLabel +
         '    <span>Déf. <strong>' + town.townDefense + '</strong></span>' +
         '  </span>' +
         '</div>' +
-        '<button type="button" class="btn btn--primary btn--sm">Rejoindre</button>';
+        '<button type="button" class="' + btnClass + '">' + btnLabel + '</button>';
       li.querySelector('button').addEventListener('click', function () {
-        joinTown(town.id);
+        if (isFull) enqueueForTown(town.id);
+        else joinTown(town.id);
       });
       listEl.appendChild(li);
     });
+  }
+
+  /** Rejoint la file d'attente d'une ville pleine et informe le joueur. */
+  function enqueueForTown(townId) {
+    apiCall('/towns/' + encodeURIComponent(townId) + '/queue', { method: 'POST' })
+      .then(function (res) {
+        toast('Vous êtes en file d\'attente — position ' + res.position + '.', 'success');
+        loadTowns();
+      })
+      .catch(function (err) {
+        if (err.code === 'already-queued') {
+          toast('Vous êtes déjà dans la file d\'attente de cette ville.', 'info');
+          return;
+        }
+        if (err.code === 'already-joined') {
+          apiCall('/towns/' + encodeURIComponent(townId))
+            .then(function (town) { enterTown(town.id, town); })
+            .catch(function (err2) { toast(err2.message, 'error'); });
+          return;
+        }
+        toast(err.message || 'Impossible de rejoindre la file', 'error');
+      });
   }
 
   function joinTown(townId) {
@@ -1157,10 +1192,25 @@
     $('trigger-night-btn').disabled = true;
   }
 
+  var ROLE_BADGES = {
+    founder: '<span class="roster__role roster__role--founder" title="Fondateur de la ville">⚑</span>',
+    manager: '<span class="roster__role roster__role--manager" title="Gestionnaire de la banque">🛡</span>',
+  };
+
   function renderRoster(town) {
     var list = $('roster-list');
     var citizens = town.citizens || [];
     $('roster-count').textContent = citizens.length;
+
+    // Indicateur de présence : combien d'habitants sont connectés maintenant.
+    var onlineEl = $('roster-online');
+    if (onlineEl) {
+      var onlineCount = typeof town.onlineCount === 'number'
+        ? town.onlineCount
+        : citizens.filter(function (c) { return c.online; }).length;
+      onlineEl.textContent = '● ' + onlineCount + ' en ligne';
+    }
+
     list.innerHTML = '';
     citizens.forEach(function (c) {
       var li = document.createElement('li');
@@ -1168,20 +1218,97 @@
       if (c.id === state.yourCitizenId) classes += ' is-self';
       if (!c.alive) classes += ' is-dead';
       if (c.location === 'desert') classes += ' is-desert';
+      if (c.online) classes += ' is-online';
       li.className = classes;
       var loc = c.alive
         ? (c.location === 'desert' ? 'Désert' : 'Ville')
         : (c.causeOfDeath || 'Mort');
+      var roleBadge = ROLE_BADGES[c.role] || '';
+      var presence = c.online
+        ? '<span class="roster__presence roster__presence--on" title="Connecté">en ligne</span>'
+        : '<span class="roster__presence roster__presence--off" title="Hors ligne">hors ligne</span>';
       li.innerHTML =
         '<span class="roster__dot" aria-hidden="true"></span>' +
-        '<span class="roster__name">' + escapeHtml(c.name) + '<br>' +
-        '  <span class="roster__location">' + escapeHtml(loc) + '</span>' +
+        '<span class="roster__name">' + escapeHtml(c.name) + ' ' + roleBadge + '<br>' +
+        '  <span class="roster__location">' + escapeHtml(loc) + ' · ' + presence + '</span>' +
         '</span>' +
         '<span class="roster__ap" title="Points d\'action">' +
         (c.alive ? (c.actionPoints + ' PA') : '—') +
         '</span>';
       list.appendChild(li);
     });
+
+    renderBankGovernance(town);
+  }
+
+  /**
+   * Panneau de gouvernance de la banque commune : affiche le régime d'accès et,
+   * pour le fondateur / les gestionnaires, un bouton pour le basculer.
+   */
+  function renderBankGovernance(town) {
+    var gov = $('bank-gov');
+    if (!gov) return;
+    var label = $('bank-policy-label');
+    var toggle = $('bank-policy-toggle');
+    var hint = $('bank-gov-hint');
+    var policy = town.bankPolicy || 'open';
+    var role = town.yourRole || 'citizen';
+    var canManage = role === 'founder' || role === 'manager';
+
+    gov.hidden = false;
+    if (label) label.textContent = policy === 'restricted' ? 'restreint' : 'libre';
+
+    if (toggle) {
+      if (canManage) {
+        toggle.hidden = false;
+        toggle.textContent = policy === 'restricted'
+          ? 'Rouvrir l\'accès à tous'
+          : 'Restreindre l\'accès';
+        toggle.onclick = function () {
+          var next = policy === 'restricted' ? 'open' : 'restricted';
+          setBankPolicy(town.id, next);
+        };
+      } else {
+        toggle.hidden = true;
+      }
+    }
+
+    if (hint) {
+      if (policy === 'restricted') {
+        hint.textContent = canManage
+          ? 'Seuls le fondateur et les gestionnaires peuvent construire.'
+          : 'Accès restreint : vous ne pouvez pas puiser dans la banque.';
+      } else {
+        hint.textContent = 'Tous les citoyens peuvent construire avec la banque.';
+      }
+    }
+  }
+
+  function setBankPolicy(townId, policy) {
+    apiCall('/towns/' + encodeURIComponent(townId) + '/bank/policy', {
+      method: 'PUT',
+      body: { policy: policy },
+    })
+      .then(function () {
+        toast(policy === 'restricted'
+          ? 'Banque en accès restreint.'
+          : 'Banque rouverte à tous.', 'success');
+        refreshTownState();
+      })
+      .catch(function (err) {
+        toast(err.message || 'Changement de régime refusé', 'error');
+      });
+  }
+
+  /** Recharge l'état complet de la ville via REST puis rafraîchit l'UI. */
+  function refreshTownState() {
+    if (!state.currentTownId) return;
+    apiCall('/towns/' + encodeURIComponent(state.currentTownId))
+      .then(function (town) {
+        state.yourCitizenId = town.yourCitizenId;
+        renderTown(town);
+      })
+      .catch(function () { /* transitoire : ignore */ });
   }
 
   /* =========================================================================
@@ -1574,10 +1701,69 @@
       case 'activity.recorded':
         onActivityRecorded(msg.entry);
         break;
+      case 'presence.snapshot':
+        applyPresenceSnapshot(msg);
+        break;
+      case 'presence.update':
+        applyPresenceUpdate(msg);
+        break;
+      case 'bank.policy':
+        applyBankPolicy(msg);
+        break;
       case 'error':
         toast(msg.message || 'Erreur serveur', 'error');
         break;
     }
+  }
+
+  /** Ensemble des comptes actuellement connectés à la ville (présence live). */
+  function applyPresenceSnapshot(msg) {
+    state.online = {};
+    (msg.online || []).forEach(function (m) { state.online[m.accountId] = true; });
+    reflectPresence(msg.onlineCount);
+  }
+
+  function applyPresenceUpdate(msg) {
+    if (!state.online) state.online = {};
+    if (msg.present) state.online[msg.accountId] = true;
+    else delete state.online[msg.accountId];
+    reflectPresence(msg.onlineCount);
+    if (state.town) {
+      var who = null;
+      (state.town.citizens || []).forEach(function (c) {
+        if (c.id === msg.citizenId) who = c.name;
+      });
+      if (who) {
+        logEvent('☍ ' + who + (msg.present ? ' est en ligne.' : ' s\'est déconnecté(e).'), 'info');
+      }
+    }
+  }
+
+  /**
+   * Applique la présence à l'affichage sans refetch complet : met à jour le
+   * drapeau `online` de chaque citoyen à partir du set de comptes connectés,
+   * puis rafraîchit l'indicateur et le roster.
+   */
+  function reflectPresence(onlineCount) {
+    var onlineEl = $('roster-online');
+    if (onlineEl && typeof onlineCount === 'number') {
+      onlineEl.textContent = '● ' + onlineCount + ' en ligne';
+    }
+    if (!state.town || !state.town.citizens) return;
+    // On recharge l'état complet pour récupérer le mapping compte→citoyen à
+    // jour (les nouveaux arrivants, les promotions de file, etc.).
+    refreshTownState();
+  }
+
+  function applyBankPolicy(msg) {
+    if (state.town) {
+      state.town.bankPolicy = msg.policy;
+      renderBankGovernance(state.town);
+    }
+    logEvent('⚖ ' + (msg.by || 'Un gestionnaire') + ' a mis la banque en accès ' +
+      (msg.policy === 'restricted' ? 'restreint' : 'libre') + '.',
+      msg.policy === 'restricted' ? 'warning' : 'info');
+    refreshTownState();
   }
 
   function applySnapshot(snapshot) {

@@ -25,7 +25,9 @@ import {
   type AccountTownEntry,
   type ActivityEntry,
   type ActivityInput,
+  type BankPolicy,
   type Difficulty,
+  type LeaveTownResult,
   type ForumMessageRecord,
   type ForumThreadDetail,
   type ForumThreadKind,
@@ -41,6 +43,7 @@ import {
   type SessionRecord,
   type StoredNightReport,
   type Store,
+  type TownQueueEntry,
   type TownRecord,
 } from './store.js';
 
@@ -131,6 +134,8 @@ export class MemoryStore implements Store {
   /** Résultat final par ville (clé : townId). Un seul résultat par partie. */
   private readonly gameResults = new Map<Id, Omit<LeaderboardEntry, 'rank'>>();
   private readonly membershipJoinedAt = new Map<string, Date>();
+  /** Horodatage d'entrée en file d'attente, clé `${townId}|${accountId}`. */
+  private readonly queuedAt = new Map<string, Date>();
   private readonly forumThreads = new Map<Id, ForumThreadRecord>();
   private readonly forumMessages = new Map<Id, ForumMessageRecord[]>();
   private readonly forumVotes = new Map<Id, Map<Id, ForumVoteRecord>>();
@@ -231,6 +236,10 @@ export class MemoryStore implements Store {
       game: new Game(difficultyConfig(difficulty), seedFromString(`town-${id}`)),
       membership: new Map(),
       closed: false,
+      founderAccountId: null,
+      bankPolicy: 'open',
+      bankManagers: new Set<Id>(),
+      queue: [],
     };
     this.towns.set(town.id, town);
     return town;
@@ -254,14 +263,145 @@ export class MemoryStore implements Store {
     if (town.membership.size >= MAX_CITIZENS_PER_TOWN) {
       throw new StoreError('town-full', 'Cette ville est complète');
     }
+    const wasEmpty = town.membership.size === 0;
     const citizen = town.game.addCitizen(citizenName);
     town.membership.set(accountId, citizen.id);
+    if (wasEmpty && !town.founderAccountId) {
+      town.founderAccountId = accountId;
+    }
+    // Un compte qui rejoint quitte la file d'attente s'il y était.
+    const qi = town.queue.indexOf(accountId);
+    if (qi !== -1) town.queue.splice(qi, 1);
     this.membershipJoinedAt.set(`${townId}|${accountId}`, new Date());
     return { citizenId: citizen.id };
   }
 
   async citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined> {
     return this.towns.get(townId)?.membership.get(accountId);
+  }
+
+  async leaveTown(townId: Id, accountId: Id): Promise<LeaveTownResult> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    if (town.closed) {
+      throw new StoreError('town-closed', 'Cette ville est terminée');
+    }
+    // Retire de la file d'attente le cas échéant (compte non membre).
+    const qi = town.queue.indexOf(accountId);
+    if (qi !== -1) town.queue.splice(qi, 1);
+
+    const citizenId = town.membership.get(accountId);
+    if (!citizenId) {
+      return { removedCitizenId: null, promoted: null };
+    }
+    town.game.removeCitizen(citizenId);
+    town.membership.delete(accountId);
+    town.bankManagers.delete(accountId);
+    this.membershipJoinedAt.delete(`${townId}|${accountId}`);
+    if (town.founderAccountId === accountId) {
+      // Le fondateur part : on transfère le rôle au plus ancien membre restant.
+      town.founderAccountId = town.membership.keys().next().value ?? null;
+    }
+
+    const promoted = await this.promoteFromQueue(town);
+    return { removedCitizenId: citizenId, promoted };
+  }
+
+  /**
+   * Promeut la tête de la file d'attente si une place est libre. Renvoie les
+   * infos du compte promu (pour publication temps réel) ou `null`.
+   */
+  private async promoteFromQueue(
+    town: TownRecord,
+  ): Promise<LeaveTownResult['promoted']> {
+    while (town.queue.length > 0 && town.membership.size < MAX_CITIZENS_PER_TOWN) {
+      const nextAccountId = town.queue[0]!;
+      // Compte déjà membre (cas limite) ou disparu → on l'évacue de la file.
+      if (town.membership.has(nextAccountId)) {
+        town.queue.shift();
+        continue;
+      }
+      const account = this.accounts.get(nextAccountId);
+      if (!account) {
+        town.queue.shift();
+        continue;
+      }
+      town.queue.shift();
+      const citizenName = account.email.split('@')[0]!;
+      const citizen = town.game.addCitizen(citizenName);
+      town.membership.set(nextAccountId, citizen.id);
+      this.membershipJoinedAt.set(`${town.id}|${nextAccountId}`, new Date());
+      return { accountId: nextAccountId, citizenId: citizen.id, citizenName };
+    }
+    return null;
+  }
+
+  async enqueueForTown(
+    townId: Id,
+    accountId: Id,
+  ): Promise<{ position: number; size: number }> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    if (town.closed) {
+      throw new StoreError('town-closed', 'Cette ville est terminée');
+    }
+    if (town.membership.has(accountId)) {
+      throw new StoreError('already-joined', 'Vous avez déjà rejoint cette ville');
+    }
+    if (town.membership.size < MAX_CITIZENS_PER_TOWN) {
+      throw new StoreError('town-not-full', 'Cette ville n\'est pas pleine : rejoignez-la directement');
+    }
+    if (town.queue.includes(accountId)) {
+      throw new StoreError('already-queued', 'Vous êtes déjà dans la file d\'attente');
+    }
+    town.queue.push(accountId);
+    this.queuedAt.set(`${townId}|${accountId}`, new Date());
+    return { position: town.queue.length, size: town.queue.length };
+  }
+
+  async leaveQueue(townId: Id, accountId: Id): Promise<void> {
+    const town = this.towns.get(townId);
+    if (!town) return;
+    const i = town.queue.indexOf(accountId);
+    if (i !== -1) town.queue.splice(i, 1);
+    this.queuedAt.delete(`${townId}|${accountId}`);
+  }
+
+  async getQueue(townId: Id): Promise<TownQueueEntry[]> {
+    const town = this.towns.get(townId);
+    if (!town) return [];
+    return town.queue.map((accountId, idx) => ({
+      accountId,
+      position: idx + 1,
+      enqueuedAt: this.queuedAt.get(`${townId}|${accountId}`) ?? new Date(),
+    }));
+  }
+
+  async setBankPolicy(townId: Id, policy: BankPolicy): Promise<void> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    town.bankPolicy = policy;
+  }
+
+  async setBankManager(townId: Id, accountId: Id, allowed: boolean): Promise<void> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    if (!town.membership.has(accountId)) {
+      throw new StoreError('not-a-citizen', 'Ce compte n\'est pas citoyen de la ville');
+    }
+    if (town.founderAccountId === accountId) {
+      throw new StoreError('founder-immutable', 'Le fondateur est gestionnaire permanent');
+    }
+    if (allowed) town.bankManagers.add(accountId);
+    else town.bankManagers.delete(accountId);
   }
 
   async listAccountTowns(accountId: Id): Promise<AccountTownEntry[]> {

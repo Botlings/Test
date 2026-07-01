@@ -210,6 +210,19 @@ export class Game {
   }
 
   /**
+   * Retire définitivement un citoyen de la ville (un joueur qui quitte la
+   * partie). Libère la place pour la file d'attente. Sans effet — et sans
+   * erreur — si l'identifiant est inconnu : l'appelant (le Store) reste
+   * idempotent. Autorisé même sur un citoyen mort (nettoyage d'un compte).
+   */
+  removeCitizen(citizenId: string): boolean {
+    const idx = this._citizens.findIndex((c) => c.id === citizenId);
+    if (idx === -1) return false;
+    this._citizens.splice(idx, 1);
+    return true;
+  }
+
+  /**
    * Déplace un citoyen entre la ville et la première zone du désert (cas
    * « gateway »). Conservé pour rétro-compatibilité avec les anciens clients
    * qui ne connaissent pas la grille de zones : envoyer le citoyen au désert

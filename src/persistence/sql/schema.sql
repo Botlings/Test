@@ -50,6 +50,11 @@ CREATE TABLE IF NOT EXISTS towns (
   -- Régénérée déterministe à partir de `desert_seed` si manquante ou invalide.
   desert              jsonb         NOT NULL DEFAULT '{}'::jsonb,
   desert_seed         bigint        NOT NULL DEFAULT 0,
+  -- Gouvernance multijoueur (jalon 2) : fondateur de la ville et régime
+  -- d'accès à la banque commune ('open' = libre, 'restricted' = fondateur +
+  -- gestionnaires uniquement pour les dépenses de construction).
+  founder_account_id  uuid                   REFERENCES accounts(id) ON DELETE SET NULL,
+  bank_policy         text          NOT NULL DEFAULT 'open' CHECK (bank_policy IN ('open','restricted')),
   CONSTRAINT towns_resources_nonneg CHECK (
     bank_wood >= 0 AND bank_metal >= 0 AND bank_water >= 0
   )
@@ -64,6 +69,11 @@ ALTER TABLE towns
   ADD COLUMN IF NOT EXISTS desert jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE towns
   ADD COLUMN IF NOT EXISTS desert_seed bigint NOT NULL DEFAULT 0;
+-- Gouvernance multijoueur (jalon 2).
+ALTER TABLE towns
+  ADD COLUMN IF NOT EXISTS founder_account_id uuid REFERENCES accounts(id) ON DELETE SET NULL;
+ALTER TABLE towns
+  ADD COLUMN IF NOT EXISTS bank_policy text NOT NULL DEFAULT 'open';
 
 CREATE TABLE IF NOT EXISTS citizens (
   town_id                  uuid     NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
@@ -98,6 +108,26 @@ CREATE TABLE IF NOT EXISTS town_memberships (
   PRIMARY KEY (town_id, account_id),
   FOREIGN KEY (town_id, citizen_id) REFERENCES citizens(town_id, id) ON DELETE CASCADE
 );
+
+-- Gestionnaires de banque : comptes autorisés à dépenser la banque commune
+-- quand `towns.bank_policy = 'restricted'`. Le fondateur est implicite (non
+-- listé ici). Jalon 2.
+CREATE TABLE IF NOT EXISTS town_bank_managers (
+  town_id     uuid         NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+  account_id  uuid         NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  granted_at  timestamptz  NOT NULL DEFAULT now(),
+  PRIMARY KEY (town_id, account_id)
+);
+
+-- File d'attente pour rejoindre une ville pleine. Ordre = `enqueued_at`.
+-- Jalon 2. (Transitoire mais persistée pour survivre à un redémarrage.)
+CREATE TABLE IF NOT EXISTS town_queue (
+  town_id      uuid         NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+  account_id   uuid         NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  enqueued_at  timestamptz  NOT NULL DEFAULT now(),
+  PRIMARY KEY (town_id, account_id)
+);
+CREATE INDEX IF NOT EXISTS town_queue_order_idx ON town_queue(town_id, enqueued_at ASC);
 
 CREATE TABLE IF NOT EXISTS night_events (
   id          uuid         PRIMARY KEY DEFAULT gen_random_uuid(),

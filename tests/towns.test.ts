@@ -148,7 +148,7 @@ describe('POST /towns/:id/join', () => {
     expect((res.json() as { error: { code: string } }).error.code).toBe('already-joined');
   });
 
-  it('refuse au-delà de la capacité maximale (10 joueurs)', async () => {
+  it('refuse au-delà de la capacité maximale (40 joueurs)', async () => {
     const built = await makeTestApp();
     app = built.app;
     const reg = await register(built.app, 'alia@hordes.test', 'password!1');
@@ -159,7 +159,8 @@ describe('POST /towns/:id/join', () => {
       payload: { name: 'Aldebaran', difficulty: 'normal' },
     });
     const townId = (created.json() as TownState).id;
-    for (let i = 1; i <= 9; i++) {
+    // Le fondateur occupe 1 place : 39 arrivants supplémentaires → ville pleine (40).
+    for (let i = 1; i <= 39; i++) {
       const joiner = await register(built.app, `j${i}@hordes.test`, 'password!1');
       const res = await built.app.inject({
         method: 'POST',
@@ -168,16 +169,16 @@ describe('POST /towns/:id/join', () => {
       });
       expect(res.statusCode).toBe(200);
     }
-    // 11ème joueur : refusé.
-    const eleventh = await register(built.app, 'late@hordes.test', 'password!1');
+    // 41ème joueur : refusé (ville pleine → passe par la file d'attente).
+    const late = await register(built.app, 'late@hordes.test', 'password!1');
     const tooLate = await built.app.inject({
       method: 'POST',
       url: `/towns/${townId}/join`,
-      headers: bearer(eleventh.body.accessToken!),
+      headers: bearer(late.body.accessToken!),
     });
     expect(tooLate.statusCode).toBe(409);
     expect((tooLate.json() as { error: { code: string } }).error.code).toBe('town-full');
-  });
+  }, 30000);
 
   it('renvoie 404 sur ville inconnue', async () => {
     const built = await makeTestApp();

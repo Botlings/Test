@@ -1393,6 +1393,79 @@ body[data-phase='night'] .status-pill--phase {
   background: var(--pa-ink-soft);
 }
 
+/* Présence temps réel (jalon 2) : point vif pour un habitant connecté. */
+.roster__item.is-online .roster__dot {
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.55);
+}
+
+.roster__online {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #2f9e44;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.roster__role {
+  font-size: 0.85rem;
+  vertical-align: baseline;
+}
+.roster__role--founder { color: var(--pa-rust); }
+.roster__role--manager { color: var(--pa-ochre-deep); }
+
+.roster__presence {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.roster__presence--on { color: #2f9e44; }
+.roster__presence--off { color: var(--pa-ink-soft); }
+
+/* Ville complète dans le lobby. */
+.badge--full {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--pa-blood);
+  color: var(--pa-ochre);
+  border: 1px solid var(--pa-ink);
+  border-radius: 4px;
+}
+
+/* Gouvernance de la banque commune (carte terminal → tokens --crt*). */
+.bank-gov {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--crt-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bank-gov__status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--crt);
+}
+.bank-gov__status strong { color: var(--crt-bright); }
+
+.bank-gov__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--crt-faint);
+  line-height: 1.35;
+}
+
+.bank-gov .btn {
+  align-self: flex-start;
+}
+
 /* ════════════════════════════════════════════════════════════════
    JOURNAL DE LA VILLE (terminal — flux temps réel)
    ════════════════════════════════════════════════════════════════ */

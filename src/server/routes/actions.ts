@@ -25,7 +25,7 @@ import {
   isKnownBuildingId,
 } from '../../domain/buildings.js';
 import type { Location } from '../../domain/types.js';
-import { StoreError, type Store } from '../../persistence/store.js';
+import { StoreError, canSpendBank, type Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
 import type { RealtimeHub } from '../../realtime/hub.js';
 import type { NightScheduler } from '../night-scheduler.js';
@@ -149,6 +149,16 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           break;
         }
         case 'build': {
+          // La construction puise dans la banque commune : soumise au régime
+          // d'accès (open = tous, restricted = fondateur + gestionnaires).
+          if (!canSpendBank(town, accountId)) {
+            return reply.code(403).send({
+              error: {
+                code: 'bank-restricted',
+                message: 'La banque est en accès restreint : seuls le fondateur et les gestionnaires peuvent construire',
+              },
+            });
+          }
           town.game.build(citizenId);
           await store.saveTown(town);
           publishTownSnapshot(hub, town);
@@ -172,6 +182,14 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           if (typeof buildingId !== 'string' || !isKnownBuildingId(buildingId)) {
             return reply.code(400).send({
               error: { code: 'building-unknown', message: 'Bâtiment inconnu' },
+            });
+          }
+          if (!canSpendBank(town, accountId)) {
+            return reply.code(403).send({
+              error: {
+                code: 'bank-restricted',
+                message: 'La banque est en accès restreint : seuls le fondateur et les gestionnaires peuvent construire',
+              },
             });
           }
           const result = town.game.constructBuilding(citizenId, buildingId);

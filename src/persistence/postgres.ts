@@ -33,7 +33,9 @@ import {
   type ActivityEntry,
   type ActivityInput,
   type ActivityKind,
+  type BankPolicy,
   type Difficulty,
+  type LeaveTownResult,
   type ForumMessageRecord,
   type ForumThreadDetail,
   type ForumThreadKind,
@@ -49,6 +51,7 @@ import {
   type SessionRecord,
   type StoredNightReport,
   type Store,
+  type TownQueueEntry,
   type TownRecord,
 } from './store.js';
 import { difficultyConfig, normalizeVoteOptions } from './memory.js';
@@ -99,10 +102,12 @@ export class PgStore implements Store {
       buildings: unknown;
       desert: unknown;
       desert_seed: string | number;
+      founder_account_id: Id | null;
+      bank_policy: BankPolicy;
     }>(
       `SELECT id, name, difficulty, created_at, closed, day, phase, town_defense,
               game_over, next_citizen_seq, bank_wood, bank_metal, bank_water,
-              buildings, desert, desert_seed
+              buildings, desert, desert_seed, founder_account_id, bank_policy
          FROM towns`,
     );
     if (townsRes.rowCount === 0) return;
@@ -195,8 +200,26 @@ export class PgStore implements Store {
         game,
         membership: membershipByTown.get(row.id) ?? new Map(),
         closed: row.closed,
+        founderAccountId: row.founder_account_id ?? null,
+        bankPolicy: row.bank_policy === 'restricted' ? 'restricted' : 'open',
+        bankManagers: new Set<Id>(),
+        queue: [],
       };
       this.towns.set(row.id, town);
+    }
+
+    // Hydrate les gestionnaires de banque et la file d'attente.
+    const managersRes = await this.pool.query<{ town_id: Id; account_id: Id }>(
+      `SELECT town_id, account_id FROM town_bank_managers`,
+    );
+    for (const row of managersRes.rows) {
+      this.towns.get(row.town_id)?.bankManagers.add(row.account_id);
+    }
+    const queueRes = await this.pool.query<{ town_id: Id; account_id: Id }>(
+      `SELECT town_id, account_id FROM town_queue ORDER BY town_id, enqueued_at ASC`,
+    );
+    for (const row of queueRes.rows) {
+      this.towns.get(row.town_id)?.queue.push(row.account_id);
     }
   }
 
@@ -366,6 +389,10 @@ export class PgStore implements Store {
       game,
       membership: new Map(),
       closed: false,
+      founderAccountId: null,
+      bankPolicy: 'open',
+      bankManagers: new Set<Id>(),
+      queue: [],
     };
     this.towns.set(id, town);
     return town;
@@ -389,8 +416,11 @@ export class PgStore implements Store {
     if (town.membership.size >= MAX_CITIZENS_PER_TOWN) {
       throw new StoreError('town-full', 'Cette ville est complète');
     }
+    const wasEmpty = town.membership.size === 0;
+    const becomesFounder = wasEmpty && !town.founderAccountId;
     const citizen = town.game.addCitizen(citizenName);
     town.membership.set(accountId, citizen.id);
+    if (becomesFounder) town.founderAccountId = accountId;
 
     const client = await this.pool.connect();
     try {
@@ -402,23 +432,237 @@ export class PgStore implements Store {
         [town.id, accountId, citizen.id],
       );
       await client.query(
-        `UPDATE towns SET next_citizen_seq = $2 WHERE id = $1`,
-        [town.id, town.game.snapshot().nextCitizenSeq],
+        `UPDATE towns SET next_citizen_seq = $2${becomesFounder ? ', founder_account_id = $3' : ''} WHERE id = $1`,
+        becomesFounder
+          ? [town.id, town.game.snapshot().nextCitizenSeq, accountId]
+          : [town.id, town.game.snapshot().nextCitizenSeq],
+      );
+      // Un compte qui rejoint quitte la file d'attente.
+      await client.query(
+        `DELETE FROM town_queue WHERE town_id = $1 AND account_id = $2`,
+        [town.id, accountId],
       );
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK').catch(() => undefined);
       // Compense la mutation in-memory si le commit échoue.
       town.membership.delete(accountId);
+      if (becomesFounder) town.founderAccountId = null;
       throw err;
     } finally {
       client.release();
     }
+    const qi = town.queue.indexOf(accountId);
+    if (qi !== -1) town.queue.splice(qi, 1);
     return { citizenId: citizen.id };
   }
 
   async citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined> {
     return this.towns.get(townId)?.membership.get(accountId);
+  }
+
+  async leaveTown(townId: Id, accountId: Id): Promise<LeaveTownResult> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    if (town.closed) {
+      throw new StoreError('town-closed', 'Cette ville est terminée');
+    }
+
+    const qi = town.queue.indexOf(accountId);
+    const citizenId = town.membership.get(accountId);
+
+    if (!citizenId) {
+      // Compte non membre : on l'évacue juste de la file s'il y était.
+      if (qi !== -1) {
+        town.queue.splice(qi, 1);
+        await this.pool
+          .query(`DELETE FROM town_queue WHERE town_id = $1 AND account_id = $2`, [townId, accountId])
+          .catch(() => undefined);
+      }
+      return { removedCitizenId: null, promoted: null };
+    }
+
+    // Retire le citoyen du moteur et de la base, puis promeut la tête de file.
+    town.game.removeCitizen(citizenId);
+    town.membership.delete(accountId);
+    town.bankManagers.delete(accountId);
+    if (qi !== -1) town.queue.splice(qi, 1);
+    const newFounder =
+      town.founderAccountId === accountId
+        ? (town.membership.keys().next().value ?? null)
+        : town.founderAccountId;
+
+    let promoted: LeaveTownResult['promoted'] = null;
+    let promotedAccount: AccountRecord | undefined;
+    while (town.queue.length > 0 && town.membership.size < MAX_CITIZENS_PER_TOWN) {
+      const nextAccountId = town.queue[0]!;
+      if (town.membership.has(nextAccountId)) {
+        town.queue.shift();
+        continue;
+      }
+      const account = await this.getAccount(nextAccountId);
+      if (!account) {
+        town.queue.shift();
+        continue;
+      }
+      town.queue.shift();
+      const citizenName = account.email.split('@')[0]!;
+      const citizen = town.game.addCitizen(citizenName);
+      town.membership.set(nextAccountId, citizen.id);
+      promoted = { accountId: nextAccountId, citizenId: citizen.id, citizenName };
+      promotedAccount = account;
+      break;
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`DELETE FROM citizens WHERE town_id = $1 AND id = $2`, [townId, citizenId]);
+      await client.query(
+        `DELETE FROM town_memberships WHERE town_id = $1 AND account_id = $2`,
+        [townId, accountId],
+      );
+      await client.query(
+        `DELETE FROM town_bank_managers WHERE town_id = $1 AND account_id = $2`,
+        [townId, accountId],
+      );
+      await client.query(`DELETE FROM town_queue WHERE town_id = $1 AND account_id = $2`, [
+        townId,
+        accountId,
+      ]);
+      if (newFounder !== town.founderAccountId) {
+        town.founderAccountId = newFounder;
+        await client.query(`UPDATE towns SET founder_account_id = $2 WHERE id = $1`, [
+          townId,
+          newFounder,
+        ]);
+      }
+      if (promoted && promotedAccount) {
+        const citizen = town.game
+          .status()
+          .citizens.find((c) => c.id === promoted!.citizenId)!;
+        await this.upsertCitizen(client, townId, promoted.accountId, citizen);
+        await client.query(
+          `INSERT INTO town_memberships (town_id, account_id, citizen_id) VALUES ($1, $2, $3)`,
+          [townId, promoted.accountId, promoted.citizenId],
+        );
+        await client.query(`DELETE FROM town_queue WHERE town_id = $1 AND account_id = $2`, [
+          townId,
+          promoted.accountId,
+        ]);
+        await client.query(`UPDATE towns SET next_citizen_seq = $2 WHERE id = $1`, [
+          townId,
+          town.game.snapshot().nextCitizenSeq,
+        ]);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw err;
+    } finally {
+      client.release();
+    }
+    return { removedCitizenId: citizenId, promoted };
+  }
+
+  async enqueueForTown(
+    townId: Id,
+    accountId: Id,
+  ): Promise<{ position: number; size: number }> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    if (town.closed) {
+      throw new StoreError('town-closed', 'Cette ville est terminée');
+    }
+    if (town.membership.has(accountId)) {
+      throw new StoreError('already-joined', 'Vous avez déjà rejoint cette ville');
+    }
+    if (town.membership.size < MAX_CITIZENS_PER_TOWN) {
+      throw new StoreError('town-not-full', 'Cette ville n\'est pas pleine : rejoignez-la directement');
+    }
+    if (town.queue.includes(accountId)) {
+      throw new StoreError('already-queued', 'Vous êtes déjà dans la file d\'attente');
+    }
+    await this.pool.query(
+      `INSERT INTO town_queue (town_id, account_id) VALUES ($1, $2)
+       ON CONFLICT (town_id, account_id) DO NOTHING`,
+      [townId, accountId],
+    );
+    town.queue.push(accountId);
+    return { position: town.queue.length, size: town.queue.length };
+  }
+
+  async leaveQueue(townId: Id, accountId: Id): Promise<void> {
+    const town = this.towns.get(townId);
+    if (town) {
+      const i = town.queue.indexOf(accountId);
+      if (i !== -1) town.queue.splice(i, 1);
+    }
+    await this.pool
+      .query(`DELETE FROM town_queue WHERE town_id = $1 AND account_id = $2`, [townId, accountId])
+      .catch(() => undefined);
+  }
+
+  async getQueue(townId: Id): Promise<TownQueueEntry[]> {
+    const town = this.towns.get(townId);
+    if (!town) return [];
+    const res = await this.pool.query<{ account_id: Id; enqueued_at: Date }>(
+      `SELECT account_id, enqueued_at FROM town_queue WHERE town_id = $1 ORDER BY enqueued_at ASC`,
+      [townId],
+    );
+    if (res.rowCount && res.rowCount > 0) {
+      return res.rows.map((r, idx) => ({
+        accountId: r.account_id,
+        position: idx + 1,
+        enqueuedAt: r.enqueued_at,
+      }));
+    }
+    // Repli sur le cache mémoire si la table est vide (ex. tests sans DB).
+    return town.queue.map((accountId, idx) => ({
+      accountId,
+      position: idx + 1,
+      enqueuedAt: new Date(),
+    }));
+  }
+
+  async setBankPolicy(townId: Id, policy: BankPolicy): Promise<void> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    town.bankPolicy = policy;
+    await this.pool.query(`UPDATE towns SET bank_policy = $2 WHERE id = $1`, [townId, policy]);
+  }
+
+  async setBankManager(townId: Id, accountId: Id, allowed: boolean): Promise<void> {
+    const town = this.towns.get(townId);
+    if (!town) {
+      throw new StoreError('town-not-found', 'Ville introuvable');
+    }
+    if (!town.membership.has(accountId)) {
+      throw new StoreError('not-a-citizen', 'Ce compte n\'est pas citoyen de la ville');
+    }
+    if (town.founderAccountId === accountId) {
+      throw new StoreError('founder-immutable', 'Le fondateur est gestionnaire permanent');
+    }
+    if (allowed) {
+      town.bankManagers.add(accountId);
+      await this.pool.query(
+        `INSERT INTO town_bank_managers (town_id, account_id) VALUES ($1, $2)
+         ON CONFLICT (town_id, account_id) DO NOTHING`,
+        [townId, accountId],
+      );
+    } else {
+      town.bankManagers.delete(accountId);
+      await this.pool.query(
+        `DELETE FROM town_bank_managers WHERE town_id = $1 AND account_id = $2`,
+        [townId, accountId],
+      );
+    }
   }
 
   async listAccountTowns(accountId: Id): Promise<AccountTownEntry[]> {

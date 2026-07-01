@@ -32,8 +32,28 @@ export interface StoredNightReport {
 
 export type Difficulty = 'normal' | 'hard' | 'hardcore';
 
-/** Nombre maximum de joueurs distincts dans une ville. */
-export const MAX_CITIZENS_PER_TOWN = 10;
+/**
+ * Régime d'accès à la banque commune de la ville.
+ *   - `open`       : n'importe quel citoyen peut puiser dans la banque pour
+ *                    construire (comportement historique du jalon 1).
+ *   - `restricted` : seuls le fondateur et les gestionnaires désignés peuvent
+ *                    dépenser les ressources de la banque (anti-pillage).
+ */
+export type BankPolicy = 'open' | 'restricted';
+
+/** Rôle d'un compte vis-à-vis de la ville et de sa banque. */
+export type TownRole = 'founder' | 'manager' | 'citizen';
+
+/** Une entrée de la file d'attente d'une ville pleine. */
+export interface TownQueueEntry {
+  readonly accountId: Id;
+  /** Position 1-based dans la file (1 = prochain à entrer). */
+  readonly position: number;
+  readonly enqueuedAt: Date;
+}
+
+/** Nombre maximum de joueurs distincts dans une ville (jalon 2 : 40 habitants). */
+export const MAX_CITIZENS_PER_TOWN = 40;
 /** Durée de vie par défaut d'un refresh token (en ms) — 30 jours. */
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -56,6 +76,15 @@ export interface SessionRecord {
  * sérialiser / restaurer son `snapshot()` sur leur backend respectif.
  *
  * `membership` mappe `accountId → citizenId` (l'identifiant côté domain).
+ *
+ * Gouvernance multijoueur (jalon 2) :
+ *   - `founderAccountId` : premier compte à avoir rejoint (créateur). Toujours
+ *     gestionnaire de banque, ne peut être révoqué.
+ *   - `bankPolicy`       : régime d'accès à la banque commune.
+ *   - `bankManagers`     : comptes autorisés à dépenser la banque en régime
+ *     `restricted` (le fondateur est implicitement inclus).
+ *   - `queue`            : file d'attente ordonnée (accountId) pour rejoindre
+ *     une ville pleine. Transitoire : non persistée durablement.
  */
 export interface TownRecord {
   readonly id: Id;
@@ -65,6 +94,41 @@ export interface TownRecord {
   readonly game: Game;
   readonly membership: Map<Id, string>;
   closed: boolean;
+  founderAccountId: Id | null;
+  bankPolicy: BankPolicy;
+  readonly bankManagers: Set<Id>;
+  readonly queue: Id[];
+}
+
+/**
+ * Détermine si un compte a le droit de dépenser les ressources de la banque
+ * commune (construction). En régime `open`, tout citoyen le peut ; en régime
+ * `restricted`, seuls le fondateur et les gestionnaires désignés. Pure
+ * fonction (pas d'I/O) — mutualisée par les routes et les tests.
+ */
+export function canSpendBank(town: TownRecord, accountId: Id): boolean {
+  if (town.bankPolicy === 'open') return true;
+  if (town.founderAccountId && town.founderAccountId === accountId) return true;
+  return town.bankManagers.has(accountId);
+}
+
+/** Rôle d'un compte dans une ville (pour l'affichage / les autorisations). */
+export function roleFor(town: TownRecord, accountId: Id): TownRole {
+  if (town.founderAccountId && town.founderAccountId === accountId) return 'founder';
+  if (town.bankManagers.has(accountId)) return 'manager';
+  return 'citizen';
+}
+
+/** Résultat d'un départ de ville : éventuelle promotion de la tête de file. */
+export interface LeaveTownResult {
+  /** Le citoyen retiré (compte sortant). `null` si le compte n'était pas membre. */
+  readonly removedCitizenId: string | null;
+  /** Compte promu depuis la file d'attente pour occuper la place libérée. */
+  readonly promoted: {
+    readonly accountId: Id;
+    readonly citizenId: string;
+    readonly citizenName: string;
+  } | null;
 }
 
 export interface NightEventInput {
@@ -188,6 +252,10 @@ export interface ForumThreadDetail {
 export type ActivityKind =
   | 'town.create'
   | 'citizen.join'
+  | 'citizen.leave'
+  | 'citizen.promoted'
+  | 'bank.policy'
+  | 'bank.manager'
   | 'citizen.move'
   | 'citizen.scavenge'
   | 'citizen.build'
@@ -274,6 +342,43 @@ export interface Store {
   createTown(name: string, difficulty: Difficulty): Promise<TownRecord>;
   joinTown(townId: Id, accountId: Id, citizenName: string): Promise<{ citizenId: string }>;
   citizenIdFor(townId: Id, accountId: Id): Promise<string | undefined>;
+
+  /**
+   * Retire un compte d'une ville (le joueur quitte la partie) puis, si la
+   * file d'attente n'est pas vide, promeut automatiquement la tête de file
+   * pour occuper la place libérée. Idempotent : un compte non membre renvoie
+   * `removedCitizenId: null` sans erreur. Lève `StoreError('town-closed')`
+   * si la partie est terminée.
+   */
+  leaveTown(townId: Id, accountId: Id): Promise<LeaveTownResult>;
+
+  /* ----------------------- File d'attente (ville pleine) ---------------- */
+  /**
+   * Ajoute un compte à la file d'attente d'une ville pleine. Lève
+   * `StoreError('town-not-found' | 'town-closed' | 'already-joined' |
+   * 'already-queued' | 'town-not-full')`. Renvoie la position 1-based.
+   */
+  enqueueForTown(townId: Id, accountId: Id): Promise<{ position: number; size: number }>;
+
+  /** Retire un compte de la file d'attente (no-op s'il n'y est pas). */
+  leaveQueue(townId: Id, accountId: Id): Promise<void>;
+
+  /** File d'attente ordonnée d'une ville (vide si aucune attente). */
+  getQueue(townId: Id): Promise<TownQueueEntry[]>;
+
+  /* ----------------------- Banque : droits d'accès ---------------------- */
+  /**
+   * Change le régime d'accès à la banque commune. Réservé au fondateur /
+   * gestionnaires côté route. Lève `StoreError('town-not-found')`.
+   */
+  setBankPolicy(townId: Id, policy: BankPolicy): Promise<void>;
+
+  /**
+   * Accorde (ou révoque) le droit de gestion de banque à un compte membre.
+   * Le fondateur ne peut être révoqué. Lève
+   * `StoreError('town-not-found' | 'not-a-citizen' | 'founder-immutable')`.
+   */
+  setBankManager(townId: Id, accountId: Id, allowed: boolean): Promise<void>;
   /**
    * Liste les villes auxquelles un compte a participé, triées de la plus
    * récente à la plus ancienne. Utilisé par `/auth/me/history`.

@@ -333,6 +333,22 @@
               </div>
             </dl>
 
+            <!-- Gouvernance de la banque commune (jalon 2) -->
+            <div class="bank-gov" id="bank-gov" hidden>
+              <p class="bank-gov__status">
+                Accès banque : <strong id="bank-policy-label">libre</strong>
+              </p>
+              <button
+                type="button"
+                class="btn btn--sm btn--ghost"
+                id="bank-policy-toggle"
+                hidden
+              >
+                Restreindre l'accès
+              </button>
+              <p class="bank-gov__hint" id="bank-gov-hint"></p>
+            </div>
+
             <div class="defense">
               <div class="defense__row">
                 <span class="defense__label">Défense de la ville</span>
@@ -450,6 +466,7 @@
               <h2 class="card__title">
                 Citoyens
                 <span class="card__count" id="roster-count">0</span>
+                <span class="roster__online" id="roster-online" title="Habitants connectés en ce moment"></span>
               </h2>
             </header>
             <ul class="roster" id="roster-list"></ul>
