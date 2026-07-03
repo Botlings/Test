@@ -1,16 +1,20 @@
 /* Hordes Revival — feuille de styles partagée.
    ───────────────────────────────────────────────────────────────
-   DEUX ESTHÉTIQUES, UNE DÉCISION FIGÉE (DA horreur post-apo 60's) :
+   DEUX ESTHÉTIQUES, UNE DÉCISION FIGÉE (DA « rétro mignon post-apo 60's ») :
 
-   1. HORREUR POST-APO ANNÉES 60 = thème PAR DÉFAUT (`:root`), commuté en
-      DEUX SCÈNES RADICALEMENT DISTINCTES par data-daytime (heure locale) —
-      PAS un simple assombrissement : palette, typographie, illustrations et
-      textures changent entièrement (cf. bloc « DEUX THÈMES » plus bas).
-        • JOUR  = DÉSERT BRÛLANT : sable / ocre / rouille, soleil écrasant
-          (sunburst), affiches de propagande, Archivo Black + Oswald.
-        • NUIT  = INVASION ZOMBIE : cendre / noir / rouge sang, lune de sang,
-          silhouettes de horde à l'horizon, ombres dures rouges, typographie
-          d'horreur Creepster + Special Elite.
+   BASE = RÉTRO MIGNON (décision humaine 2026-06-12) : formes rondes, coins
+   généreux (--radius), illustrations cute/chibi (personnages à grosse tête,
+   grands yeux ronds), charm de réclame vintage — appliquée à l'univers
+   post-apo et commutée en DEUX SCÈNES RADICALEMENT DISTINCTES par
+   data-daytime (heure locale) — PAS un simple assombrissement : palette,
+   typographie, illustrations et textures changent entièrement (cf. bloc
+   « DEUX THÈMES » plus bas).
+        • JOUR  = LONESOME ROAD : route déserte qui file vers l'horizon,
+          vieilles caravanes abandonnées, poussière, sable / ocre / rouille,
+          soleil bas et mélancolique, Archivo Black + Oswald.
+        • NUIT  = CIMETIÈRE : cendre / noir / rouge sang, lune de sang, croix
+          et pierres tombales, bougies, petits zombies qui sortent de terre,
+          typographie d'horreur Creepster + Special Elite.
       Public + landing + ville, SANS mascotte. AUCUNE mention de marque.
 
    2. TERMINAL VERT PHOSPHORE (+ CRT) = SKIN RÉSERVÉ aux interfaces
@@ -43,7 +47,7 @@
   --pa-line: #2a1b10;
 
   --maxw: 1080px;
-  --radius: 10px;
+  --radius: 18px; /* coins généreux : base « rétro mignon », formes rondes */
   /* Ombres dures et chaudes (brun calciné, pas de bleu). */
   --shadow: 6px 6px 0 rgba(34, 20, 10, 0.92);
   --shadow-soft: 4px 4px 0 rgba(34, 20, 10, 0.22);
@@ -283,8 +287,8 @@ h1, h2, h3 {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.6rem;
+  border-radius: 999px; /* boutons en galet arrondi (rétro mignon) */
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 1.05rem;
@@ -397,8 +401,8 @@ h1, h2, h3 {
 .hero__eyebrow-tag {
   background: var(--pa-blood);
   color: #fff;
-  padding: 0.2rem 0.7rem;
-  border-radius: 4px;
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
   letter-spacing: 0.08em;
   box-shadow: var(--shadow-soft);
 }
@@ -446,7 +450,7 @@ h1, h2, h3 {
   padding: 0.35rem 0.7rem;
   background: rgba(255, 255, 255, 0.45);
   border-left: 4px solid var(--pa-rust);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 12px 12px 0;
 }
 
 .hero__meta span {
@@ -459,7 +463,7 @@ h1, h2, h3 {
   font-size: 0.95rem;
   color: var(--pa-ink-soft);
   border: 2px dashed var(--pa-rust);
-  border-radius: 6px;
+  border-radius: 14px;
   padding: 0.7rem 1rem;
   background: rgba(255, 199, 44, 0.16);
 }
@@ -499,8 +503,8 @@ h1, h2, h3 {
   font-family: var(--font-display);
   font-size: 0.85rem;
   letter-spacing: 0.18em;
-  padding: 0.25rem 0.9rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.95rem;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
@@ -622,7 +626,7 @@ section {
   color: #fff;
   background: var(--pa-rust);
   padding: 0.3rem 1.4rem;
-  border-bottom-right-radius: 8px;
+  border-bottom-right-radius: 16px;
 }
 
 .phase--day .phase__tag  { background: var(--pa-ochre-deep); }

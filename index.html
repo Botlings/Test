@@ -125,98 +125,121 @@
 
           <div class="hero__poster" aria-hidden="true">
             <div class="hero-emblem hero-emblem--day">
-              <svg viewBox="0 0 200 240" role="img" aria-label="Affiche de propagande : la cité fortifiée tient bon face à la horde">
-                <!-- Ciel ocre brûlé -->
-                <rect x="0" y="0" width="200" height="240" fill="#e0a32e"/>
-                <!-- Soleil écrasant + rayons (sunburst rétro) -->
-                <g fill="#c25f2a" opacity="0.55">
-                  <path d="M100 86 L0 0 L46 0 Z"/>
-                  <path d="M100 86 L46 0 L92 0 Z"/>
-                  <path d="M100 86 L92 0 L138 0 Z"/>
-                  <path d="M100 86 L138 0 L184 0 Z"/>
-                  <path d="M100 86 L184 0 L200 24 Z"/>
-                  <path d="M100 86 L200 24 L200 70 Z"/>
-                  <path d="M100 86 L0 70 L0 24 Z"/>
-                  <path d="M100 86 L0 24 L0 0 Z"/>
+              <svg viewBox="0 0 200 240" role="img" aria-label="Illustration rétro : une route déserte s'étire vers l'horizon, une vieille caravane abandonnée et un petit survivant qui salue">
+                <defs>
+                  <linearGradient id="dsky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#f5df94"/>
+                    <stop offset="0.58" stop-color="#e8b25c"/>
+                    <stop offset="1" stop-color="#d98f47"/>
+                  </linearGradient>
+                </defs>
+                <!-- Ciel chaud, coins arrondis -->
+                <rect x="0" y="0" width="200" height="240" rx="16" fill="url(#dsky)"/>
+                <!-- Gros soleil rond et doux, bas sur l'horizon (mélancolie de fin de jour) -->
+                <circle cx="100" cy="122" r="44" fill="#f8e8ac" opacity="0.65"/>
+                <circle cx="100" cy="122" r="27" fill="#fdf3cc"/>
+                <!-- Dunes rondes -->
+                <path d="M0 148 q46 -20 92 -6 q46 14 108 -8 L200 240 L0 240 Z" fill="#d8b169"/>
+                <path d="M0 174 q56 -16 104 -4 q50 12 96 -8 L200 240 L0 240 Z" fill="#c0914c"/>
+                <!-- Route qui file vers le point de fuite -->
+                <path d="M90 140 L110 140 L156 240 L44 240 Z" fill="#836341"/>
+                <!-- Ligne médiane pointillée, arrondie et fuyante -->
+                <g fill="#ecce7d">
+                  <rect x="98.5" y="150" width="3" height="7" rx="1.5"/>
+                  <rect x="98" y="168" width="4" height="9" rx="2"/>
+                  <rect x="97" y="190" width="6" height="12" rx="3"/>
+                  <rect x="95.5" y="216" width="9" height="16" rx="4.5"/>
                 </g>
-                <circle cx="100" cy="78" r="34" fill="#f3e0a8"/>
-                <circle cx="100" cy="78" r="34" fill="none" stroke="#2a1b10" stroke-width="3"/>
-                <!-- Dunes -->
-                <path d="M0 150 q50 -18 100 -2 q50 16 100 -4 L200 240 L0 240 Z" fill="#cbb073"/>
-                <path d="M0 178 q60 14 100 2 q44 -13 100 4 L200 240 L0 240 Z" fill="#a8884f"/>
-                <!-- Horde de silhouettes massées à l'horizon -->
-                <g fill="#2a1b10" opacity="0.78">
-                  <path d="M30 150 q3 -10 7 0 l0 12 -7 0 Z"/>
-                  <path d="M42 152 q3 -9 6 0 l0 11 -6 0 Z"/>
-                  <path d="M54 149 q3 -11 7 0 l0 13 -7 0 Z"/>
-                  <path d="M150 151 q3 -10 7 0 l0 12 -7 0 Z"/>
-                  <path d="M162 149 q3 -11 6 0 l0 13 -6 0 Z"/>
-                  <path d="M173 152 q3 -9 6 0 l0 11 -6 0 Z"/>
+                <!-- Poteaux télégraphiques qui rapetissent vers l'horizon -->
+                <g fill="#6f4a28">
+                  <g><rect x="150" y="118" width="3" height="28" rx="1.5"/><rect x="145.5" y="120" width="12" height="3" rx="1.5"/></g>
+                  <g><rect x="161" y="106" width="2.4" height="21" rx="1.2"/><rect x="157.4" y="108" width="9.6" height="2.4" rx="1.2"/></g>
+                  <g><rect x="169" y="98" width="2" height="15" rx="1"/><rect x="166" y="99.5" width="8" height="2" rx="1"/></g>
                 </g>
-                <!-- Cité fortifiée au centre (remparts + tour de guet) -->
-                <g stroke="#2a1b10" stroke-width="3" stroke-linejoin="round">
-                  <rect x="74" y="158" width="52" height="40" fill="#9c4322"/>
-                  <path d="M74 158 l0 -6 6 0 0 6 6 0 0 -6 6 0 0 6 6 0 0 -6 6 0 0 6 6 0 0 -6 6 0 0 6 6 0 0 -6 6 0 0 6" fill="#9c4322"/>
-                  <rect x="92" y="138" width="16" height="60" fill="#7a3219"/>
-                  <path d="M92 138 l0 -5 4 0 0 5 4 0 0 -5 4 0 0 5 4 0 0 -5 4 0 0 5" fill="#7a3219"/>
-                  <rect x="96" y="150" width="8" height="9" fill="#e0a32e"/>
-                  <rect x="84" y="176" width="10" height="22" fill="#2a1b10"/>
+                <!-- Vieille caravane abandonnée, silhouette bien arrondie -->
+                <g stroke="#3f2a17" stroke-width="2.4" stroke-linejoin="round">
+                  <rect x="18" y="150" width="60" height="34" rx="13" fill="#c96f43"/>
+                  <rect x="25" y="157" width="20" height="15" rx="5" fill="#f2e3b8"/>
+                  <rect x="53" y="158" width="18" height="21" rx="5" fill="#a9552f"/>
                 </g>
-                <!-- Cadre d'affiche -->
-                <rect x="3" y="3" width="194" height="234" fill="none" stroke="#2a1b10" stroke-width="5"/>
+                <circle cx="33" cy="186" r="8" fill="#3f2a17"/><circle cx="33" cy="186" r="3.4" fill="#8a6a45"/>
+                <circle cx="64" cy="186" r="8" fill="#3f2a17"/><circle cx="64" cy="186" r="3.4" fill="#8a6a45"/>
+                <!-- Petit survivant chibi qui salue (formes rondes, mignon) -->
+                <g>
+                  <ellipse cx="150" cy="226" rx="15" ry="4" fill="#3f2a17" opacity="0.26"/>
+                  <path d="M140 226 q0 -27 10 -27 q10 0 10 27 z" fill="#9c4322"/>
+                  <rect x="136" y="204" width="8" height="17" rx="4" fill="#6f4a28"/>
+                  <circle cx="150" cy="191" r="12" fill="#f0c9a0"/>
+                  <path d="M138 189 a12 12 0 0 1 24 0 q-12 -9 -24 0 z" fill="#5e3a1c"/>
+                  <circle cx="146" cy="192" r="1.8" fill="#2a1b10"/>
+                  <circle cx="154" cy="192" r="1.8" fill="#2a1b10"/>
+                  <path d="M147 197 q3 3 6 0" fill="none" stroke="#2a1b10" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M160 209 q11 -2 12 -15" fill="none" stroke="#f0c9a0" stroke-width="5" stroke-linecap="round"/>
+                  <circle cx="172" cy="193" r="3.6" fill="#f0c9a0"/>
+                </g>
+                <!-- Cadre d'affiche arrondi -->
+                <rect x="3" y="3" width="194" height="234" rx="14" fill="none" stroke="#3f2a17" stroke-width="4"/>
               </svg>
             </div>
             <div class="hero-emblem hero-emblem--night">
-              <svg viewBox="0 0 200 240" role="img" aria-label="Affiche d'alerte : la horde déferle sur la cité sous une lune de sang">
+              <svg viewBox="0 0 200 240" role="img" aria-label="Illustration : un cimetière sous une lune de sang, croix et bougies, de petits zombies aux yeux verts sortent de la terre">
                 <defs>
                   <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="#3a0608"/>
-                    <stop offset="0.55" stop-color="#190406"/>
-                    <stop offset="1" stop-color="#080203"/>
+                    <stop offset="0" stop-color="#1b0207"/>
+                    <stop offset="0.58" stop-color="#0d0104"/>
+                    <stop offset="1" stop-color="#050102"/>
                   </linearGradient>
                 </defs>
-                <!-- Ciel rouge sang -->
-                <rect x="0" y="0" width="200" height="240" fill="url(#nsky)"/>
-                <!-- Halo + lune de sang -->
-                <circle cx="142" cy="56" r="46" fill="#7a0b0c" opacity="0.45"/>
-                <circle cx="142" cy="56" r="30" fill="#c11a1c"/>
-                <circle cx="142" cy="56" r="30" fill="none" stroke="#2a0204" stroke-width="2"/>
-                <circle cx="133" cy="49" r="7" fill="#8c1012" opacity="0.75"/>
-                <circle cx="152" cy="63" r="5" fill="#8c1012" opacity="0.6"/>
-                <circle cx="148" cy="46" r="3.5" fill="#8c1012" opacity="0.6"/>
-                <!-- Cité fortifiée lointaine, lueur d'incendie -->
-                <g stroke="#120203" stroke-width="2" stroke-linejoin="round">
-                  <rect x="68" y="150" width="64" height="36" fill="#1f0d10"/>
-                  <path d="M68 150 l0 -6 7 0 0 6 7 0 0 -6 7 0 0 6 7 0 0 -6 7 0 0 6 7 0 0 -6 7 0 0 6 7 0 0 -6 7 0 0 6" fill="#1f0d10"/>
-                  <rect x="92" y="130" width="16" height="56" fill="#160a0c"/>
-                  <rect x="96" y="142" width="8" height="9" fill="#ff7a1a"/>
+                <!-- Ciel noir oppressant, coins arrondis -->
+                <rect x="0" y="0" width="200" height="240" rx="16" fill="url(#nsky)"/>
+                <!-- Lune de sang, halo doux -->
+                <circle cx="140" cy="56" r="44" fill="#5c0709" opacity="0.4"/>
+                <circle cx="140" cy="56" r="28" fill="#c31a1c"/>
+                <circle cx="132" cy="49" r="6.5" fill="#8f1113" opacity="0.7"/>
+                <circle cx="150" cy="63" r="4.5" fill="#8f1113" opacity="0.6"/>
+                <circle cx="146" cy="47" r="3" fill="#8f1113" opacity="0.6"/>
+                <!-- Sol de cimetière, monticule arrondi -->
+                <path d="M0 168 q50 -12 100 -2 q50 10 100 -4 L200 240 L0 240 Z" fill="#120306"/>
+                <!-- Pierres tombales arrondies -->
+                <g stroke="#000" stroke-width="1.6">
+                  <path d="M24 202 v-27 a11 11 0 0 1 22 0 v27 z" fill="#241016"/>
+                  <path d="M152 206 v-23 a10 10 0 0 1 20 0 v23 z" fill="#241016"/>
                 </g>
-                <!-- Lueurs d'incendie derrière les remparts -->
-                <path d="M74 150 q6 -12 12 0 z" fill="#ff6a18" opacity="0.8"/>
-                <path d="M112 152 q5 -10 10 0 z" fill="#ff8a22" opacity="0.7"/>
-                <!-- Sol calciné -->
-                <path d="M0 172 q50 -12 100 -2 q50 10 100 -4 L200 240 L0 240 Z" fill="#0b0304"/>
-                <!-- HORDE au premier plan : silhouettes massives, bras tendus -->
-                <g fill="#040102">
-                  <g transform="translate(22,182) scale(1.05)">
-                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 64 h-32 z"/>
-                    <path d="M-11 22 l-22 -10 4 -8 24 9 z"/><path d="M11 20 l23 -16 5 7 -24 17 z"/>
+                <!-- Croix -->
+                <g fill="#2a1319">
+                  <g transform="translate(96,174)"><rect x="-3" y="0" width="6" height="36" rx="2.5"/><rect x="-11" y="8" width="22" height="6" rx="2.5"/></g>
+                  <g transform="translate(64,188) scale(0.8)"><rect x="-3" y="0" width="6" height="30" rx="2.5"/><rect x="-10" y="7" width="20" height="5.5" rx="2.5"/></g>
+                </g>
+                <!-- Bougies : cire arrondie + flamme qui brille -->
+                <g>
+                  <rect x="52" y="206" width="5" height="13" rx="2.5" fill="#d9c9a6"/>
+                  <circle cx="54.5" cy="202" r="5" fill="#ff7a1a" opacity="0.45"/>
+                  <path d="M54.5 198 q3.2 4 0 7.5 q-3.2 -3.5 0 -7.5z" fill="#ffd36a"/>
+                  <rect x="182" y="214" width="4.5" height="10" rx="2" fill="#d9c9a6"/>
+                  <circle cx="184.2" cy="210" r="4.2" fill="#ff7a1a" opacity="0.45"/>
+                  <path d="M184.2 207 q2.7 3.4 0 6.2 q-2.7 -2.8 0 -6.2z" fill="#ffd36a"/>
+                </g>
+                <!-- Petits zombies chibi qui sortent de terre (ronds, yeux verts phosphore) -->
+                <g stroke="#0a0503" stroke-width="0.8">
+                  <g transform="translate(118,208)">
+                    <path d="M-15 22 a15 12 0 0 1 30 0 z" fill="#0c1c10"/>
+                    <circle cx="0" cy="2" r="10" fill="#1c4227"/>
+                    <circle cx="-3.4" cy="1" r="1.8" fill="#9dff6a"/>
+                    <circle cx="3.4" cy="1" r="1.8" fill="#9dff6a"/>
+                    <path d="M-4 6 q4 3.5 8 0" fill="none" stroke="#0a2913" stroke-width="1.2" stroke-linecap="round"/>
+                    <path d="M-9 11 q-9 -1 -12 -10" fill="none" stroke="#1c4227" stroke-width="4.4" stroke-linecap="round"/>
                   </g>
-                  <g transform="translate(62,196) scale(1.25)">
-                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 60 h-32 z"/>
-                    <path d="M-11 24 l-24 8 3 9 24 -9 z"/><path d="M11 22 l22 -12 5 8 -23 12 z"/>
-                  </g>
-                  <g transform="translate(112,190) scale(1.15)">
-                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 62 h-32 z"/>
-                    <path d="M-11 20 l-23 -14 5 -7 23 14 z"/><path d="M11 24 l24 6 -3 9 -24 -7 z"/>
-                  </g>
-                  <g transform="translate(158,198) scale(1.3)">
-                    <circle cx="0" cy="0" r="9"/><path d="M-11 12 h22 l5 58 h-32 z"/>
-                    <path d="M-11 22 l-22 -8 3 -9 23 9 z"/><path d="M11 20 l23 -16 5 7 -24 17 z"/>
+                  <g transform="translate(40,214) scale(0.86)">
+                    <path d="M-15 22 a15 12 0 0 1 30 0 z" fill="#0c1c10"/>
+                    <circle cx="0" cy="2" r="10" fill="#173a22"/>
+                    <circle cx="-3.4" cy="1" r="1.8" fill="#9dff6a"/>
+                    <circle cx="3.4" cy="1" r="1.8" fill="#9dff6a"/>
+                    <path d="M-4 6 q4 2.5 8 0" fill="none" stroke="#0a2913" stroke-width="1.2" stroke-linecap="round"/>
+                    <path d="M9 11 q9 -2 12 -11" fill="none" stroke="#173a22" stroke-width="4.4" stroke-linecap="round"/>
                   </g>
                 </g>
-                <!-- Cadre d'affiche sanglant -->
-                <rect x="3" y="3" width="194" height="234" fill="none" stroke="#7a0b0c" stroke-width="5"/>
+                <!-- Cadre d'affiche sanglant, arrondi -->
+                <rect x="3" y="3" width="194" height="234" rx="14" fill="none" stroke="#7a0b0c" stroke-width="4"/>
               </svg>
             </div>
             <p class="hero__poster-stamp">Cité&nbsp;84 · Tenez la nuit</p>
