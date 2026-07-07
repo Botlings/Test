@@ -35,6 +35,13 @@ export interface AppDeps {
   readonly scheduler?: NightScheduler;
   /** Registre de présence temps réel. Créé par défaut si non fourni. */
   readonly presence?: PresenceRegistry;
+  /**
+   * Période du heartbeat WebSocket (ping serveur → pong client) en
+   * millisecondes. Une connexion qui n'a pas répondu au ping précédent est
+   * purgée au tour suivant, ce qui libère sa présence. Défaut : 30 000 ms.
+   * `0` désactive le heartbeat (utile pour certains tests).
+   */
+  readonly heartbeatIntervalMs?: number;
 }
 
 export interface BuiltApp {
@@ -55,11 +62,43 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
     logger = false,
     scheduler,
     presence = new PresenceRegistry(),
+    heartbeatIntervalMs = 30_000,
   } = deps;
 
   const app = Fastify({ logger });
   await app.register(cookiePlugin);
   await app.register(websocketPlugin);
+
+  // Heartbeat WebSocket : sans lui, une connexion coupée brutalement (réseau
+  // mobile perdu, veille, onglet tué sans handshake de fermeture TCP) laisse un
+  // socket « à moitié ouvert » — l'événement `close` n'arrive jamais et le
+  // citoyen resterait « en ligne » en fantôme, faussant l'indicateur de
+  // présence et le compteur d'occupation de la ville. On sonde donc chaque
+  // socket : `sawPong=false` signifie « n'a pas répondu au ping précédent » →
+  // on termine la connexion, ce qui déclenche `close` → purge de la présence.
+  // Les navigateurs répondent automatiquement au ping protocolaire ; seules les
+  // connexions réellement mortes sont purgées.
+  const sawPong = new WeakMap<WebSocket, boolean>();
+  if (heartbeatIntervalMs > 0) {
+    const timer = setInterval(() => {
+      for (const client of app.websocketServer.clients) {
+        const socket = client as WebSocket;
+        if (sawPong.get(socket) === false) {
+          socket.terminate();
+          continue;
+        }
+        sawPong.set(socket, false);
+        try {
+          socket.ping();
+        } catch {
+          // Socket en cours de fermeture : ignoré, il sera purgé au tour suivant.
+        }
+      }
+    }, heartbeatIntervalMs);
+    // Ne pas maintenir le process (ni la boucle de test) en vie pour ce timer.
+    timer.unref?.();
+    app.addHook('onClose', async () => clearInterval(timer));
+  }
 
   // Sondes de santé.
   //   - /health/live  : process vivant (utilisé par Docker HEALTHCHECK et Render)
@@ -102,6 +141,9 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   registerForumRoutes(app, { store, jwtSecret, hub });
 
   app.get('/ws', { websocket: true }, (socket: WebSocket, request) => {
+    // Vivant tant qu'il n'a pas manqué un pong (voir le heartbeat plus haut).
+    sawPong.set(socket, true);
+    socket.on('pong', () => sawPong.set(socket, true));
     const url = new URL(request.url, 'http://localhost');
     const token = url.searchParams.get('token');
     const townId = url.searchParams.get('townId') as Id | null;
@@ -197,6 +239,8 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
 
       // Messages montants : chat de ville + heartbeat applicatif.
       socket.on('message', (raw: unknown) => {
+        // Tout trafic montant atteste que la connexion est vivante.
+        sawPong.set(socket, true);
         let parsed: unknown;
         try {
           parsed = JSON.parse(String(raw));
