@@ -1,76 +1,84 @@
-/* Hordes Revival — feuille de styles partagée.
-   ───────────────────────────────────────────────────────────────
-   DEUX ESTHÉTIQUES, UNE DÉCISION FIGÉE (DA « rétro mignon post-apo 60's ») :
+/* Hordes Revival — feuille de styles partagée (landing + tokens de base).
+   ═══════════════════════════════════════════════════════════════════
+   DA FIGÉE — PIXEL ART RÉTRO 16-32px (décision humaine 2026-07-07).
+   Reconstruction from scratch : toute l'ancienne DA « rétro mignon /
+   formes rondes / caravane oxydée » a été supprimée. On repart d'un
+   langage pixel art strict :
 
-   BASE = RÉTRO MIGNON (décision humaine 2026-06-12) : formes rondes, coins
-   généreux (--radius), illustrations cute/chibi (personnages à grosse tête,
-   grands yeux ronds), charm de réclame vintage — appliquée à l'univers
-   post-apo et commutée en DEUX SCÈNES RADICALEMENT DISTINCTES par
-   data-daytime (heure locale) — PAS un simple assombrissement : palette,
-   typographie, illustrations et textures changent entièrement (cf. bloc
-   « DEUX THÈMES » plus bas).
-        • JOUR  = LONESOME ROAD : route déserte qui file vers l'horizon,
-          vieilles caravanes abandonnées, poussière, sable / ocre / rouille,
-          soleil bas et mélancolique, Archivo Black + Oswald.
-        • NUIT  = CIMETIÈRE : cendre / noir / rouge sang, lune de sang, croix
-          et pierres tombales, bougies, petits zombies qui sortent de terre,
-          typographie d'horreur Creepster + Special Elite.
-      Public + landing + ville, SANS mascotte. AUCUNE mention de marque.
+     • Coins CARRÉS partout (--radius: 0) — aucun arrondi.
+     • Polices BITMAP : « Press Start 2P » (titrage) + « VT323 » (corps).
+     • Rendu net : image-rendering: pixelated / shape-rendering: crispEdges
+       sur toutes les images et illustrations SVG (sprites qui restent
+       crantés, jamais lissés).
+     • Ombres portées DURES à décalage entier (pas de flou) = look 8/16-bit.
+     • Textures = TRAMES (dithering) en damier de pixels, pas de dégradés lisses.
 
-   2. TERMINAL VERT PHOSPHORE (+ CRT) = SKIN RÉSERVÉ aux interfaces
-      « informatiques » (classe `.terminal`) : carte du désert, stats,
-      inventaire/défense, journaux et rapport de nuit. NE PAS
-      réintroduire le terminal vert sur les pages/zones non informatiques.
+   DEUX THÈMES RADICALEMENT DISTINCTS, commutés par body[data-daytime]
+   (posé par daynight.js depuis l'heure locale — nuit 20 h → 6 h) — PAS un
+   simple assombrissement : palette, trames, sprites et ambiance changent.
+       • JOUR = LONESOME ROAD : route déserte sablonneuse, rouille,
+         carcasses de véhicules, poussière pixelisée. Sable / ocre / brun rouillé.
+       • NUIT = CIMETIÈRE ROUGE SANG : croix pixelisées, brume rouge,
+         silhouettes de zombies en pixel art, ciel noir étoilé oppressant.
+   Public + landing + ville, SANS mascotte, AUCUNE mention de marque.
 
-   game.css ne fait QU'AJOUTER des composants de jeu et hérite des
-   tokens --pa-* ci-dessous (palette désert irradié — la cascade suffit). */
+   TERMINAL VERT PHOSPHORE (+ CRT) = skin RÉSERVÉ aux interfaces
+   « informatiques » (classe `.terminal`) : carte du désert, stats,
+   inventaire/défense, journaux et rapport de nuit. Ne JAMAIS le
+   réintroduire sur les zones non informatiques.
+
+   game.css n'AJOUTE que des composants de ville et hérite des tokens
+   --pa-* + du système pixel ci-dessous (la cascade suffit). */
 
 /* ════════════════════════════════════════════════════════════════
-   DÉSERT IRRADIÉ 60's — TOKENS PAR DÉFAUT (mode JOUR de référence)
-   ────────────────────────────────────────────────────────────────
-   Sable blanchi par le soleil, structure rouille/oxyde,
-   accent ocre, alerte rouge sang séché, encre brun calciné.
+   JOUR — LONESOME ROAD : TOKENS PAR DÉFAUT (palette pixel limitée)
+   Sable délavé, rouille/oxyde, ocre ambre, rouge sang séché, encre brune.
    ════════════════════════════════════════════════════════════════ */
 :root {
-  --pa-sand: #ddc792;   /* sable blanchi — surface principale */
-  --pa-sand-deep: #cbb073; /* sable plus profond */
-  --pa-paper: #e9d4a1;   /* papier d'affiche délavé — cartes */
-  --pa-rust: #9c4322;    /* rouille / oxyde — structure, titres, marque */
-  --pa-rust-deep: #5e2410;
-  --pa-rust-bright: #c25f2a;
-  --pa-ochre: #e0a32e;  /* ocre / ambre — accent, surlignage */
-  --pa-ochre-deep: #b9781a;
-  --pa-blood: #a72817;     /* rouge sang séché — alerte, CTA */
-  --pa-blood-deep: #6d1209;
-  --pa-ink: #2a1b10;     /* brun calciné — encre, bordures */
-  --pa-ink-soft: #5a4128;
-  --pa-line: #2a1b10;
+  --pa-sand: #d8bd82;      /* sable délavé — surface principale */
+  --pa-sand-deep: #c1a465; /* sable plus profond / ombre de dune */
+  --pa-paper: #e7d3a2;     /* panneau clair — cartes */
+  --pa-rust: #a24b25;      /* rouille / oxyde — structure, titres, marque */
+  --pa-rust-deep: #5f2a12;
+  --pa-rust-bright: #c8632e;
+  --pa-ochre: #e0a72e;     /* ocre / ambre — accent, surlignage */
+  --pa-ochre-deep: #b17c17;
+  --pa-blood: #b02a17;     /* rouge sang séché — alerte, CTA */
+  --pa-blood-deep: #6d1409;
+  --pa-ink: #241606;       /* brun calciné — encre, bordures */
+  --pa-ink-soft: #523a1c;
+  --pa-line: #241606;
 
   --maxw: 1080px;
-  --radius: 18px; /* coins généreux : base « rétro mignon », formes rondes */
-  /* Ombres dures et chaudes (brun calciné, pas de bleu). */
-  --shadow: 6px 6px 0 rgba(34, 20, 10, 0.92);
-  --shadow-soft: 4px 4px 0 rgba(34, 20, 10, 0.22);
+  --radius: 0; /* PIXEL ART : coins carrés, aucun arrondi */
 
-  /* TYPOGRAPHIE — pilotée par tokens pour basculer JOUR ⇄ NUIT.
-     JOUR = titrage publicitaire condensé (Archivo Black) + Oswald net.
-     NUIT = ces tokens sont réécrits en horreur (Creepster dégoulinant +
-     Special Elite machine à écrire) sous body[data-daytime='night']. */
-  --font-display: 'Archivo Black', Impact, sans-serif;
-  --font-body: 'Oswald', 'Segoe UI', system-ui, sans-serif;
-  --hero-title-shadow: 3px 3px 0 var(--pa-ochre);
+  /* Ombres portées DURES, décalage entier, zéro flou → drop-shadow 8-bit. */
+  --shadow: 8px 8px 0 rgba(20, 12, 4, 0.9);
+  --shadow-soft: 4px 4px 0 rgba(20, 12, 4, 0.35);
 
-  /* Fond sable scorché : soleil écrasant en haut, brume de rouille au
-     fond, grain de poussière, dégradé de dune. */
+  /* TYPOGRAPHIE BITMAP — pilotée par tokens (JOUR ⇄ NUIT gardent le pixel,
+     seule la couleur change). Titrage = Press Start 2P ; corps = VT323. */
+  --font-display: 'Press Start 2P', 'Silkscreen', 'Courier New', monospace;
+  --font-body: 'VT323', 'Share Tech Mono', 'Courier New', monospace;
+  --hero-title-shadow: 4px 4px 0 var(--pa-ochre-deep);
+
+  /* Trame de pixels (dithering) — damier 2px très discret, appliqué en
+     texture sur les surfaces de chrome (remplace les anciens dégradés lisses). */
+  --pixel-dither:
+    repeating-conic-gradient(
+      rgba(36, 22, 6, 0.05) 0% 25%, transparent 0% 50%
+    ) 0 0 / 4px 4px;
+
+  /* Fond désert pixel : ciel banni en bandes dures + dunes + trame de sable. */
   --bg-gradient:
-    radial-gradient(circle at 50% -8%, rgba(255, 184, 74, 0.34), transparent 55%),
-    radial-gradient(circle at 86% 92%, rgba(120, 48, 18, 0.18), transparent 52%),
-    repeating-linear-gradient(
-      28deg,
-      rgba(60, 38, 18, 0.028) 0 2px,
-      transparent 2px 6px
-    ),
-    linear-gradient(180deg, var(--pa-paper) 0%, var(--pa-sand) 52%, var(--pa-sand-deep) 100%);
+    linear-gradient(
+      180deg,
+      #f0d99e 0%, #f0d99e 14%,
+      #e8c883 14%, #e8c883 30%,
+      #ddba74 30%, #ddba74 48%,
+      var(--pa-sand) 48%, var(--pa-sand) 74%,
+      var(--pa-sand-deep) 74%, var(--pa-sand-deep) 100%
+    );
 }
 
 * {
@@ -87,17 +95,26 @@ body {
   background-attachment: fixed;
   color: var(--pa-ink);
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 20px;      /* VT323 est étroit → on remonte pour la lisibilité */
   font-weight: 400;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
+  line-height: 1.35;
   min-height: 100vh;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* Sprites et illustrations : rendu net, jamais interpolé. */
+img,
+svg,
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 a {
   color: var(--pa-rust);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 a:hover {
@@ -110,10 +127,10 @@ p {
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  letter-spacing: 0.01em;
-  line-height: 1.05;
+  line-height: 1.5;
   color: var(--pa-rust);
   text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 ::selection {
@@ -123,12 +140,10 @@ h1, h2, h3 {
 
 /* ── Utilitaires ───────────────────────────────────────────── */
 /* L'attribut HTML `hidden` doit TOUJOURS gagner : sans cette règle, tout
-   composant qui pose son propre `display` (ex. game.css : .modal{display:flex},
-   .screen--auth{display:flex}) écrase la règle UA `[hidden]{display:none}`.
-   Résultat sans ce correctif : toutes les modales et tous les écrans marqués
-   `hidden` s'affichent empilés au chargement, et leurs overlays plein écran
-   (z-index 150) interceptent les clics → « popups non fermables » et bouton
-   « Rejoindre » inopérant. Ne jamais retirer. */
+   composant qui pose son propre `display` (ex. game.css : .modal{display:flex})
+   écrase la règle UA. Résultat sans le correctif : modales/écrans `hidden`
+   s'affichent empilés et leurs overlays interceptent les clics → popups non
+   fermables et bouton « Rejoindre » inopérant. Ne jamais retirer. */
 [hidden] {
   display: none !important;
 }
@@ -157,15 +172,16 @@ h1, h2, h3 {
   background: var(--pa-rust);
   color: var(--pa-ochre);
   padding: 0.6rem 1rem;
-  border-radius: 4px;
-  font-weight: 700;
+  border: 3px solid var(--pa-ink);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
 }
 
-/* ── Bandeau défilant (marquee réclame) ──────────────────── */
+/* ── Bandeau défilant (marquee réclame pixel) ──────────────── */
 .ticker {
   background: var(--pa-rust);
   color: var(--pa-ochre);
-  border-bottom: 3px solid var(--pa-ochre);
+  border-bottom: 4px solid var(--pa-ink);
   overflow: hidden;
   white-space: nowrap;
 }
@@ -173,13 +189,12 @@ h1, h2, h3 {
 .ticker__track {
   display: inline-flex;
   gap: 3rem;
-  padding: 0.35rem 0;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.18em;
+  padding: 0.5rem 0;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  animation: ticker-scroll 26s linear infinite;
+  animation: ticker-scroll 30s linear infinite;
 }
 
 .ticker__track span {
@@ -201,8 +216,8 @@ h1, h2, h3 {
   gap: 1.5rem;
   padding: 0.7rem clamp(1rem, 4vw, 2.5rem);
   background: var(--pa-sand);
-  border-bottom: 3px solid var(--pa-rust);
-  box-shadow: 0 3px 0 rgba(34, 20, 10, 0.12);
+  border-bottom: 4px solid var(--pa-rust);
+  box-shadow: 0 4px 0 rgba(20, 12, 4, 0.18);
 }
 
 .brand {
@@ -211,34 +226,32 @@ h1, h2, h3 {
   gap: 0.6rem;
   color: var(--pa-rust);
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
 
 .brand__mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid var(--pa-ochre);
-  background: var(--pa-rust);
-  color: var(--pa-ochre);
-  font-size: 1.15rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 0;
+  border: 3px solid var(--pa-ink);
+  background: var(--pa-ochre);
+  color: var(--pa-rust-deep);
+  font-size: 1rem;
 }
 
 .site-nav {
   display: flex;
-  gap: 1.4rem;
+  gap: 1.2rem;
   margin-left: auto;
   flex-wrap: wrap;
   align-items: center;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.04em;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -258,7 +271,7 @@ h1, h2, h3 {
   background: var(--pa-ochre);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.18s ease;
+  transition: transform 0.12s steps(3);
 }
 
 .site-nav a:not(.site-nav__cta):hover::after,
@@ -267,40 +280,39 @@ h1, h2, h3 {
 }
 
 .site-nav__cta {
-  padding: 0.35rem 1rem;
-  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  border-radius: 0;
   background: var(--pa-blood);
-  color: #fff !important;
-  border: 2px solid var(--pa-ink);
+  color: #f4e4c1 !important;
+  border: 3px solid var(--pa-ink);
   box-shadow: var(--shadow-soft);
 }
 
 .site-nav__cta:hover {
   background: var(--pa-blood-deep);
-  color: #fff !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 rgba(34, 20, 10, 0.25);
+  color: #f4e4c1 !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(20, 12, 4, 0.35);
 }
 
-/* ── Boutons ──────────────────────────────────────────────── */
+/* ── Boutons (touches d'arcade carrées) ───────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.6rem;
-  border-radius: 999px; /* boutons en galet arrondi (rétro mignon) */
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.06em;
+  padding: 0.75rem 1.4rem;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0;
   text-transform: uppercase;
   cursor: pointer;
   border: 3px solid var(--pa-ink);
   background: var(--pa-sand);
   color: var(--pa-rust);
   box-shadow: var(--shadow-soft);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease,
-    color 0.15s ease;
+  transition: transform 0.08s steps(2), box-shadow 0.08s steps(2),
+    background 0.1s steps(2), color 0.1s steps(2);
 }
 
 .btn:hover,
@@ -311,8 +323,8 @@ h1, h2, h3 {
 }
 
 .btn:active {
-  transform: translate(0, 0);
-  box-shadow: 2px 2px 0 rgba(34, 20, 10, 0.6);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(20, 12, 4, 0.7);
 }
 
 .btn--primary {
@@ -351,6 +363,8 @@ h1, h2, h3 {
   overflow: hidden;
 }
 
+/* Soleil pixel : rayons en secteurs DURS (pas de dégradé lisse), rotation
+   par paliers (steps) pour un tournoiement mécanique 8-bit. */
 .hero__sunburst {
   position: absolute;
   top: -30%;
@@ -359,15 +373,15 @@ h1, h2, h3 {
   height: 130%;
   background: repeating-conic-gradient(
     from 0deg at 70% 40%,
-    rgba(255, 199, 44, 0.5) 0deg 7deg,
-    transparent 7deg 14deg
+    rgba(224, 167, 46, 0.55) 0deg 6deg,
+    transparent 6deg 12deg
   );
-  -webkit-mask-image: radial-gradient(circle at 70% 40%, #000 0%, transparent 62%);
-  mask-image: radial-gradient(circle at 70% 40%, #000 0%, transparent 62%);
-  opacity: 0.55;
+  -webkit-mask-image: radial-gradient(circle at 70% 40%, #000 0%, transparent 60%);
+  mask-image: radial-gradient(circle at 70% 40%, #000 0%, transparent 60%);
+  opacity: 0.5;
   pointer-events: none;
   z-index: 0;
-  animation: sunspin 90s linear infinite;
+  animation: sunspin 96s steps(60) infinite;
 }
 
 @keyframes sunspin {
@@ -390,36 +404,44 @@ h1, h2, h3 {
   flex-wrap: wrap;
   gap: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.06em;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   color: var(--pa-ink-soft);
   margin-bottom: 1rem;
 }
 
 .hero__eyebrow-tag {
   background: var(--pa-blood);
-  color: #fff;
-  padding: 0.2rem 0.8rem;
-  border-radius: 999px;
-  letter-spacing: 0.08em;
+  color: #f4e4c1;
+  padding: 0.25rem 0.7rem;
+  border-radius: 0;
+  border: 2px solid var(--pa-ink);
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  letter-spacing: 0;
   box-shadow: var(--shadow-soft);
+  animation: pixel-blink 2.4s steps(1) infinite;
+}
+
+@keyframes pixel-blink {
+  0%, 82%, 100% { opacity: 1; }
+  83%, 99%      { opacity: 0.55; }
 }
 
 .hero__title {
   font-family: var(--font-display);
-  font-size: clamp(2.3rem, 6.5vw, 4.2rem);
+  font-size: clamp(1.2rem, 3.8vw, 2.3rem);
+  line-height: 1.5;
   color: var(--pa-rust);
   text-shadow: var(--hero-title-shadow);
-  letter-spacing: 0.005em;
 }
 
 .hero__lead {
   margin-top: 1.4rem;
-  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  font-size: clamp(1.15rem, 2.2vw, 1.4rem);
   color: var(--pa-ink-soft);
-  max-width: 56ch;
+  max-width: 52ch;
 }
 
 .hero__actions {
@@ -434,12 +456,11 @@ h1, h2, h3 {
   padding: 0;
   margin: 2rem 0 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.6rem 1.4rem;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.03em;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
   color: var(--pa-ink);
 }
 
@@ -447,10 +468,10 @@ h1, h2, h3 {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.35rem 0.7rem;
-  background: rgba(255, 255, 255, 0.45);
-  border-left: 4px solid var(--pa-rust);
-  border-radius: 0 12px 12px 0;
+  padding: 0.4rem 0.7rem;
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid var(--pa-ink);
+  border-left-width: 6px;
 }
 
 .hero__meta span {
@@ -460,21 +481,20 @@ h1, h2, h3 {
 
 .hero__notice {
   margin-top: 2.2rem;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--pa-ink-soft);
-  border: 2px dashed var(--pa-rust);
-  border-radius: 14px;
+  border: 3px dashed var(--pa-rust);
+  border-radius: 0;
   padding: 0.7rem 1rem;
-  background: rgba(255, 199, 44, 0.16);
+  background: rgba(224, 167, 46, 0.16);
 }
 
 .hero__notice::before {
-  content: '⚠ ';
+  content: '\26A0 ';
   color: var(--pa-blood);
-  font-weight: 700;
 }
 
-/* ── Affiche de propagande survivaliste à droite du hero (sans mascotte) ── */
+/* ── Panneau d'affiche pixel à droite du hero (sans mascotte) ── */
 .hero__poster {
   --size: clamp(220px, 26vw, 320px);
   position: relative;
@@ -487,43 +507,42 @@ h1, h2, h3 {
   padding: 1.4rem 1.4rem 1rem;
   background: var(--pa-ochre);
   border: 4px solid var(--pa-ink);
-  border-radius: var(--radius);
+  border-radius: 0;
   box-shadow: var(--shadow);
-  transform: rotate(-2deg);
 }
 
 .hero__poster::before {
-  content: 'CITÉ 84';
+  content: 'CITE 84';
   position: absolute;
-  top: -16px;
+  top: -14px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--pa-rust);
   color: var(--pa-ochre);
   font-family: var(--font-display);
-  font-size: 0.85rem;
-  letter-spacing: 0.18em;
-  padding: 0.25rem 0.95rem;
-  border-radius: 999px;
+  font-size: 0.6rem;
+  letter-spacing: 0;
+  padding: 0.35rem 0.8rem;
+  border: 3px solid var(--pa-ink);
   white-space: nowrap;
 }
 
 .hero-emblem {
-  width: 88%;
+  width: 90%;
 }
 
 .hero-emblem svg {
   display: block;
   width: 100%;
   height: auto;
-  filter: drop-shadow(3px 4px 0 rgba(34, 20, 10, 0.35));
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 rgba(20, 12, 4, 0.4));
 }
 
 .hero__poster-stamp {
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--pa-rust-deep);
 }
@@ -545,7 +564,8 @@ section {
 }
 
 .section-title {
-  font-size: clamp(1.6rem, 3.8vw, 2.4rem);
+  font-size: clamp(0.95rem, 2.6vw, 1.5rem);
+  line-height: 1.5;
   text-align: center;
   position: relative;
   display: inline-block;
@@ -561,11 +581,11 @@ section {
   content: '';
   position: absolute;
   top: 50%;
-  width: clamp(36px, 8vw, 110px);
-  height: 4px;
+  width: clamp(30px, 8vw, 90px);
+  height: 6px;
   background: var(--pa-ochre);
-  border-top: 1px solid var(--pa-rust);
-  border-bottom: 1px solid var(--pa-rust);
+  border-top: 2px solid var(--pa-ink);
+  border-bottom: 2px solid var(--pa-ink);
 }
 
 .section-title::before { right: 100%; }
@@ -575,24 +595,24 @@ section {
   text-align: center;
   color: var(--pa-ink-soft);
   max-width: 60ch;
-  margin: 1.1rem auto 0;
-  font-size: 1.05rem;
+  margin: 1.3rem auto 0;
+  font-size: 1.2rem;
 }
 
-/* ── Cartes « poster » (cycle / coop / survive) ────────────────
+/* ── Cartes « panneau » (cycle / coop / survive) ───────────────
    NB : `.card` est aussi utilisé par le terminal de jeu (game.css le
    redéfinit). Les règles `.card` de la landing sont donc scopées sous
-   `.survive` pour ne jamais fuir dans le jeu (pas de hover-lift réclame
-   sur les cartes terminal). `.phase`/`.feature` n'existent que sur la landing. */
+   `.survive` pour ne jamais fuir dans le jeu.
+   `.phase`/`.feature` n'existent que sur la landing. */
 .phase,
 .feature,
 .survive .card {
   background: var(--pa-paper);
   border: 3px solid var(--pa-ink);
-  border-radius: var(--radius);
+  border-radius: 0;
   position: relative;
   box-shadow: var(--shadow-soft);
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition: transform 0.08s steps(2), box-shadow 0.08s steps(2);
 }
 
 .phase:hover,
@@ -618,22 +638,23 @@ section {
 
 .phase__tag {
   display: inline-block;
-  font-family: var(--font-body);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  font-size: 0.55rem;
   text-transform: uppercase;
-  color: #fff;
+  color: #f4e4c1;
   background: var(--pa-rust);
-  padding: 0.3rem 1.4rem;
-  border-bottom-right-radius: 16px;
+  padding: 0.4rem 1.2rem;
+  border-bottom: 3px solid var(--pa-ink);
+  border-right: 3px solid var(--pa-ink);
 }
 
 .phase--day .phase__tag  { background: var(--pa-ochre-deep); }
 .phase--night .phase__tag { background: var(--pa-rust-deep); }
 
 .phase__title {
-  font-size: 1.6rem;
+  font-size: 1rem;
+  line-height: 1.5;
   margin: 1rem 1.4rem 0.8rem;
 }
 
@@ -642,6 +663,7 @@ section {
 
 .phase p {
   padding: 0 1.4rem;
+  font-size: 1.15rem;
 }
 
 /* ── Coopérer (features) ───────────────────────────────────── */
@@ -662,7 +684,7 @@ section {
   justify-content: center;
   width: 52px;
   height: 52px;
-  border-radius: 50%;
+  border-radius: 0;
   border: 3px solid var(--pa-ink);
   background: var(--pa-ochre);
   font-size: 1.5rem;
@@ -670,13 +692,14 @@ section {
 }
 
 .feature__title {
-  font-size: 1.15rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-bottom: 0.7rem;
   color: var(--pa-rust);
 }
 
 .feature p {
-  font-size: 0.98rem;
+  font-size: 1.12rem;
 }
 
 /* ── Survivre ──────────────────────────────────────────────── */
@@ -698,7 +721,7 @@ section {
   width: 52px;
   height: 52px;
   margin-bottom: 0.8rem;
-  border-radius: 8px;
+  border-radius: 0;
   border: 3px solid var(--pa-ink);
   background: var(--pa-rust);
   color: var(--pa-ochre);
@@ -706,23 +729,23 @@ section {
 }
 
 .survive .card__title {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-bottom: 0.7rem;
   color: var(--pa-rust);
 }
 
 .survive .card p {
-  font-size: 0.98rem;
+  font-size: 1.12rem;
 }
 
-/* ── Roadmap ───────────────────────────────────────────────── */
 /* ── Classement des villes ─────────────────────────────────── */
 .leaderboard__panel {
   margin: 2.4rem auto 0;
   max-width: 820px;
   background: var(--pa-paper);
   border: 3px solid var(--pa-ink);
-  border-radius: var(--radius);
+  border-radius: 0;
   box-shadow: var(--shadow-soft);
   padding: clamp(1rem, 3vw, 1.6rem);
 }
@@ -731,7 +754,7 @@ section {
   text-align: center;
   color: var(--pa-ink-soft);
   margin: 0.6rem 0;
-  font-size: 1.02rem;
+  font-size: 1.15rem;
 }
 
 .leaderboard__scroll {
@@ -741,25 +764,24 @@ section {
 .leaderboard__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.98rem;
+  font-size: 1.1rem;
 }
 
 .leaderboard__table thead th {
   text-align: left;
-  font-family: var(--font-body);
-  font-weight: 700;
+  font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-size: 0.8rem;
+  letter-spacing: 0;
+  font-size: 0.55rem;
   color: var(--pa-rust);
-  padding: 0.55rem 0.7rem;
+  padding: 0.7rem 0.7rem;
   border-bottom: 3px solid var(--pa-ink);
   white-space: nowrap;
 }
 
 .leaderboard__table tbody td {
   padding: 0.6rem 0.7rem;
-  border-bottom: 1px solid rgba(34, 20, 10, 0.16);
+  border-bottom: 2px solid rgba(36, 22, 6, 0.18);
   color: var(--pa-ink);
 }
 
@@ -768,18 +790,19 @@ section {
 }
 
 .leaderboard__table tbody tr.is-victory {
-  background: rgba(255, 199, 44, 0.16);
+  background: rgba(224, 167, 46, 0.2);
 }
 
 .leaderboard__rank {
-  font-family: 'Bungee', var(--font-display);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
   color: var(--pa-blood);
-  width: 2.4rem;
+  width: 2.6rem;
   text-align: center;
 }
 
 .leaderboard__town {
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .leaderboard__num {
@@ -790,11 +813,11 @@ section {
 
 .leaderboard__badge {
   display: inline-block;
-  padding: 0.12rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  letter-spacing: 0;
   border: 2px solid var(--pa-ink);
   white-space: nowrap;
 }
@@ -806,9 +829,10 @@ section {
 
 .leaderboard__badge--loss {
   background: var(--pa-blood);
-  color: #fff;
+  color: #f4e4c1;
 }
 
+/* ── Roadmap / jalons ──────────────────────────────────────── */
 .milestones {
   list-style: none;
   padding: 0;
@@ -822,10 +846,10 @@ section {
 
 .milestone {
   position: relative;
-  padding: 1.2rem 1.4rem 1.3rem 3.4rem;
+  padding: 1.2rem 1.4rem 1.3rem 3.6rem;
   background: var(--pa-paper);
   border: 3px solid var(--pa-ink);
-  border-radius: var(--radius);
+  border-radius: 0;
   border-left-width: 10px;
   border-left-color: var(--pa-ink-soft);
   box-shadow: var(--shadow-soft);
@@ -835,10 +859,10 @@ section {
 .milestone::before {
   content: 'M' counter(milestone, decimal-leading-zero);
   position: absolute;
-  top: 1.1rem;
+  top: 1.2rem;
   left: 0.9rem;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 0.55rem;
   color: var(--pa-ink-soft);
 }
 
@@ -857,35 +881,36 @@ section {
 
 .milestone__status {
   display: inline-block;
-  font-family: var(--font-body);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  font-size: 0.78rem;
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  font-size: 0.5rem;
   text-transform: uppercase;
-  padding: 0.15rem 0.6rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0;
+  border: 2px solid var(--pa-ink);
   background: var(--pa-sand-deep);
   color: var(--pa-ink-soft);
 }
 
 .milestone--done .milestone__status {
   background: var(--pa-rust);
-  color: #fff;
+  color: #f4e4c1;
 }
 
 .milestone--active .milestone__status {
   background: var(--pa-blood);
-  color: #fff;
+  color: #f4e4c1;
 }
 
 .milestone h3 {
-  font-size: 1.1rem;
-  margin: 0.4rem 0 0.4rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0.6rem 0 0.5rem;
   color: var(--pa-rust);
 }
 
 .milestone p {
-  font-size: 0.98rem;
+  font-size: 1.12rem;
 }
 
 /* ── FAQ ───────────────────────────────────────────────────── */
@@ -900,10 +925,10 @@ section {
 .faq-item {
   background: var(--pa-paper);
   border: 3px solid var(--pa-ink);
-  border-radius: var(--radius);
+  border-radius: 0;
   padding: 0 1.3rem;
   box-shadow: var(--shadow-soft);
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.1s steps(2);
 }
 
 .faq-item[open] {
@@ -915,9 +940,9 @@ section {
   list-style: none;
   cursor: pointer;
   padding: 1rem 0;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  line-height: 1.5;
   color: var(--pa-rust);
   display: flex;
   align-items: center;
@@ -930,15 +955,14 @@ section {
 .faq-item summary::after {
   content: '+';
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 0.9rem;
   line-height: 1;
   color: var(--pa-blood);
   flex-shrink: 0;
-  transition: transform 0.2s ease;
 }
 
 .faq-item[open] summary::after {
-  content: '–';
+  content: '\2013';
 }
 
 .faq-item summary:focus-visible {
@@ -948,7 +972,7 @@ section {
 
 .faq-item p {
   color: var(--pa-ink-soft);
-  font-size: 0.98rem;
+  font-size: 1.12rem;
   padding: 0 0 1.1rem;
   max-width: 62ch;
 }
@@ -961,12 +985,12 @@ section {
   background:
     repeating-linear-gradient(
       -45deg,
-      rgba(255, 199, 44, 0.10) 0 14px,
-      transparent 14px 28px
+      rgba(224, 167, 46, 0.12) 0 12px,
+      transparent 12px 24px
     ),
     var(--pa-rust);
-  border-top: 5px solid var(--pa-ochre);
-  border-bottom: 5px solid var(--pa-ochre);
+  border-top: 5px solid var(--pa-ink);
+  border-bottom: 5px solid var(--pa-ink);
   overflow: hidden;
 }
 
@@ -976,30 +1000,30 @@ section {
   text-align: center;
   background: var(--pa-paper);
   border: 4px solid var(--pa-ink);
-  border-radius: var(--radius);
+  border-radius: 0;
   padding: clamp(1.8rem, 4vw, 2.6rem);
   box-shadow: var(--shadow);
 }
 
 .newsletter__eyebrow {
-  font-family: var(--font-body);
-  font-weight: 700;
+  font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.9rem;
+  letter-spacing: 0;
+  font-size: 0.58rem;
   color: var(--pa-blood);
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.8rem;
 }
 
 .newsletter__title {
-  font-size: clamp(1.5rem, 3.6vw, 2.1rem);
+  font-size: clamp(0.95rem, 2.6vw, 1.3rem);
+  line-height: 1.5;
   color: var(--pa-rust);
 }
 
 .newsletter__lead {
   margin-top: 1rem;
   color: var(--pa-ink-soft);
-  font-size: 1.02rem;
+  font-size: 1.15rem;
 }
 
 .newsletter__form {
@@ -1013,16 +1037,16 @@ section {
   flex: 1;
   min-width: 0;
   padding: 0.7rem 0.9rem;
-  border-radius: 8px;
+  border-radius: 0;
   border: 3px solid var(--pa-ink);
-  background: #fff;
+  background: #fbf2da;
   color: var(--pa-ink);
   font-family: var(--font-body);
-  font-size: 1.05rem;
+  font-size: 1.2rem;
 }
 
 .newsletter__input::placeholder {
-  color: #9a9078;
+  color: #9a8b6a;
 }
 
 .newsletter__input:focus {
@@ -1033,7 +1057,7 @@ section {
 
 .newsletter__input[aria-invalid='true'] {
   border-color: var(--pa-blood);
-  background: #fff2f1;
+  background: #f7e0d8;
 }
 
 .newsletter__submit {
@@ -1049,8 +1073,7 @@ section {
   min-height: 1.4em;
   margin-top: 1.1rem;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.15rem;
   letter-spacing: 0.02em;
   color: var(--pa-ink-soft);
 }
@@ -1061,15 +1084,14 @@ section {
 
 .newsletter__status[data-state='success'] {
   color: var(--pa-rust);
-  font-weight: 700;
 }
 
 .newsletter__privacy {
   margin: 1.4rem auto 0;
   max-width: 520px;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--pa-ink-soft);
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
 .newsletter__bullets {
@@ -1081,9 +1103,8 @@ section {
   justify-content: center;
   gap: 0.6rem 1.5rem;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--pa-ink);
 }
@@ -1096,17 +1117,16 @@ section {
 
 .newsletter__bullets span {
   color: var(--pa-rust);
-  font-weight: 700;
 }
 
 /* ── Pied de page ──────────────────────────────────────────── */
 .site-footer {
-  border-top: 3px solid var(--pa-rust);
+  border-top: 4px solid var(--pa-rust);
   text-align: center;
   padding: 2.4rem 1rem;
   color: var(--pa-ink-soft);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   letter-spacing: 0.02em;
   background: var(--pa-sand);
 }
@@ -1114,14 +1134,14 @@ section {
 .site-footer__brand {
   font-family: var(--font-display);
   color: var(--pa-rust);
-  font-size: 1.1rem;
-  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+  margin-bottom: 0.6rem;
 }
 
 .site-footer__meta {
   color: var(--pa-ink-soft);
-  margin-top: 0.4rem;
-  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
 }
 
 /* ── Responsive (landing) ──────────────────────────────────── */
@@ -1133,7 +1153,6 @@ section {
 
   .hero__poster {
     margin: 1rem auto 0;
-    transform: rotate(-1deg);
   }
 }
 
@@ -1164,7 +1183,7 @@ section {
 @media (max-width: 420px) {
   .site-nav {
     gap: 0.6rem 0.9rem;
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   .hero__meta {
@@ -1175,22 +1194,21 @@ section {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .ticker__track,
-  .hero__sunburst { animation: none; }
+  .hero__sunburst,
+  .hero__eyebrow-tag { animation: none; }
 }
 
 /* ════════════════════════════════════════════════════════════════
    SKIN TERMINAL VERT — RÉSERVÉ AUX INTERFACES « INFORMATIQUES » (`.terminal`)
    ────────────────────────────────────────────────────────────────
-   DÉCISION FIGÉE (2026-06-12) : la ville et tout le public sont en
-   Réclame post-apo 60's (thème par défaut). Le vert phosphore + CRT
-   n'habille QUE les surfaces de données calculées par le jeu — carte
-   du désert, inventaire/défense, constantes du citoyen, journal et
-   rapport de nuit. On les marque d'une classe `.terminal` : les tokens
-   verts ci-dessous sont hérités par leurs descendants uniquement.
+   Le vert phosphore + CRT n'habille QUE les surfaces de données calculées
+   par le jeu — carte du désert, inventaire/défense, constantes du citoyen,
+   journal et rapport de nuit. On les marque d'une classe `.terminal` : les
+   tokens verts ci-dessous sont hérités par leurs descendants uniquement.
    game.css y ajoute les composants. AUCUNE fuite vers la ville/public.
+   Déjà pixel-compatible (polices VT323 / Share Tech Mono, coins carrés).
    ════════════════════════════════════════════════════════════════ */
 .terminal {
-  /* TERMINAL VERT PHOSPHORE */
   --crt: #2eff6b;
   --crt-bright: #b6ffd1;
   --crt-soft: #1bc454;
@@ -1213,7 +1231,7 @@ section {
   --night: #2eff6b;
 
   --shadow: 0 0 28px rgba(46, 255, 107, 0.12);
-  --radius: 4px;
+  --radius: 0;
 
   --glow-strong: 0 0 6px rgba(46, 255, 107, 0.85),
                  0 0 18px rgba(46, 255, 107, 0.55);
@@ -1236,19 +1254,19 @@ section {
   background: var(--bg-gradient);
   background-attachment: fixed;
   color: var(--ink);
-  font-family: 'Share Tech Mono', 'Consolas', 'Monaco', monospace;
+  font-family: 'VT323', 'Share Tech Mono', 'Consolas', monospace;
   text-shadow: var(--glow-soft);
   animation: crt-flicker 6s infinite;
 }
 
-/* Les règles de skin descendantes sont enveloppées dans :where(.terminal) :
-   spécificité nulle pour que game.css garde le dernier mot, et portée limitée
-   aux sous-arbres marqués `.terminal` (jamais la ville ni le public). */
+/* Règles de skin descendantes enveloppées dans :where(.terminal) : spécificité
+   nulle pour que game.css garde le dernier mot, portée limitée aux sous-arbres
+   `.terminal` (jamais la ville ni le public). */
 :where(.terminal) h1,
 :where(.terminal) h2,
 :where(.terminal) h3 {
-  font-family: 'Bungee', 'Bungee Inline', 'Impact', sans-serif;
-  letter-spacing: 0.04em;
+  font-family: 'Silkscreen', 'VT323', monospace;
+  letter-spacing: 0;
   color: var(--crt-bright);
   text-shadow: var(--glow-strong);
 }
@@ -1275,10 +1293,9 @@ section {
 
 /* Vignette d'ambiance jour/nuit — UNIVERSELLE (public + ville + statut), sans
    toucher au HTML : pseudo-élément `body::before`. JOUR : liseré de sable brûlé
-   très léger. NUIT : vignette ROUGE SANG lourde qui resserre la scène (terreur),
-   couplée à la brume cramoisie de body::after. Les scanlines CRT ne sont PLUS
-   globales — elles vivent sur les panneaux `.terminal` (voir game.css),
-   conformément à « CRT réservé à l'informatique ». */
+   léger. NUIT : vignette ROUGE SANG lourde qui resserre la scène (terreur),
+   couplée à la brume cramoisie de body::after. Les scanlines CRT vivent sur
+   les panneaux `.terminal` (game.css), conformément à « CRT informatique ». */
 body::before {
   content: '';
   position: fixed;
@@ -1289,7 +1306,7 @@ body::before {
     radial-gradient(
       ellipse 130% 120% at 50% 50%,
       transparent 58%,
-      var(--veil-edge, rgba(34, 20, 10, 0.16)) 100%
+      var(--veil-edge, rgba(36, 22, 6, 0.18)) 100%
     );
   transition: background 0.6s ease;
 }
@@ -1305,16 +1322,16 @@ body::before {
 :where(.terminal) .skip-link:focus {
   background: var(--crt);
   color: var(--bg);
-  border-radius: 0;
+  border: 1px solid var(--crt);
   text-shadow: none;
 }
 
 /* Brand version terminal */
 :where(.terminal) .brand {
   color: var(--crt-bright);
-  font-family: 'Bungee', sans-serif;
-  font-size: 1.1rem;
-  letter-spacing: 0.05em;
+  font-family: 'Silkscreen', 'VT323', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0;
   text-shadow: var(--glow-strong);
 }
 
@@ -1329,22 +1346,21 @@ body::before {
   font-size: 1.2rem;
 }
 
-/* Boutons version terminal (terminal). :where() garde la spécificité d'un
-   simple .btn pour que les variantes de game.css (--danger, :disabled…)
-   continuent de l'emporter, exactement comme avant la refonte. */
+/* Boutons version terminal. :where() garde la spécificité d'un simple .btn
+   pour que les variantes de game.css (--danger, :disabled…) l'emportent. */
 :where(.terminal) .btn {
-  padding: 0.7rem 1.3rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 0;
   border: 1px solid var(--crt);
   background: transparent;
   color: var(--crt-bright);
   font-family: 'VT323', 'Share Tech Mono', monospace;
   font-weight: 400;
-  font-size: 1.2rem;
-  letter-spacing: 0.1em;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
   text-shadow: var(--glow-soft);
   box-shadow: none;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.2s ease;
+  transition: background 0.12s steps(2), color 0.12s steps(2), box-shadow 0.15s ease;
 }
 
 :where(.terminal) .btn::before { content: '[ '; }
@@ -1400,70 +1416,67 @@ body::before {
 /* ════════════════════════════════════════════════════════════════
    DEUX THÈMES RADICALEMENT DISTINCTS — PAS UN ASSOMBRISSEMENT
    ────────────────────────────────────────────────────────────────
-   Le cycle ne baisse PAS simplement la luminosité : JOUR et NUIT ont
-   chacun leur palette, leur typographie, leurs illustrations et leurs
-   textures. data-daytime (posé par daynight.js depuis l'heure locale —
-   nuit de 20 h à 6 h) commute l'intégralité du jeu de tokens, donc toute
-   la ville (game.css) et tout le public basculent d'une scène à l'autre.
+   data-daytime (posé par daynight.js depuis l'heure locale — nuit de
+   20 h à 6 h) commute l'intégralité du jeu de tokens : toute la ville
+   (game.css) et tout le public basculent d'une SCÈNE à l'autre.
 
-   JOUR — DÉSERT BRÛLANT 60's : ciel jaune de poussière, sable/ocre/rouille,
-          soleil écrasant (sunburst), affiches de propagande survivaliste,
-          titrage publicitaire condensé (Archivo Black). Sec, chaud, lumineux.
-   NUIT — INVASION ZOMBIE : ciel rouge sang, fond cendre/noir, ombres dures
-          rouges, silhouettes de horde à l'horizon, lune de sang, typographie
-          d'horreur dégoulinante (Creepster) + machine à écrire (Special Elite).
-          Terreur palpable — une AUTRE scène, pas la même en plus sombre.
+   JOUR — LONESOME ROAD : ciel de poussière banni, sable/ocre/rouille,
+          soleil pixel, sprites de route déserte. Sec, chaud, lumineux.
+   NUIT — CIMETIÈRE : ciel noir étoilé, fond cendre/noir, rouge sang,
+          brume cramoisie, croix et sprites de zombies. Terreur palpable.
    Les panneaux .terminal (vert phosphore) gardent leurs propres tokens. */
 
-/* ── JOUR : valeurs de :root (désert brûlant), liseré de sable. ──── */
+/* ── JOUR : valeurs de :root (désert), liseré de sable. ──── */
 body[data-daytime='day'] {
-  --veil-edge: rgba(60, 30, 10, 0.18);
+  --veil-edge: rgba(60, 30, 10, 0.2);
 }
 
-/* ── NUIT : réécriture COMPLÈTE de la palette en horreur d'invasion. ─
-   Mêmes noms de tokens → toute la ville et le public cascadent sans
-   réécriture, mais la scène change radicalement (sombre, sang, cendre). */
+/* ── NUIT : réécriture COMPLÈTE de la palette en cimetière rouge sang.
+   Mêmes noms de tokens → toute la ville et le public cascadent, mais la
+   scène change radicalement (noir, sang, cendre, ciel étoilé). */
 body[data-daytime='night'] {
-  --pa-sand: #150a0c;        /* surface principale → cendre noircie */
-  --pa-sand-deep: #0a0506;
-  --pa-paper: #1c0e11;       /* cartes → papier carbonisé */
+  --pa-sand: #140a0c;        /* surface principale → cendre noircie */
+  --pa-sand-deep: #090405;
+  --pa-paper: #1b0d10;       /* cartes → papier carbonisé */
   --pa-rust: #ff4332;        /* structure / titres → rouge sang vif */
   --pa-rust-deep: #b3160f;
   --pa-rust-bright: #ff6f4d;
-  --pa-ochre: #cdbfa6;       /* accent → os / cendre pâle (lisible sur noir) */
-  --pa-ochre-deep: #8f8068;
+  --pa-ochre: #ccbea5;       /* accent → os / cendre pâle (lisible sur noir) */
+  --pa-ochre-deep: #8e7f67;
   --pa-blood: #e21414;       /* alerte / CTA → rouge sang */
   --pa-blood-deep: #7a0b0c;
   --pa-ink: #ece0d6;         /* TEXTE → os pâle (clair sur fond noir) */
   --pa-ink-soft: #b3a293;    /* texte secondaire → cendre */
   --pa-line: #4a1a1c;
 
-  /* Ombres dures ROUGE SANG (plus de brun) — agressives sur le noir. */
-  --shadow: 6px 6px 0 rgba(120, 6, 8, 0.85);
-  --shadow-soft: 4px 4px 0 rgba(120, 6, 8, 0.40);
+  /* Ombres dures ROUGE SANG, décalage entier, zéro flou. */
+  --shadow: 8px 8px 0 rgba(120, 6, 8, 0.85);
+  --shadow-soft: 4px 4px 0 rgba(120, 6, 8, 0.4);
 
-  /* Typographie d'horreur : titre dégoulinant + corps machine à écrire. */
-  --font-display: 'Creepster', 'Archivo Black', Impact, sans-serif;
-  --font-body: 'Special Elite', 'Oswald', 'Courier New', monospace;
-  --hero-title-shadow: 0 0 14px rgba(226, 20, 20, 0.85), 3px 3px 0 #2a0204;
+  /* Typographie : pixel identique, seule la couleur passe au sang / os. */
+  --hero-title-shadow: 0 0 12px rgba(226, 20, 20, 0.7), 4px 4px 0 #2a0204;
 
   --veil-edge: rgba(78, 0, 5, 0.82);
-  --night-haze: radial-gradient(ellipse 120% 52% at 50% 110%, rgba(150, 10, 12, 0.50), transparent 70%);
+  --night-haze: radial-gradient(ellipse 120% 52% at 50% 110%, rgba(150, 10, 12, 0.5), transparent 70%);
 
-  /* Fond NUIT : lune de sang en haut, brume cramoisie au sol, silhouettes
-     de horde tuilées à l'horizon, grain de cendre, dégradé noir → rouge. */
+  /* Fond NUIT pixel : ciel noir étoilé (points durs), brume au sol, croix
+     de cimetière + silhouettes de zombies tuilées à l'horizon, bandes de sol. */
   --bg-gradient:
-    radial-gradient(circle at 50% -6%, rgba(190, 16, 18, 0.45), transparent 52%),
+    radial-gradient(circle at 18% 12%, #ece0d6 0 1px, transparent 2px),
+    radial-gradient(circle at 42% 8%, #ece0d6 0 1px, transparent 2px),
+    radial-gradient(circle at 68% 16%, #b3a293 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 6%, #ece0d6 0 1px, transparent 2px),
+    radial-gradient(circle at 30% 22%, #b3a293 0 1px, transparent 2px),
+    radial-gradient(circle at 58% 26%, #ece0d6 0 1px, transparent 2px),
+    radial-gradient(circle at 50% -4%, rgba(190, 16, 18, 0.42), transparent 44%),
     radial-gradient(circle at 50% 116%, rgba(110, 6, 8, 0.34), transparent 60%),
-    url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22420%22 height=%22130%22 viewBox=%220 0 420 130%22%3E%3Cdefs%3E%3Cg id=%22z%22%3E%3Ccircle cx=%220%22 cy=%2212%22 r=%227%22/%3E%3Cpath d=%22M-8 22 h16 l3 50 h-22 z%22/%3E%3Cpath d=%22M-8 68 l-4 44 h7 l5 -36 z%22/%3E%3Cpath d=%22M8 68 l4 44 h-7 l-5 -36 z%22/%3E%3Cpath d=%22M-8 28 l-17 -10 3 -7 19 9 z%22/%3E%3Cpath d=%22M8 27 l18 -4 -2 -8 -18 5 z%22/%3E%3C/g%3E%3C/defs%3E%3Cg fill=%22%23070205%22%3E%3Cuse href=%22%23z%22 transform=%22translate(28,18) scale(0.9)%22/%3E%3Cuse href=%22%23z%22 transform=%22translate(92,6) scale(1.12)%22/%3E%3Cuse href=%22%23z%22 transform=%22translate(152,24) scale(0.78)%22/%3E%3Cuse href=%22%23z%22 transform=%22translate(214,12) scale(1.04)%22/%3E%3Cuse href=%22%23z%22 transform=%22translate(282,22) scale(0.86)%22/%3E%3Cuse href=%22%23z%22 transform=%22translate(352,4) scale(1.16)%22/%3E%3C/g%3E%3C/svg%3E") bottom center / 420px auto repeat-x,
-    repeating-linear-gradient(28deg, rgba(0, 0, 0, 0.34) 0 2px, transparent 2px 6px),
+    url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22420%22 height=%22132%22 viewBox=%220 0 420 132%22 shape-rendering=%22crispEdges%22%3E%3Cg fill=%22%23070205%22%3E%3Crect x=%2224%22 y=%2244%22 width=%228%22 height=%228%22/%3E%3Crect x=%2216%22 y=%2252%22 width=%2224%22 height=%228%22/%3E%3Crect x=%2224%22 y=%2252%22 width=%228%22 height=%2280%22/%3E%3Crect x=%22200%22 y=%2228%22 width=%228%22 height=%228%22/%3E%3Crect x=%22192%22 y=%2236%22 width=%2224%22 height=%228%22/%3E%3Crect x=%22200%22 y=%2236%22 width=%228%22 height=%2296%22/%3E%3Crect x=%22120%22 y=%2270%22 width=%2216%22 height=%2262%22/%3E%3Crect x=%22112%22 y=%2278%22 width=%2232%22 height=%228%22/%3E%3Crect x=%22300%22 y=%2266%22 width=%2216%22 height=%2266%22/%3E%3Crect x=%22292%22 y=%2274%22 width=%2232%22 height=%228%22/%3E%3Crect x=%22348%22 y=%2242%22 width=%228%22 height=%228%22/%3E%3Crect x=%22340%22 y=%2250%22 width=%2224%22 height=%228%22/%3E%3Crect x=%22348%22 y=%2250%22 width=%228%22 height=%2282%22/%3E%3C/g%3E%3C/svg%3E") bottom center / 420px auto repeat-x,
     linear-gradient(180deg, #0a0406 0%, #12070a 52%, #1b0a0e 100%);
 }
 
-/* Brume de sang plein écran — UNIQUEMENT la nuit (transparent le jour).
-   `screen` → la lueur cramoisie MONTE de l'horizon (là où grouille la horde)
-   sans noircir le contenu ; pointer-events:none, sous les modales (150) et
-   sous les panneaux .terminal (z-95, cf. game.css) qui restent phosphore. */
+/* Brume de sang plein écran — UNIQUEMENT la nuit. `screen` → la lueur
+   cramoisie MONTE de l'horizon sans noircir le contenu ; pointer-events:none,
+   sous les modales (150) et sous les panneaux .terminal (z-95). */
 body::after {
   content: '';
   position: fixed;
@@ -1477,7 +1490,7 @@ body::after {
 
 /* La nuit : la vignette cramoisie (body::before) respire — terreur palpable. */
 body[data-daytime='night']::before {
-  animation: dread-pulse 7.5s ease-in-out infinite;
+  animation: dread-pulse 7.5s steps(12) infinite;
 }
 
 @keyframes dread-pulse {
@@ -1485,13 +1498,12 @@ body[data-daytime='night']::before {
   50%      { opacity: 0.66; }
 }
 
-/* Le sunburst (rayons de soleil) n'existe QUE le jour : la nuit, le ciel
-   devient une lune de sang (radial du --bg-gradient), pas un soleil terni. */
+/* Le soleil pixel n'existe QUE le jour ; la nuit, le ciel devient noir étoilé. */
 body[data-daytime='night'] .hero__sunburst {
   display: none;
 }
 
-/* ── Affiche du hero : illustration distincte selon le thème ─────── */
+/* ── Affiche du hero : sprite distinct selon le thème ─────── */
 .hero-emblem--night { display: none; }
 
 body[data-daytime='night'] .hero-emblem--day { display: none; }
@@ -1514,25 +1526,24 @@ body[data-daytime='night'] .hero__poster::before {
   align-items: center;
   gap: 0.4rem;
   flex-shrink: 0;
-  padding: 0.3rem 0.8rem;
+  padding: 0.4rem 0.7rem;
   border: 3px solid var(--pa-ink);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--pa-ochre);
   color: var(--pa-rust-deep);
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  letter-spacing: 0;
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+  transition: transform 0.08s steps(2), box-shadow 0.08s steps(2), background 0.1s steps(2);
 }
 
 .daynight-toggle:hover,
 .daynight-toggle:focus-visible {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 rgba(34, 20, 10, 0.3);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 rgba(20, 12, 4, 0.3);
   outline: none;
 }
 
@@ -1542,7 +1553,7 @@ body[data-daytime='night'] .hero__poster::before {
 }
 
 .daynight-toggle__icon {
-  font-size: 1rem;
+  font-size: 0.85rem;
   line-height: 1;
 }
 
@@ -1552,7 +1563,7 @@ body[data-daytime='night'] .daynight-toggle {
   border-color: var(--pa-ochre);
 }
 
-/* Variante terminal du bouton si jamais placé dans un en-tête .terminal. */
+/* Variante terminal du bouton si placé dans un en-tête .terminal. */
 :where(.terminal) .daynight-toggle {
   border-radius: 0;
   border: 1px solid var(--crt);
@@ -1565,63 +1576,13 @@ body[data-daytime='night'] .daynight-toggle {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   TEXTURE MÉTAL USÉ — « VIEILLE CARAVANE DU DÉSERT » (mode JOUR)
+   TEXTURE PIXEL — TRAME DE POUSSIÈRE (dithering) SUR LE CHROME
    ────────────────────────────────────────────────────────────────
-   DÉCISION HUMAINE (2026-06-12) : affiner le thème JOUR avec de la tôle
-   oxydée façon vieille caravane abandonnée — tôle ondulée, plaques de
-   rouille, peinture écaillée, rivets apparents, reflet de chaleur — en
-   COMPLÉMENT des affiches de propagande craquelées et de la typographie
-   vintage condensée (qui restent inchangées).
-
-   Implémentation 100 % cohérente avec le système de tokens : un seul
-   token `--metal-sheet` (empilement de dégradés, pur CSS, aucune image
-   externe — comme la horde nocturne en data-URI SVG) appliqué en
-   `background-image` PAR-DESSUS la couleur de base sable des panneaux.
-   Les dégradés sont en rgba → le sable/papier transparaît dessous, ce qui
-   produit la tôle peinte+écaillée sans masquer le contenu.
-
-   ⚠ NUIT : `--metal-sheet` repasse à `none` → la scène d'invasion cendre/
-   sang reste strictement inchangée (la tôle est une affaire de plein jour).
-   ⚠ Aucune fuite vers le terminal vert : on ne cible que des classes de la
-   landing publique (vérifié : absentes de game.html).
+   Remplace l'ancienne « tôle de caravane » (dégradés lisses) par un
+   damier de pixels discret, cohérent avec la DA pixel art. JOUR : trame
+   brune sur sable. NUIT : la trame passe en rouge sombre (poussière de
+   cendre). Aucune fuite vers le terminal vert (classes landing seulement).
    ════════════════════════════════════════════════════════════════ */
-:root {
-  /* Tôle de caravane oxydée. Ordre des couches = avant → arrière :
-       1. rivets bombés aux 4 coins (bossage clair + anneau d'ombre) ;
-       2. reflet de chaleur diagonal qui glisse sur la tôle ;
-       3. éclats de peinture sable encore accrochés (peinture écaillée) ;
-       4. plaques de rouille mouchetées (oxyde affleurant) ;
-       5. nervures verticales de tôle ondulée ;
-       6. grain de tôle brossée. */
-  --metal-sheet:
-    radial-gradient(circle at 12px 12px, rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
-    radial-gradient(circle at calc(100% - 12px) 12px, rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
-    radial-gradient(circle at 12px calc(100% - 12px), rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
-    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), rgba(255, 238, 206, 0.55) 0 1.2px, rgba(38, 22, 10, 0.7) 1.2px 2.6px, transparent 3.1px),
-    linear-gradient(108deg, transparent 0%, rgba(255, 244, 208, 0.11) 16%, transparent 34%),
-    radial-gradient(ellipse 13% 9% at 34% 64%, rgba(233, 212, 161, 0.34), transparent 70%),
-    radial-gradient(ellipse 9% 13% at 73% 27%, rgba(221, 199, 146, 0.30), transparent 72%),
-    radial-gradient(ellipse 40% 30% at 16% 22%, rgba(120, 48, 18, 0.24), transparent 60%),
-    radial-gradient(ellipse 34% 44% at 84% 76%, rgba(94, 36, 16, 0.22), transparent 62%),
-    radial-gradient(ellipse 24% 19% at 60% 42%, rgba(156, 67, 34, 0.17), transparent 65%),
-    repeating-linear-gradient(90deg, rgba(255, 247, 224, 0.05) 0 2px, rgba(40, 24, 12, 0.07) 2px 5px, rgba(0, 0, 0, 0.05) 5px 8px),
-    repeating-linear-gradient(90deg, rgba(40, 24, 12, 0.045) 0 1px, transparent 1px 3px);
-
-  /* Couture de rivets (caravane) : une rangée de bossages bombés tuilée
-     horizontalement, posée en bord haut/bas des grands panneaux carrosserie. */
-  --metal-seam:
-    radial-gradient(circle, rgba(255, 240, 210, 0.5) 0 1px, rgba(38, 22, 10, 0.66) 1px 2.4px, transparent 3px)
-    0 50% / 24px 100% repeat-x;
-}
-
-/* NUIT : pas de tôle — l'invasion zombie reste cendre/sang, intacte. */
-body[data-daytime='night'] {
-  --metal-sheet: none;
-}
-
-/* Carrosserie en tôle oxydée : la texture se superpose à la couleur de base
-   sable déjà posée par chaque règle (background-color conservé, on ne touche
-   qu'à background-image). Affiches (.hero__poster), boutons et terminal exclus. */
 .site-header,
 .site-footer,
 .phase,
@@ -1632,37 +1593,19 @@ body[data-daytime='night'] {
 .leaderboard__panel,
 .newsletter__inner,
 .hero__meta li {
-  background-image: var(--metal-sheet);
+  background-image: var(--pixel-dither);
 }
 
-/* Couture de rivets le long des arêtes du bandeau de tête et du pied —
-   la « tôle » de la caravane boulonnée sur son châssis. */
-.site-header::after,
-.site-footer::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: var(--metal-seam);
-  pointer-events: none;
-  opacity: 0.75;
-}
-
-.site-header { position: sticky; } /* (déjà sticky : ancre le ::after de rivets) */
-.site-header::after { bottom: 0; }
-
-.site-footer { position: relative; }
-.site-footer::before { top: 0; }
-
-/* La nuit, plus de rivets : la couture disparaît avec la tôle. */
-body[data-daytime='night'] .site-header::after,
-body[data-daytime='night'] .site-footer::before {
-  display: none;
+body[data-daytime='night'] {
+  --pixel-dither:
+    repeating-conic-gradient(
+      rgba(120, 6, 8, 0.09) 0% 25%, transparent 0% 50%
+    ) 0 0 / 4px 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   body::after,
   body::before { transition: none; }
-  body[data-daytime='night']::before { animation: none; }
+  body[data-daytime='night']::before,
+  .terminal { animation: none; }
 }

@@ -1,9 +1,10 @@
 /* Hordes Revival — Tableau de bord de la ville.
    ───────────────────────────────────────────────────────────────
-   DÉCISION FIGÉE (DA horreur post-apo 60's) :
-   • La VILLE et tout le public sont en HORREUR POST-APO 60's SABLONNEUSE
-     (sable / rouille / ocre / rouge sang, Archivo Black + Oswald). C'est
-     le thème par défaut : ces composants utilisent les tokens --pa-*.
+   DÉCISION FIGÉE (DA PIXEL ART RÉTRO 16-32px, 2026-07-07) :
+   • La VILLE et tout le public sont en PIXEL ART : coins carrés
+     (border-radius 0), polices bitmap (Silkscreen titrage + VT323 corps),
+     ombres dures à décalage entier. JOUR = Lonesome Road sable/rouille,
+     NUIT = cimetière rouge sang. Ces composants utilisent les tokens --pa-*.
    • Le TERMINAL VERT PHOSPHORE + CRT n'habille QUE les interfaces
      « informatiques » : carte du désert, inventaire + défense,
      constantes du citoyen, journal de la ville et rapport de nuit
@@ -69,11 +70,11 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.2rem 0.7rem;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--pa-paper);
   border: 2px solid var(--pa-ink);
   color: var(--pa-ink);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.04em;
@@ -111,7 +112,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .game-header__email {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--pa-ink-soft);
@@ -168,7 +169,7 @@ body[data-phase='night'] .status-pill--phase {
 .api-banner::before {
   content: '⚠ Liaison serveur introuvable';
   display: block;
-  font-family: 'Archivo Black', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
   color: var(--pa-blood);
@@ -189,7 +190,7 @@ body[data-phase='night'] .status-pill--phase {
 .api-banner code {
   background: var(--pa-rust);
   padding: 0.05rem 0.45rem;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.92rem;
   color: var(--pa-ochre);
@@ -203,7 +204,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .api-banner__form label {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.04em;
@@ -220,14 +221,14 @@ body[data-phase='night'] .status-pill--phase {
   background: #fff;
   color: var(--pa-ink);
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
-  font-family: 'Oswald', sans-serif;
+  border-radius: 0;
+  font-family: 'VT323', monospace;
   font-size: 1rem;
   min-width: 0;
 }
 
 .api-banner__hint {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
@@ -265,7 +266,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .card__title {
-  font-family: 'Archivo Black', 'Oswald', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1rem;
   font-weight: 400;
   color: var(--pa-rust);
@@ -274,7 +275,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .card__sub {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
@@ -286,10 +287,10 @@ body[data-phase='night'] .status-pill--phase {
   display: inline-block;
   min-width: 1.6rem;
   padding: 0 0.45rem;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--pa-rust);
   color: var(--pa-ochre);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.85rem;
   text-align: center;
@@ -324,7 +325,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .terminal .card__title {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 0.95rem;
   color: var(--crt-bright);
   letter-spacing: 0.06em;
@@ -380,7 +381,7 @@ body[data-phase='night'] .status-pill--phase {
 .auth-card::before {
   content: 'Accès Citoyen · Cité 84';
   display: block;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.14em;
@@ -390,7 +391,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .auth-card__title {
-  font-family: 'Archivo Black', Impact, sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1.6rem;
   color: var(--pa-rust);
   text-align: center;
@@ -410,7 +411,7 @@ body[data-phase='night'] .status-pill--phase {
   display: flex;
   background: var(--pa-sand-deep);
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 0;
   overflow: hidden;
 }
@@ -422,7 +423,7 @@ body[data-phase='night'] .status-pill--phase {
   border-right: 3px solid var(--pa-ink);
   color: var(--pa-ink-soft);
   padding: 0.55rem 0.8rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.95rem;
   letter-spacing: 0.06em;
@@ -452,7 +453,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .field__label {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
@@ -467,8 +468,8 @@ body[data-phase='night'] .status-pill--phase {
   background: #fff;
   color: var(--pa-ink);
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
-  font-family: 'Oswald', sans-serif;
+  border-radius: 0;
+  font-family: 'VT323', monospace;
   font-size: 1rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   min-width: 0;
@@ -489,14 +490,14 @@ body[data-phase='night'] .status-pill--phase {
 
 .form-error {
   color: #fff;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
   padding: 0.5rem 0.75rem;
   background: var(--pa-blood);
   border: 2px solid var(--pa-blood-deep);
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .form-error::before { content: '⚠ '; }
@@ -505,7 +506,7 @@ body[data-phase='night'] .status-pill--phase {
    ÉCRAN LOBBY (réclame post-apo)
    ════════════════════════════════════════════════════════════════ */
 .screen__header h1 {
-  font-family: 'Archivo Black', Impact, sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: clamp(1.6rem, 4vw, 2.2rem);
   color: var(--pa-rust);
   text-transform: uppercase;
@@ -556,7 +557,7 @@ body[data-phase='night'] .status-pill--phase {
   border: 3px solid var(--pa-ink);
   border-left-width: 8px;
   border-left-color: var(--pa-rust);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
@@ -573,7 +574,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .town-row__name {
-  font-family: 'Archivo Black', 'Oswald', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-weight: 400;
   color: var(--pa-rust);
   font-size: 1.05rem;
@@ -582,7 +583,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .town-row__meta {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
@@ -601,8 +602,8 @@ body[data-phase='night'] .status-pill--phase {
 .badge {
   display: inline-block;
   padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  font-family: 'Oswald', sans-serif;
+  border-radius: 0;
+  font-family: 'VT323', monospace;
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -620,7 +621,7 @@ body[data-phase='night'] .status-pill--phase {
   padding: 1rem 0.8rem 1.4rem;
   color: var(--pa-ink-soft);
   text-align: center;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 1rem;
   letter-spacing: 0.02em;
@@ -638,7 +639,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .town-header__title h1 {
-  font-family: 'Archivo Black', Impact, sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: clamp(1.6rem, 4vw, 2.2rem);
   color: var(--pa-rust);
   text-transform: uppercase;
@@ -655,7 +656,7 @@ body[data-phase='night'] .status-pill--phase {
   align-items: center;
   gap: 0.6rem;
   margin-top: 0.2rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
@@ -932,7 +933,7 @@ body[data-phase='night'] .status-pill--phase {
 
 .zone-detail__title {
   margin: 0;
-  font-family: 'Bungee', 'VT323', monospace;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1rem;
   letter-spacing: 0.05em;
   color: var(--crt-bright);
@@ -971,7 +972,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .zone-detail__event-body strong {
-  font-family: 'Bungee', 'VT323', monospace;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 0.9rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1065,7 +1066,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .bank__item dd {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1.55rem;
   font-weight: 400;
   color: var(--crt-bright);
@@ -1112,7 +1113,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .defense__value {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1.3rem;
   font-weight: 400;
   color: var(--crt-bright);
@@ -1213,7 +1214,7 @@ body[data-phase='night'] .status-pill--phase {
   background: var(--crt);
   border: 1px solid var(--crt-bright);
   color: var(--bg);
-  font-family: 'Bungee', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 0.95rem;
   font-weight: 400;
   display: inline-flex;
@@ -1223,7 +1224,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .citizen-card__name {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1rem;
   color: var(--crt-bright);
   text-transform: uppercase;
@@ -1264,7 +1265,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .stat__value {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1.05rem;
   font-weight: 400;
   color: var(--crt-bright);
@@ -1279,7 +1280,7 @@ body[data-phase='night'] .status-pill--phase {
    ACTIONS DU JOUR (réclame post-apo — surface d'action)
    ════════════════════════════════════════════════════════════════ */
 .actions__title {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--pa-rust);
@@ -1321,7 +1322,7 @@ body[data-phase='night'] .status-pill--phase {
   padding: 0.6rem 0.8rem;
   background: rgba(255, 255, 255, 0.55);
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--pa-ink);
   cursor: pointer;
   font: inherit;
@@ -1352,12 +1353,12 @@ body[data-phase='night'] .status-pill--phase {
   justify-content: center;
   background: var(--pa-rust);
   border: 2px solid var(--pa-ink);
-  border-radius: 6px;
+  border-radius: 0;
   color: var(--pa-ochre);
 }
 
 .action__label {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.02em;
@@ -1366,7 +1367,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .action__cost {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.8rem;
   color: var(--pa-ink-soft);
@@ -1375,7 +1376,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .actions__hint {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.9rem;
   color: var(--pa-ink-soft);
   letter-spacing: 0.01em;
@@ -1405,7 +1406,7 @@ body[data-phase='night'] .status-pill--phase {
   padding: 0.5rem 0.65rem;
   background: rgba(255, 255, 255, 0.5);
   border: 2px solid var(--pa-ink);
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .roster__item.is-self {
@@ -1419,7 +1420,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .roster__name {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.98rem;
   letter-spacing: 0.01em;
@@ -1431,7 +1432,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .roster__location {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   color: var(--pa-ink-soft);
@@ -1439,7 +1440,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .roster__ap {
-  font-family: 'Archivo Black', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-weight: 400;
   color: var(--pa-ochre-deep);
   font-size: 0.9rem;
@@ -1451,7 +1452,7 @@ body[data-phase='night'] .status-pill--phase {
 .roster__dot {
   width: 0.65rem;
   height: 0.65rem;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--pa-rust);
   border: 1px solid var(--pa-ink);
 }
@@ -1470,7 +1471,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .roster__online {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1500,13 +1501,13 @@ body[data-phase='night'] .status-pill--phase {
   display: inline-block;
   padding: 0.05rem 0.4rem;
   font-size: 0.68rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: var(--pa-blood);
   color: var(--pa-ochre);
   border: 1px solid var(--pa-ink);
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 /* Gouvernance de la banque commune (carte terminal → tokens --crt*). */
@@ -1602,10 +1603,10 @@ body[data-phase='night'] .status-pill--phase {
   color: var(--pa-ochre);
   padding: 0.7rem 1.2rem;
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   box-shadow: var(--shadow);
   z-index: 200;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.98rem;
   letter-spacing: 0.02em;
@@ -1679,7 +1680,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .modal__title {
-  font-family: 'Archivo Black', Impact, sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1.3rem;
   color: var(--pa-rust);
   text-transform: uppercase;
@@ -1731,7 +1732,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .modal.terminal .modal__title {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   color: var(--crt-bright);
   text-shadow: var(--glow-strong);
 }
@@ -1868,7 +1869,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .profile-stat__value {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 1.3rem;
   color: var(--gold);
   font-weight: 400;
@@ -1877,7 +1878,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .profile-history__title {
-  font-family: 'Bungee', 'Impact', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 0.95rem;
   color: var(--crt-bright);
   text-transform: uppercase;
@@ -2028,7 +2029,7 @@ body[data-phase='night'] .desert-grid {
   display: inline-flex;
   background: var(--pa-paper);
   border: 2px solid var(--pa-ink);
-  border-radius: 6px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -2039,7 +2040,7 @@ body[data-phase='night'] .desert-grid {
   color: var(--pa-ink-soft);
   padding: 0.3rem 0.85rem;
   cursor: pointer;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.04em;
@@ -2070,7 +2071,7 @@ body[data-phase='night'] .desert-grid {
 
 .forum-toolbar__hint {
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
 }
@@ -2092,7 +2093,7 @@ body[data-phase='night'] .desert-grid {
 .forum-threads__empty,
 .activity-feed__empty {
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.92rem;
   padding: 0.7rem 0.4rem;
@@ -2103,7 +2104,7 @@ body[data-phase='night'] .desert-grid {
   border: 3px solid var(--pa-ink);
   border-left-width: 8px;
   border-left-color: var(--pa-rust);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
@@ -2129,14 +2130,14 @@ body[data-phase='night'] .desert-grid {
 }
 
 .thread-row__badge {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 0.1rem 0.5rem;
   border: 2px solid var(--pa-ink);
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .thread-row__badge--discussion { color: var(--pa-ink); background: var(--pa-ochre); border-color: var(--pa-ochre-deep); }
@@ -2144,7 +2145,7 @@ body[data-phase='night'] .desert-grid {
 .thread-row__badge--closed     { color: var(--pa-ink-soft); background: var(--pa-sand-deep); }
 
 .thread-row__title {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.01em;
@@ -2158,7 +2159,7 @@ body[data-phase='night'] .desert-grid {
   gap: 0.3rem 0.9rem;
   margin-top: 0.3rem;
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -2191,7 +2192,7 @@ body[data-phase='night'] .desert-grid {
 
 .activity-feed__text {
   color: var(--pa-ink);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.92rem;
   letter-spacing: 0.01em;
 }
@@ -2203,7 +2204,7 @@ body[data-phase='night'] .desert-grid {
 
 .activity-feed__time {
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
@@ -2222,10 +2223,10 @@ body[data-phase='night'] .desert-grid {
   width: 100%;
   padding: 0.55rem 0.7rem;
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   background: #fff;
   color: var(--pa-ink);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 1rem;
 }
 
@@ -2244,7 +2245,7 @@ body[data-phase='night'] .desert-grid {
 
 .thread-view__meta {
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   margin: 0.2rem 0 0;
@@ -2255,12 +2256,12 @@ body[data-phase='night'] .desert-grid {
   margin-bottom: 0.8rem;
   padding: 0.7rem 0.8rem;
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   background: rgba(255, 199, 44, 0.15);
 }
 
 .thread-view__vote-title {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 1rem;
   letter-spacing: 0.02em;
   font-weight: 700;
@@ -2283,7 +2284,7 @@ body[data-phase='night'] .desert-grid {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
   color: var(--pa-ink);
@@ -2301,7 +2302,7 @@ body[data-phase='night'] .desert-grid {
   height: 10px;
   background: var(--pa-sand-deep);
   border: 2px solid var(--pa-ink);
-  border-radius: 999px;
+  border-radius: 0;
   overflow: hidden;
   margin-left: 0.4rem;
 }
@@ -2317,7 +2318,7 @@ body[data-phase='night'] .desert-grid {
 
 .vote-option-row__count {
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
   font-weight: 600;
@@ -2331,7 +2332,7 @@ body[data-phase='night'] .desert-grid {
 .thread-view__vote-total {
   margin-top: 0.4rem;
   text-align: right;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   color: var(--pa-ink-soft);
@@ -2352,7 +2353,7 @@ body[data-phase='night'] .desert-grid {
 .thread-view__message {
   padding: 0.55rem 0.7rem;
   border: 2px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.55);
 }
 
@@ -2360,7 +2361,7 @@ body[data-phase='night'] .desert-grid {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   color: var(--pa-ink-soft);
@@ -2375,7 +2376,7 @@ body[data-phase='night'] .desert-grid {
 
 .thread-view__message-body {
   white-space: pre-wrap;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 1rem;
   letter-spacing: 0.01em;
   color: var(--pa-ink);
@@ -2384,14 +2385,14 @@ body[data-phase='night'] .desert-grid {
 
 .thread-view__messages-empty {
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   padding: 0.5rem 0;
 }
 
 .thread-view__closed-hint {
   margin: 0.5rem 0 0;
   color: var(--pa-ink-soft);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   text-align: center;
 }
@@ -2424,8 +2425,8 @@ body[data-phase='night'] .desert-grid {
   grid-column: 1 / -1;
   padding: 0.9rem;
   border: 3px dashed var(--pa-ink);
-  border-radius: 8px;
-  font-family: 'Oswald', sans-serif;
+  border-radius: 0;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 1rem;
   color: var(--pa-ink-soft);
@@ -2436,7 +2437,7 @@ body[data-phase='night'] .desert-grid {
 .building {
   position: relative;
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.55);
   padding: 0.8rem 0.85rem 0.9rem;
   display: flex;
@@ -2479,7 +2480,7 @@ body[data-phase='night'] .desert-grid {
 
 .building__name {
   flex: 1;
-  font-family: 'Archivo Black', 'Oswald', sans-serif;
+  font-family: 'Silkscreen', 'VT323', monospace;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
   color: var(--pa-rust);
@@ -2487,20 +2488,20 @@ body[data-phase='night'] .desert-grid {
 }
 
 .building__count {
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.85rem;
   color: var(--pa-ochre);
   letter-spacing: 0.03em;
   padding: 0.05rem 0.45rem;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--pa-rust);
   white-space: nowrap;
 }
 
 .building__desc {
   margin: 0;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.86rem;
   color: var(--pa-ink-soft);
   line-height: 1.45;
@@ -2513,7 +2514,7 @@ body[data-phase='night'] .desert-grid {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--pa-ink);
@@ -2528,7 +2529,7 @@ body[data-phase='night'] .desert-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 0.5rem;
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-size: 0.86rem;
   color: var(--pa-ink-soft);
   letter-spacing: 0.01em;
@@ -2540,7 +2541,7 @@ body[data-phase='night'] .desert-grid {
   gap: 0.2rem;
   padding: 0.05rem 0.45rem;
   border: 2px solid var(--pa-ink);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--pa-sand-deep);
 }
 
@@ -2553,10 +2554,10 @@ body[data-phase='night'] .desert-grid {
 .building__action {
   appearance: none;
   border: 3px solid var(--pa-ink);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--pa-rust);
   color: var(--pa-ochre);
-  font-family: 'Oswald', sans-serif;
+  font-family: 'VT323', monospace;
   font-weight: 700;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -2617,7 +2618,7 @@ body[data-phase='night'] .desert-grid {
 .activity-feed::-webkit-scrollbar-thumb,
 .thread-view__messages::-webkit-scrollbar-thumb {
   background: var(--pa-ink-soft);
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .roster::-webkit-scrollbar-thumb:hover,
@@ -2785,7 +2786,7 @@ html {
   .modal__card {
     padding: 1.1rem 1rem;
     max-height: calc(100dvh - 1.4rem);
-    border-radius: 14px 14px var(--radius) var(--radius);
+    border-radius: 0;
   }
 
   .modal__title {
