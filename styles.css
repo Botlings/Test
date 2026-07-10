@@ -35,49 +35,56 @@
    Sable délavé, rouille/oxyde, ocre ambre, rouge sang séché, encre brune.
    ════════════════════════════════════════════════════════════════ */
 :root {
-  --pa-sand: #d8bd82;      /* sable délavé — surface principale */
-  --pa-sand-deep: #c1a465; /* sable plus profond / ombre de dune */
-  --pa-paper: #e7d3a2;     /* panneau clair — cartes */
-  --pa-rust: #a24b25;      /* rouille / oxyde — structure, titres, marque */
-  --pa-rust-deep: #5f2a12;
-  --pa-rust-bright: #c8632e;
-  --pa-ochre: #e0a72e;     /* ocre / ambre — accent, surlignage */
-  --pa-ochre-deep: #b17c17;
-  --pa-blood: #b02a17;     /* rouge sang séché — alerte, CTA */
-  --pa-blood-deep: #6d1409;
-  --pa-ink: #241606;       /* brun calciné — encre, bordures */
-  --pa-ink-soft: #523a1c;
-  --pa-line: #241606;
+  /* ── PALETTE EGA STRICTE (décision humaine 2026-07-10) ──────────────
+     TOUTES les couleurs ci-dessous sont piochées dans la palette matérielle
+     EGA 64 couleurs : chaque canal R/G/B ∈ {00, 55, AA, FF}, RIEN d'autre.
+     Aplats durs, ZÉRO dégradé lissé. ≤ 16 teintes visibles par écran.
+     JOUR — Lonesome Road (sous-ensemble CHAUD : noir, brun rouille, ocre,
+     sable/tan, ambre, rouge sang, os pâle). */
+  --pa-sand: #ffaa55;      /* tan sable — surface principale (header, inputs) */
+  --pa-sand-deep: #aa5500; /* brun rouille — ombre de dune / surface profonde */
+  --pa-paper: #ffffaa;     /* parchemin pâle — cartes / panneaux */
+  --pa-rust: #aa5500;      /* rouille / oxyde — structure, titres, marque */
+  --pa-rust-deep: #550000; /* rouille brûlée — texte sur accent / fond profond */
+  --pa-rust-bright: #ff5500;
+  --pa-ochre: #ffff55;     /* jaune ocre — accent, surlignage */
+  --pa-ochre-deep: #aa5500;
+  --pa-blood: #aa0000;     /* rouge sang — alerte, CTA */
+  --pa-blood-deep: #550000;
+  --pa-ink: #000000;       /* noir — encre, bordures */
+  --pa-ink-soft: #550000;  /* sépia sombre — texte secondaire (lisible sur pâle) */
+  --pa-line: #000000;
 
   --maxw: 1080px;
   --radius: 0; /* PIXEL ART : coins carrés, aucun arrondi */
 
   /* Ombres portées DURES, décalage entier, zéro flou → drop-shadow 8-bit. */
-  --shadow: 8px 8px 0 rgba(20, 12, 4, 0.9);
-  --shadow-soft: 4px 4px 0 rgba(20, 12, 4, 0.35);
+  --shadow: 8px 8px 0 rgba(0, 0, 0, 0.9);
+  --shadow-soft: 4px 4px 0 rgba(0, 0, 0, 0.4);
 
   /* TYPOGRAPHIE BITMAP — pilotée par tokens (JOUR ⇄ NUIT gardent le pixel,
-     seule la couleur change). Titrage = Press Start 2P ; corps = VT323. */
+     seule la couleur change). Titrage = Press Start 2P (bitmap 80's) ;
+     corps = VT323, police bitmap de terminal, pour la lisibilité des blocs. */
   --font-display: 'Press Start 2P', 'Silkscreen', 'Courier New', monospace;
   --font-body: 'VT323', 'Share Tech Mono', 'Courier New', monospace;
   --hero-title-shadow: 4px 4px 0 var(--pa-ochre-deep);
 
-  /* Trame de pixels (dithering) — damier 2px très discret, appliqué en
-     texture sur les surfaces de chrome (remplace les anciens dégradés lisses). */
+  /* Trame de pixels (DITHERING) — damier 4px dur (aucune interpolation :
+     bornes de secteur confondues → aplats), appliqué en texture sur le chrome. */
   --pixel-dither:
     repeating-conic-gradient(
-      rgba(36, 22, 6, 0.05) 0% 25%, transparent 0% 50%
+      rgba(0, 0, 0, 0.07) 0% 25%, transparent 0% 50%
     ) 0 0 / 4px 4px;
 
-  /* Fond désert pixel : ciel banni en bandes dures + dunes + trame de sable. */
+  /* Fond désert : BANDES DURES EGA (stops confondus = aucune fusion de teinte,
+     ce n'est pas un dégradé mais un aplat par bande). Ciel jaune → sable tan →
+     sol brun rouille. */
   --bg-gradient:
     linear-gradient(
       180deg,
-      #f0d99e 0%, #f0d99e 14%,
-      #e8c883 14%, #e8c883 30%,
-      #ddba74 30%, #ddba74 48%,
-      var(--pa-sand) 48%, var(--pa-sand) 74%,
-      var(--pa-sand-deep) 74%, var(--pa-sand-deep) 100%
+      #ffff55 0%, #ffff55 20%,
+      #ffaa55 20%, #ffaa55 46%,
+      #aa5500 46%, #aa5500 100%
     );
 }
 
@@ -283,14 +290,14 @@ h1, h2, h3 {
   padding: 0.4rem 1rem;
   border-radius: 0;
   background: var(--pa-blood);
-  color: #f4e4c1 !important;
+  color: #ffffaa !important;
   border: 3px solid var(--pa-ink);
   box-shadow: var(--shadow-soft);
 }
 
 .site-nav__cta:hover {
   background: var(--pa-blood-deep);
-  color: #f4e4c1 !important;
+  color: #ffffaa !important;
   transform: translate(-2px, -2px);
   box-shadow: 6px 6px 0 rgba(20, 12, 4, 0.35);
 }
@@ -373,7 +380,7 @@ h1, h2, h3 {
   height: 130%;
   background: repeating-conic-gradient(
     from 0deg at 70% 40%,
-    rgba(224, 167, 46, 0.55) 0deg 6deg,
+    rgba(255, 255, 85, 0.5) 0deg 6deg,
     transparent 6deg 12deg
   );
   -webkit-mask-image: radial-gradient(circle at 70% 40%, #000 0%, transparent 60%);
@@ -985,7 +992,7 @@ section {
   background:
     repeating-linear-gradient(
       -45deg,
-      rgba(224, 167, 46, 0.12) 0 12px,
+      rgba(255, 255, 85, 0.14) 0 12px,
       transparent 12px 24px
     ),
     var(--pa-rust);
@@ -1238,18 +1245,9 @@ section {
   --glow-soft:   0 0 4px rgba(46, 255, 107, 0.55),
                  0 0 12px rgba(46, 255, 107, 0.28);
 
-  --bg-gradient:
-    radial-gradient(
-      ellipse 90% 70% at 50% -10%,
-      rgba(46, 255, 107, 0.10),
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 60% 40% at 50% 110%,
-      rgba(46, 255, 107, 0.07),
-      transparent 65%
-    ),
-    linear-gradient(180deg, #060c08 0%, #040805 60%, #03060a 100%);
+  /* Fond phosphore : APLAT noir-vert unique (aucune lueur radiale dégradée).
+     La courbure CRT vient des scanlines (.terminal::after) + du glow de texte. */
+  --bg-gradient: #050a07;
 
   background: var(--bg-gradient);
   background-attachment: fixed;
@@ -1291,11 +1289,11 @@ section {
   text-shadow: none;
 }
 
-/* Vignette d'ambiance jour/nuit — UNIVERSELLE (public + ville + statut), sans
-   toucher au HTML : pseudo-élément `body::before`. JOUR : liseré de sable brûlé
-   léger. NUIT : vignette ROUGE SANG lourde qui resserre la scène (terreur),
-   couplée à la brume cramoisie de body::after. Les scanlines CRT vivent sur
-   les panneaux `.terminal` (game.css), conformément à « CRT informatique ». */
+/* SCANLINES CRT UNIVERSELLES (décision humaine 2026-07-10 : « scanlines sur
+   toute l'interface ») — pseudo-élément `body::before`, plein écran, au-dessus
+   de tout le contenu (public + ville + statut), sous les modales/HUD critiques.
+   Motif à bornes DURES (1px opaque / 2px vide) = trame de balayage, PAS un
+   dégradé. Fonctionne sur les deux palettes (lignes noires sur JOUR et NUIT). */
 body::before {
   content: '';
   position: fixed;
@@ -1303,12 +1301,11 @@ body::before {
   pointer-events: none;
   z-index: 100;
   background:
-    radial-gradient(
-      ellipse 130% 120% at 50% 50%,
-      transparent 58%,
-      var(--veil-edge, rgba(36, 22, 6, 0.18)) 100%
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.30) 0 1px,
+      transparent 1px 3px
     );
-  transition: background 0.6s ease;
 }
 
 @keyframes crt-flicker {
@@ -1435,43 +1432,45 @@ body[data-daytime='day'] {
    Mêmes noms de tokens → toute la ville et le public cascadent, mais la
    scène change radicalement (noir, sang, cendre, ciel étoilé). */
 body[data-daytime='night'] {
-  --pa-sand: #140a0c;        /* surface principale → cendre noircie */
-  --pa-sand-deep: #090405;
-  --pa-paper: #1b0d10;       /* cartes → papier carbonisé */
-  --pa-rust: #ff4332;        /* structure / titres → rouge sang vif */
-  --pa-rust-deep: #b3160f;
-  --pa-rust-bright: #ff6f4d;
-  --pa-ochre: #ccbea5;       /* accent → os / cendre pâle (lisible sur noir) */
-  --pa-ochre-deep: #8e7f67;
-  --pa-blood: #e21414;       /* alerte / CTA → rouge sang */
-  --pa-blood-deep: #7a0b0c;
-  --pa-ink: #ece0d6;         /* TEXTE → os pâle (clair sur fond noir) */
-  --pa-ink-soft: #b3a293;    /* texte secondaire → cendre */
-  --pa-line: #4a1a1c;
+  /* NUIT — cimetière rouge sang, sous-ensemble EGA FROID (canaux ∈ {00,55,AA,FF}) :
+     noir, bleu nuit, gris cendre, os blanc, rouge sang. ≤ 16 teintes. */
+  --pa-sand: #000000;        /* surface principale → noir de nuit */
+  --pa-sand-deep: #000000;
+  --pa-paper: #000055;       /* cartes → pierre tombale bleu-nuit (froid) */
+  --pa-rust: #ff5555;        /* structure / titres → rouge sang vif */
+  --pa-rust-deep: #aa0000;
+  --pa-rust-bright: #ff5555;
+  --pa-ochre: #aaaaaa;       /* accent → cendre / os pâle (lisible sur noir) */
+  --pa-ochre-deep: #555555;
+  --pa-blood: #aa0000;       /* alerte / CTA → rouge sang */
+  --pa-blood-deep: #550000;
+  --pa-ink: #ffffff;         /* TEXTE → os blanc (clair sur fond noir) */
+  --pa-ink-soft: #aaaaaa;    /* texte secondaire → cendre */
+  --pa-line: #550000;
 
   /* Ombres dures ROUGE SANG, décalage entier, zéro flou. */
-  --shadow: 8px 8px 0 rgba(120, 6, 8, 0.85);
-  --shadow-soft: 4px 4px 0 rgba(120, 6, 8, 0.4);
+  --shadow: 8px 8px 0 rgba(85, 0, 0, 0.85);
+  --shadow-soft: 4px 4px 0 rgba(85, 0, 0, 0.4);
 
-  /* Typographie : pixel identique, seule la couleur passe au sang / os. */
-  --hero-title-shadow: 0 0 12px rgba(226, 20, 20, 0.7), 4px 4px 0 #2a0204;
+  /* Titre : ombre portée DURE sang (aucun halo flou en scène CGA). */
+  --hero-title-shadow: 4px 4px 0 #550000;
 
-  --veil-edge: rgba(78, 0, 5, 0.82);
-  --night-haze: radial-gradient(ellipse 120% 52% at 50% 110%, rgba(150, 10, 12, 0.5), transparent 70%);
+  --veil-edge: transparent;
+  --night-haze: transparent;
 
-  /* Fond NUIT pixel : ciel noir étoilé (points durs), brume au sol, croix
-     de cimetière + silhouettes de zombies tuilées à l'horizon, bandes de sol. */
+  /* Fond NUIT : APLAT noir (linear « gradient » à stops confondus = aplat pur),
+     ciel étoilé en points DURS 1px, brume de sang en bande dure au sol, et
+     silhouettes de pierres/croix pixel tuilées à l'horizon. Zéro dégradé lissé. */
   --bg-gradient:
-    radial-gradient(circle at 18% 12%, #ece0d6 0 1px, transparent 2px),
-    radial-gradient(circle at 42% 8%, #ece0d6 0 1px, transparent 2px),
-    radial-gradient(circle at 68% 16%, #b3a293 0 1px, transparent 2px),
-    radial-gradient(circle at 82% 6%, #ece0d6 0 1px, transparent 2px),
-    radial-gradient(circle at 30% 22%, #b3a293 0 1px, transparent 2px),
-    radial-gradient(circle at 58% 26%, #ece0d6 0 1px, transparent 2px),
-    radial-gradient(circle at 50% -4%, rgba(190, 16, 18, 0.42), transparent 44%),
-    radial-gradient(circle at 50% 116%, rgba(110, 6, 8, 0.34), transparent 60%),
-    url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22420%22 height=%22132%22 viewBox=%220 0 420 132%22 shape-rendering=%22crispEdges%22%3E%3Cg fill=%22%23070205%22%3E%3Crect x=%2224%22 y=%2244%22 width=%228%22 height=%228%22/%3E%3Crect x=%2216%22 y=%2252%22 width=%2224%22 height=%228%22/%3E%3Crect x=%2224%22 y=%2252%22 width=%228%22 height=%2280%22/%3E%3Crect x=%22200%22 y=%2228%22 width=%228%22 height=%228%22/%3E%3Crect x=%22192%22 y=%2236%22 width=%2224%22 height=%228%22/%3E%3Crect x=%22200%22 y=%2236%22 width=%228%22 height=%2296%22/%3E%3Crect x=%22120%22 y=%2270%22 width=%2216%22 height=%2262%22/%3E%3Crect x=%22112%22 y=%2278%22 width=%2232%22 height=%228%22/%3E%3Crect x=%22300%22 y=%2266%22 width=%2216%22 height=%2266%22/%3E%3Crect x=%22292%22 y=%2274%22 width=%2232%22 height=%228%22/%3E%3Crect x=%22348%22 y=%2242%22 width=%228%22 height=%228%22/%3E%3Crect x=%22340%22 y=%2250%22 width=%2224%22 height=%228%22/%3E%3Crect x=%22348%22 y=%2250%22 width=%228%22 height=%2282%22/%3E%3C/g%3E%3C/svg%3E") bottom center / 420px auto repeat-x,
-    linear-gradient(180deg, #0a0406 0%, #12070a 52%, #1b0a0e 100%);
+    radial-gradient(circle at 18% 12%, #ffffff 0 1px, transparent 1px),
+    radial-gradient(circle at 42% 8%, #ffffff 0 1px, transparent 1px),
+    radial-gradient(circle at 68% 16%, #aaaaaa 0 1px, transparent 1px),
+    radial-gradient(circle at 82% 6%, #ffffff 0 1px, transparent 1px),
+    radial-gradient(circle at 30% 22%, #aaaaaa 0 1px, transparent 1px),
+    radial-gradient(circle at 58% 26%, #ffffff 0 1px, transparent 1px),
+    linear-gradient(0deg, #550000 0 10px, transparent 10px),
+    url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22420%22 height=%22132%22 viewBox=%220 0 420 132%22 shape-rendering=%22crispEdges%22%3E%3Cg fill=%22%23000000%22%3E%3Crect x=%2224%22 y=%2244%22 width=%228%22 height=%228%22/%3E%3Crect x=%2216%22 y=%2252%22 width=%2224%22 height=%228%22/%3E%3Crect x=%2224%22 y=%2252%22 width=%228%22 height=%2280%22/%3E%3Crect x=%22200%22 y=%2228%22 width=%228%22 height=%228%22/%3E%3Crect x=%22192%22 y=%2236%22 width=%2224%22 height=%228%22/%3E%3Crect x=%22200%22 y=%2236%22 width=%228%22 height=%2296%22/%3E%3Crect x=%22120%22 y=%2270%22 width=%2216%22 height=%2262%22/%3E%3Crect x=%22112%22 y=%2278%22 width=%2232%22 height=%228%22/%3E%3Crect x=%22300%22 y=%2266%22 width=%2216%22 height=%2266%22/%3E%3Crect x=%22292%22 y=%2274%22 width=%2232%22 height=%228%22/%3E%3Crect x=%22348%22 y=%2242%22 width=%228%22 height=%228%22/%3E%3Crect x=%22340%22 y=%2250%22 width=%2224%22 height=%228%22/%3E%3Crect x=%22348%22 y=%2250%22 width=%228%22 height=%2282%22/%3E%3C/g%3E%3C/svg%3E") bottom center / 420px auto repeat-x,
+    #000000;
 }
 
 /* Brume de sang plein écran — UNIQUEMENT la nuit. `screen` → la lueur
@@ -1509,9 +1508,22 @@ body[data-daytime='night'] .hero__sunburst {
 body[data-daytime='night'] .hero-emblem--day { display: none; }
 body[data-daytime='night'] .hero-emblem--night { display: block; }
 
+/* La nuit, le CTA primaire passe en rouge sang PLEIN avec texte os pâle :
+   sur fond noir, l'appel à l'action doit rester le point le plus lisible
+   (le rouge clair titres + cendre serait trop lavé). */
+body[data-daytime='night'] .btn--primary {
+  background: var(--pa-blood);
+  color: #ffffaa;
+}
+body[data-daytime='night'] .btn--primary:hover,
+body[data-daytime='night'] .btn--primary:focus-visible {
+  background: var(--pa-blood-deep);
+  color: #ffffff;
+}
+
 /* La nuit, l'affiche passe du carton ocre au carton carbonisé liseré de sang. */
 body[data-daytime='night'] .hero__poster {
-  background: #160a0d;
+  background: #000055;
   border-color: var(--pa-blood-deep);
 }
 
@@ -1599,7 +1611,7 @@ body[data-daytime='night'] .daynight-toggle {
 body[data-daytime='night'] {
   --pixel-dither:
     repeating-conic-gradient(
-      rgba(120, 6, 8, 0.09) 0% 25%, transparent 0% 50%
+      rgba(85, 0, 0, 0.12) 0% 25%, transparent 0% 50%
     ) 0 0 / 4px 4px;
 }
 
