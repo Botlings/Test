@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>GRID-OS — Terminal de survie · Hordes Revival</title>
+<style>
+/* =========================================================================
+   HORDES REVIVAL — Thème « Lonesome Road / CRT phosphore »
+   HTML/CSS/JS purs, zéro dépendance externe (aucune police, icône ou CDN).
+   Le MONDE (HUD, panneaux, décor) est en palette chaude et bascule
+   JOUR (sable/rouille) <-> NUIT (rouge sang) via body[data-phase].
+   Toute interface « informatique » (terminal, inventaire, radar) reste en
+   CRT VERT PHOSPHORE sur noir dans les deux thèmes (--crt inchangé).
+   Marques fictives maison : VELTRIX SYSTEMS (constructeur), GRID-OS (OS).
+   ========================================================================= */
+
+/* ---- Tokens JOUR : sable brûlant « Lonesome Road » ---------------------- */
+body[data-phase="day"] {
+  --bg:#c9ad82;
+  --panel:#d8c39c;
+  --panel-2:#cbb488;
+  --edge:#8f7048;
+  --edge-2:#6f5333;
+  --ink:#2c2015;
+  --ink-soft:#6c563b;
+  --rust:#b0532a;
+  --rust-2:#8a3d1e;
+  --danger:#a8331c;
+  --crt:#46ef78;
+  --crt-soft:rgba(70,239,120,.40);
+  --crt-bg:#08130b;
+  --scan:rgba(0,0,0,.05);
+  --vignette:rgba(60,35,10,.28);
+  --world-sky-1:#e6c893;
+  --world-sky-2:#cf9a5f;
+  --world-ground:#9a6238;
+  --orb:#d9772e;
+  --orb-glow:rgba(230,150,60,.55);
+}
+
+/* ---- Tokens NUIT : apocalypse rouge sang -------------------------------- */
+body[data-phase="night"] {
+  --bg:#0e0609;
+  --panel:#190c10;
+  --panel-2:#211216;
+  --edge:#4d1f27;
+  --edge-2:#6a1b26;
+  --ink:#ecdcc6;
+  --ink-soft:#9c8076;
+  --rust:#c31b2c;
+  --rust-2:#8b1220;
+  --danger:#e51d33;
+  --crt:#4df582;
+  --crt-soft:rgba(77,245,130,.42);
+  --crt-bg:#06110a;
+  --scan:rgba(0,0,0,.32);
+  --vignette:rgba(120,0,10,.5);
+  --world-sky-1:#2a0810;
+  --world-sky-2:#14060a;
+  --world-ground:#0c0406;
+  --orb:#6e0f16;
+  --orb-glow:rgba(190,20,30,.5);
+}
+
+*,
+*::before,
+*::after { box-sizing:border-box; }
+
+html, body { height:100%; }
+
+body {
+  margin:0;
+  font-family:"Consolas","Courier New",monospace;
+  background:var(--bg);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.45;
+  overflow:hidden;
+}
+
+/* Transition douce : seul le MONDE change de température ------------------ */
+body,
+.hud,
+.panel,
+.sidebar__brand,
+.nav__btn,
+.journal { transition:background .6s ease, color .6s ease, border-color .6s ease; }
+
+/* ---- Overlay CRT plein écran (scanlines + vignette) --------------------- */
+.crt-overlay {
+  position:fixed;
+  inset:0;
+  z-index:9000;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--scan) 0,
+      var(--scan) 1px,
+      transparent 1px,
+      transparent 3px),
+    radial-gradient(
+      ellipse at center,
+      transparent 55%,
+      var(--vignette) 100%);
+}
+
+/* ---- Typo display condensée pour les gros titres ----------------------- */
+.display {
+  font-family:"Impact","Arial Narrow Bold",sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  line-height:.95;
+  font-weight:400;
+}
+
+/* Libellés techniques : mono 11px uppercase letter-spacing .2em rouille --- */
+.tech-label {
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.2em;
+  color:var(--rust);
+}
+
+/* =========================================================================
+   LAYOUT PLEIN ÉCRAN
+   ========================================================================= */
+.app {
+  display:grid;
+  grid-template-rows:auto 1fr;
+  height:100dvh;
+  height:100vh;
+}
+
+/* ---- HUD (barre haute) -------------------------------------------------- */
+.hud {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:10px 18px;
+  background:var(--panel);
+  border-bottom:3px solid var(--edge-2);
+  box-shadow:0 4px 0 rgba(0,0,0,.25);
+  flex-wrap:wrap;
+}
+
+.hud__title {
+  font-size:26px;
+  color:var(--ink);
+}
+.hud__title b { color:var(--rust); }
+
+.hud__meta {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  margin-right:auto;
+}
+.hud__day { font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft); }
+
+/* Jauges segmentées ------------------------------------------------------- */
+.gauges { display:flex; gap:14px; flex-wrap:wrap; }
+.gauge { min-width:132px; }
+.gauge__head {
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  color:var(--ink-soft);
+  margin-bottom:4px;
+}
+.gauge__bar {
+  height:14px;
+  border:2px solid var(--edge-2);
+  background:var(--panel-2);
+  padding:2px;
+  overflow:hidden;
+}
+.gauge__fill {
+  height:100%;
+  background:repeating-linear-gradient(
+    to right,
+    var(--crt) 0,
+    var(--crt) 6px,
+    transparent 6px,
+    transparent 9px);
+}
+.gauge__fill.is-danger {
+  background:repeating-linear-gradient(
+    to right,
+    var(--danger) 0,
+    var(--danger) 6px,
+    transparent 6px,
+    transparent 9px);
+}
+
+/* Bascule jour/nuit ------------------------------------------------------- */
+.phase-toggle {
+  font-family:inherit;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  cursor:pointer;
+  padding:9px 14px;
+  color:var(--ink);
+  background:var(--panel-2);
+  border:2px solid var(--edge-2);
+  border-left:5px solid var(--rust);
+  box-shadow:4px 4px 0 rgba(0,0,0,.35);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.phase-toggle:active { transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(0,0,0,.35); }
+.phase-toggle__icon { font-size:16px; line-height:1; }
+
+/* ---- Grille principale : sidebar / écran / journal --------------------- */
+.stage {
+  display:grid;
+  grid-template-columns:168px 1fr 244px;
+  gap:14px;
+  padding:14px 18px 18px;
+  min-height:0;
+  overflow:hidden;
+}
+
+.panel {
+  background:var(--panel);
+  border:2px solid var(--edge-2);
+  box-shadow:5px 5px 0 rgba(0,0,0,.30);
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+/* ---- Sidebar ------------------------------------------------------------ */
+.sidebar { padding:12px; gap:10px; }
+.sidebar__brand {
+  border:2px dashed var(--edge);
+  padding:8px;
+  text-align:center;
+}
+.sidebar__brand b { display:block; font-size:13px; letter-spacing:.12em; color:var(--rust); }
+.sidebar__brand small { display:block; font-size:10px; letter-spacing:.24em; color:var(--ink-soft); text-transform:uppercase; }
+
+.nav { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.nav__btn {
+  font-family:inherit;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  text-align:left;
+  cursor:pointer;
+  padding:10px 10px;
+  color:var(--ink);
+  background:var(--panel-2);
+  border:2px solid var(--edge-2);
+  border-left:5px solid var(--rust);
+  box-shadow:3px 3px 0 rgba(0,0,0,.30);
+}
+.nav__btn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.30); }
+.nav__btn[aria-current="true"] {
+  background:var(--rust);
+  color:#fff;
+  border-left-color:var(--ink);
+}
+.sidebar__foot {
+  margin-top:auto;
+  font-size:10px;
+  letter-spacing:.16em;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+}
+
+/* ---- Zone écran --------------------------------------------------------- */
+.screen { padding:0; overflow:hidden; }
+.view { display:none; height:100%; min-height:0; overflow:auto; }
+.view.is-active { display:flex; flex-direction:column; }
+
+.view__head {
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  padding:12px 16px;
+  border-bottom:2px solid var(--edge-2);
+  background:var(--panel-2);
+}
+.view__head h2 { margin:0; font-size:22px; color:var(--ink); }
+.view__body { padding:16px; }
+
+/* ---- Décor du monde (100 % CSS) ---------------------------------------- */
+.world {
+  position:relative;
+  flex:1;
+  min-height:220px;
+  overflow:hidden;
+  background:linear-gradient(
+    to bottom,
+    var(--world-sky-1) 0%,
+    var(--world-sky-2) 62%,
+    var(--world-ground) 62%,
+    var(--world-ground) 100%);
+}
+.world__orb {
+  position:absolute;
+  top:12%;
+  right:16%;
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background:var(--orb);
+  box-shadow:0 0 60px 24px var(--orb-glow);
+}
+.world__dune {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:46%;
+  background:var(--world-ground);
+  filter:brightness(1.08);
+  clip-path:polygon(0 46%, 18% 30%, 38% 40%, 60% 24%, 82% 38%, 100% 28%, 100% 100%, 0 100%);
+  opacity:.55;
+}
+.world__road {
+  position:absolute;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  width:60%;
+  height:38%;
+  background:linear-gradient(to bottom, var(--edge-2), var(--ink));
+  clip-path:polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+  opacity:.7;
+}
+.world__skyline {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:38%;
+  height:64px;
+  display:flex;
+  align-items:flex-end;
+  gap:6px;
+  padding:0 22px;
+}
+.world__skyline span {
+  display:block;
+  width:26px;
+  background:#000;
+  opacity:.72;
+}
+.world__cap {
+  padding:12px 16px;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.18em;
+  color:var(--ink-soft);
+  border-top:2px solid var(--edge-2);
+  background:var(--panel);
+}
+
+/* ---- Cartes / actions --------------------------------------------------- */
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+.card {
+  background:var(--panel-2);
+  border:2px solid var(--edge-2);
+  border-left:5px solid var(--rust);
+  box-shadow:4px 4px 0 rgba(0,0,0,.30);
+  padding:12px;
+}
+.card h3 { margin:0 0 6px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--rust-2); }
+.card p { margin:0; font-size:12px; color:var(--ink-soft); }
+
+.btn {
+  font-family:inherit;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  cursor:pointer;
+  padding:9px 14px;
+  margin-top:10px;
+  color:#fff;
+  background:var(--rust);
+  border:2px solid var(--rust-2);
+  box-shadow:4px 4px 0 rgba(0,0,0,.35);
+}
+.btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(0,0,0,.35); }
+
+/* =========================================================================
+   INTERFACES « INFORMATIQUES » — CRT VERT PHOSPHORE (les deux thèmes)
+   ========================================================================= */
+.terminal {
+  position:relative;
+  flex:1;
+  min-height:0;
+  margin:16px;
+  padding:14px;
+  color:var(--crt);
+  background:var(--crt-bg);
+  border:2px solid var(--edge-2);
+  font-family:"Consolas","Courier New",monospace;
+  text-shadow:0 0 6px var(--crt-soft);
+  box-shadow:inset 0 0 60px rgba(0,0,0,.6), 0 0 24px var(--crt-soft);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.terminal::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,.18) 0,
+    rgba(0,0,0,.18) 1px,
+    transparent 1px,
+    transparent 3px);
+}
+.terminal::before {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:0;
+  height:40%;
+  pointer-events:none;
+  background:linear-gradient(to bottom, var(--crt-soft), transparent);
+  opacity:.14;
+}
+.terminal__out {
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:13px;
+  position:relative;
+  z-index:1;
+}
+.terminal__line { margin:0 0 2px; }
+.terminal__line.is-danger { color:var(--danger); text-shadow:0 0 6px rgba(255,60,60,.5); }
+.terminal__prompt {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-top:1px solid var(--crt-soft);
+  padding-top:8px;
+  margin-top:8px;
+  position:relative;
+  z-index:1;
+}
+.terminal__prompt span { color:var(--crt); }
+.terminal__input {
+  flex:1;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--crt);
+  background:transparent;
+  border:none;
+  outline:none;
+  text-shadow:0 0 6px var(--crt-soft);
+  caret-color:transparent;
+}
+.cursor {
+  display:inline-block;
+  width:9px;
+  height:15px;
+  background:var(--crt);
+  box-shadow:0 0 6px var(--crt-soft);
+  vertical-align:-2px;
+  animation:blink 1s steps(2,start) infinite;
+}
+@keyframes blink { 50% { opacity:0; } }
+
+/* ---- Radar / inventaire CRT --------------------------------------------- */
+.crt-grid {
+  color:var(--crt);
+  background:var(--crt-bg);
+  text-shadow:0 0 6px var(--crt-soft);
+  box-shadow:inset 0 0 60px rgba(0,0,0,.6), 0 0 24px var(--crt-soft);
+  border:2px solid var(--edge-2);
+  margin:16px;
+  padding:14px;
+  font-size:13px;
+}
+.crt-grid h3 { margin:0 0 12px; font-size:14px; letter-spacing:.2em; text-transform:uppercase; }
+.inv-row {
+  display:flex;
+  justify-content:space-between;
+  border-bottom:1px dashed var(--crt-soft);
+  padding:6px 0;
+}
+.radar {
+  position:relative;
+  width:100%;
+  max-width:340px;
+  aspect-ratio:1;
+  margin:8px auto 0;
+  border:2px solid var(--crt-soft);
+  border-radius:50%;
+  background:
+    repeating-linear-gradient(to right, transparent 0, transparent 33px, var(--crt-soft) 33px, var(--crt-soft) 34px),
+    repeating-linear-gradient(to bottom, transparent 0, transparent 33px, var(--crt-soft) 33px, var(--crt-soft) 34px);
+  overflow:hidden;
+}
+.radar::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:conic-gradient(from 0deg, var(--crt-soft), transparent 25%);
+  animation:sweep 4s linear infinite;
+}
+@keyframes sweep { to { transform:rotate(360deg); } }
+.radar__blip {
+  position:absolute;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--danger);
+  box-shadow:0 0 8px var(--danger);
+}
+
+/* ---- Journal ------------------------------------------------------------ */
+.journal { padding:12px; gap:8px; }
+.journal__head { display:flex; align-items:baseline; justify-content:space-between; }
+.journal__head h2 { margin:0; font-size:15px; text-transform:uppercase; letter-spacing:.1em; color:var(--rust-2); }
+.journal__list {
+  list-style:none;
+  margin:8px 0 0;
+  padding:0;
+  overflow:auto;
+  min-height:0;
+  flex:1;
+  font-size:12px;
+}
+.journal__list li {
+  padding:7px 8px;
+  margin-bottom:6px;
+  background:var(--panel-2);
+  border-left:4px solid var(--rust);
+}
+.journal__list li time { display:block; font-size:10px; letter-spacing:.14em; color:var(--ink-soft); }
+.journal__list li.is-danger { border-left-color:var(--danger); color:var(--danger); }
+.journal__list li.is-danger time { color:var(--danger); opacity:.8; }
+
+/* ---- Focus visible (accessibilité) ------------------------------------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline:3px solid var(--crt);
+  outline-offset:2px;
+}
+
+/* ---- Responsive : une colonne < 900px ---------------------------------- */
+@media (max-width:900px) {
+  body { overflow:auto; }
+  .app { height:auto; }
+  .stage { grid-template-columns:1fr; overflow:visible; }
+  .sidebar__foot { display:none; }
+  .nav { flex-direction:row; flex-wrap:wrap; }
+  .nav__btn { flex:1 1 40%; }
+}
+
+/* ---- Respect des préférences de mouvement ------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .cursor { animation:none; }
+  .radar::before { animation:none; }
+  body, .hud, .panel, .nav__btn, .journal { transition:none; }
+}
+</style>
+</head>
+<body data-phase="day">
+
+<!-- Décor / overlay purement visuel : masqué aux technologies d'assistance -->
+<div class="crt-overlay" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ================= HUD ================= -->
+  <header class="hud" role="banner">
+    <div class="hud__title display">HORDES <b>REVIVAL</b></div>
+    <div class="hud__meta">
+      <span class="hud__day" id="hud-day">Jour 4 — Cité de la Poussière</span>
+      <span class="tech-label">GRID-OS v2.7 · VELTRIX SYSTEMS</span>
+    </div>
+
+    <div class="gauges" aria-label="Constantes du survivant">
+      <div class="gauge">
+        <div class="gauge__head"><span>Vie</span><span>72%</span></div>
+        <div class="gauge__bar"><div class="gauge__fill" style="width:72%"></div></div>
+      </div>
+      <div class="gauge">
+        <div class="gauge__head"><span>Eau</span><span>28%</span></div>
+        <div class="gauge__bar"><div class="gauge__fill is-danger" style="width:28%"></div></div>
+      </div>
+    </div>
+
+    <button type="button" class="phase-toggle" id="phase-toggle" aria-pressed="false"
+            aria-label="Basculer entre jour et nuit">
+      <span class="phase-toggle__icon" id="phase-icon" aria-hidden="true">☀</span>
+      <span id="phase-text">Jour</span>
+    </button>
+  </header>
+
+  <!-- ================= SCÈNE ================= -->
+  <div class="stage">
+
+    <!-- ---- Sidebar ---- -->
+    <nav class="panel sidebar" aria-label="Navigation des écrans">
+      <div class="sidebar__brand">
+        <b>GRID-OS</b>
+        <small>Veltrix Systems</small>
+      </div>
+      <div class="nav">
+        <button type="button" class="nav__btn" data-screen="ville" aria-current="true">Ville</button>
+        <button type="button" class="nav__btn" data-screen="actions">Actions</button>
+        <button type="button" class="nav__btn" data-screen="terminal">Terminal</button>
+        <button type="button" class="nav__btn" data-screen="inventaire">Inventaire</button>
+        <button type="button" class="nav__btn" data-screen="radar">Radar</button>
+      </div>
+      <div class="sidebar__foot">Nœud #A-17<br>Signal stable</div>
+    </nav>
+
+    <!-- ---- Écran (une seule vue visible) ---- -->
+    <main class="panel screen" id="screen">
+
+      <!-- Vue : Ville (décor du monde 100% CSS) -->
+      <section class="view is-active" id="view-ville" aria-label="Vue de la ville">
+        <div class="view__head">
+          <h2 class="display">La Cité</h2>
+          <span class="tech-label">Secteur périmétrique</span>
+        </div>
+        <div class="world" aria-hidden="true">
+          <div class="world__orb"></div>
+          <div class="world__skyline">
+            <span style="height:48px"></span>
+            <span style="height:30px"></span>
+            <span style="height:58px"></span>
+            <span style="height:22px"></span>
+            <span style="height:40px"></span>
+            <span style="height:64px"></span>
+            <span style="height:34px"></span>
+            <span style="height:52px"></span>
+          </div>
+          <div class="world__dune"></div>
+          <div class="world__road"></div>
+        </div>
+        <p class="world__cap">Le désert avale l'horizon. Derrière les murs, 40 survivants comptent les heures avant la nuit.</p>
+      </section>
+
+      <!-- Vue : Actions -->
+      <section class="view" id="view-actions" aria-label="Actions disponibles" hidden>
+        <div class="view__head">
+          <h2 class="display">Actions</h2>
+          <span class="tech-label">6 PA restants</span>
+        </div>
+        <div class="view__body">
+          <div class="cards">
+            <div class="card">
+              <h3>Fouiller</h3>
+              <p>Ratisser un bâtiment en ruine du désert. Risque de rencontre.</p>
+              <button type="button" class="btn" data-log="Vous fouillez une station-service abandonnée.">Fouiller</button>
+            </div>
+            <div class="card">
+              <h3>Puiser l'eau</h3>
+              <p>Remplir les gourdes au puits municipal. Ration limitée.</p>
+              <button type="button" class="btn" data-log="+1 ration d'eau prélevée au puits.">Puiser</button>
+            </div>
+            <div class="card">
+              <h3>Renforcer</h3>
+              <p>Consolider la palissade avant l'assaut nocturne.</p>
+              <button type="button" class="btn" data-log="Palissade renforcée : +3 points de défense.">Renforcer</button>
+            </div>
+            <div class="card">
+              <h3>Monter la garde</h3>
+              <p>Prendre un tour de veille. Détecte les rôdeurs approchants.</p>
+              <button type="button" class="btn" data-log-danger="Un rôdeur repéré près de la porte Est.">Veiller</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vue : Terminal (CRT interactif) -->
+      <section class="view" id="view-terminal" aria-label="Terminal GRID-OS" hidden>
+        <div class="view__head">
+          <h2 class="display">Terminal</h2>
+          <span class="tech-label">GRID-OS · Shell sécurisé</span>
+        </div>
+        <div class="terminal">
+          <div class="terminal__out" id="term-out" role="log" aria-live="polite" aria-label="Sortie du terminal"></div>
+          <form class="terminal__prompt" id="term-form">
+            <span aria-hidden="true">grid-os&gt;</span>
+            <input class="terminal__input" id="term-input" type="text" autocomplete="off"
+                   spellcheck="false" aria-label="Ligne de commande" placeholder="tapez 'aide'">
+            <span class="cursor" aria-hidden="true"></span>
+          </form>
+        </div>
+      </section>
+
+      <!-- Vue : Inventaire (CRT) -->
+      <section class="view" id="view-inventaire" aria-label="Inventaire" hidden>
+        <div class="view__head">
+          <h2 class="display">Inventaire</h2>
+          <span class="tech-label">Sac à dos · 5/8</span>
+        </div>
+        <div class="crt-grid">
+          <h3>&gt; Contenu du sac</h3>
+          <div class="inv-row"><span>Bidon d'eau</span><span>×2</span></div>
+          <div class="inv-row"><span>Conserve avariée</span><span>×1</span></div>
+          <div class="inv-row"><span>Clé à molette</span><span>×1</span></div>
+          <div class="inv-row"><span>Pile 9V</span><span>×3</span></div>
+          <div class="inv-row"><span>Bandage de fortune</span><span>×1</span></div>
+        </div>
+      </section>
+
+      <!-- Vue : Radar (CRT animé) -->
+      <section class="view" id="view-radar" aria-label="Radar de zone" hidden>
+        <div class="view__head">
+          <h2 class="display">Radar</h2>
+          <span class="tech-label">Balayage périmètre · 3 contacts</span>
+        </div>
+        <div class="crt-grid">
+          <h3>&gt; Contacts hostiles</h3>
+          <div class="radar" aria-hidden="true">
+            <div class="radar__blip" style="top:30%;left:60%"></div>
+            <div class="radar__blip" style="top:68%;left:40%"></div>
+            <div class="radar__blip" style="top:22%;left:28%"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ---- Journal ---- -->
+    <aside class="panel journal" aria-label="Journal d'activité">
+      <div class="journal__head">
+        <h2>Journal</h2>
+        <span class="tech-label">Live</span>
+      </div>
+      <ul class="journal__list" id="journal-list">
+        <li><time>08:12</time>La caravane franchit la porte Nord.</li>
+        <li class="is-danger"><time>07:54</time>Nuit dernière : 2 rôdeurs franchissent la palissade.</li>
+        <li><time>07:40</time>Ration d'eau distribuée aux 40 habitants.</li>
+      </ul>
+    </aside>
+
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   Comportements — JS vanilla, zéro dépendance.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  var body = document.body;
+
+  /* ---- Horodatage HH:MM ------------------------------------------------- */
+  function stamp() {
+    var d = new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' +
+           String(d.getMinutes()).padStart(2, '0');
+  }
+
+  /* ---- Journal : prepend d'une entrée horodatée ------------------------- */
+  var journal = document.getElementById('journal-list');
+  function logEntry(text, danger) {
+    var li = document.createElement('li');
+    if (danger) { li.className = 'is-danger'; }
+    var t = document.createElement('time');
+    t.textContent = stamp();
+    li.appendChild(t);
+    li.appendChild(document.createTextNode(text));
+    journal.insertBefore(li, journal.firstChild);
+  }
+
+  /* ---- Bascule de phase jour <-> nuit ----------------------------------- */
+  var toggle = document.getElementById('phase-toggle');
+  var icon = document.getElementById('phase-icon');
+  var label = document.getElementById('phase-text');
+
+  function applyPhase(phase) {
+    body.dataset.phase = phase;
+    var night = phase === 'night';
+    toggle.setAttribute('aria-pressed', night ? 'true' : 'false');
+    icon.textContent = night ? '☾' : '☀';
+    label.textContent = night ? 'Nuit' : 'Jour';
+    // Événement custom : d'autres modules peuvent réagir au changement.
+    body.dispatchEvent(new CustomEvent('phasechange', { detail: { phase: phase } }));
+  }
+
+  toggle.addEventListener('click', function () {
+    applyPhase(body.dataset.phase === 'night' ? 'day' : 'night');
+  });
+
+  body.addEventListener('phasechange', function (e) {
+    if (e.detail.phase === 'night') {
+      logEntry('Le soleil tombe. La horde se met en marche.', true);
+    } else {
+      logEntry('L\'aube se lève sur la cité. La ville a tenu.', false);
+    }
+  });
+
+  /* ---- Navigation par délégation ([data-screen]) ------------------------ */
+  var navBtns = Array.prototype.slice.call(document.querySelectorAll('[data-screen]'));
+  function showScreen(name) {
+    var views = document.querySelectorAll('.view');
+    Array.prototype.forEach.call(views, function (v) {
+      var active = v.id === 'view-' + name;
+      v.classList.toggle('is-active', active);
+      if (active) { v.removeAttribute('hidden'); } else { v.setAttribute('hidden', ''); }
+    });
+    navBtns.forEach(function (b) {
+      b.setAttribute('aria-current', b.dataset.screen === name ? 'true' : 'false');
+    });
+    if (name === 'terminal') {
+      var input = document.getElementById('term-input');
+      if (input) { input.focus(); }
+    }
+  }
+
+  document.querySelector('.nav').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-screen]');
+    if (btn) { showScreen(btn.dataset.screen); }
+  });
+
+  /* ---- Boutons d'action -> journal -------------------------------------- */
+  document.getElementById('screen').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-log], [data-log-danger]');
+    if (!btn) { return; }
+    if (btn.dataset.logDanger != null) {
+      logEntry(btn.dataset.logDanger, true);
+    } else {
+      logEntry(btn.dataset.log, false);
+    }
+  });
+
+  /* ---- Terminal interactif ---------------------------------------------- */
+  var out = document.getElementById('term-out');
+  var form = document.getElementById('term-form');
+  var input = document.getElementById('term-input');
+
+  function termPrint(text, danger) {
+    var p = document.createElement('p');
+    p.className = 'terminal__line' + (danger ? ' is-danger' : '');
+    p.textContent = text;
+    out.appendChild(p);
+    out.scrollTop = out.scrollHeight;
+  }
+
+  var COMMANDS = {
+    aide: function () {
+      termPrint('Commandes : aide, etat, horde, scan, jour, nuit, effacer');
+    },
+    etat: function () {
+      termPrint('SURVIVANT #A-17 — Vie 72% · Eau 28% · PA 6/6 · Moral stable.');
+    },
+    horde: function () {
+      var n = 40 + Math.floor(Math.random() * 60);
+      termPrint('MENACE : ' + n + ' rôdeurs détectés au-delà du périmètre.', true);
+    },
+    scan: function () {
+      termPrint('SCAN secteur A-17 : 3 contacts hostiles, 1 épave exploitable, 0 allié.');
+    },
+    jour: function () { applyPhase('day'); termPrint('Cycle forcé -> JOUR.'); },
+    nuit: function () { applyPhase('night'); termPrint('Cycle forcé -> NUIT.', true); },
+    effacer: function () { out.innerHTML = ''; }
+  };
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var raw = input.value.trim();
+    input.value = '';
+    if (!raw) { return; }
+    termPrint('grid-os> ' + raw);
+    var cmd = raw.toLowerCase().split(/\s+/)[0];
+    if (COMMANDS[cmd]) {
+      COMMANDS[cmd]();
+    } else {
+      termPrint('Commande inconnue : ' + cmd + '. Tapez "aide".', true);
+    }
+  });
+
+  // Bandeau d'accueil du terminal.
+  termPrint('GRID-OS v2.7 — VELTRIX SYSTEMS. Terminal prêt.');
+  termPrint('Tapez "aide" pour la liste des commandes.');
+})();
+</script>
+</body>
+</html>
