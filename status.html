@@ -8,7 +8,7 @@
       name="description"
       content="État en temps réel des services de Hordes Revival : serveur de jeu, base de données, classement et site. Page de statut publique."
     />
-    <meta name="theme-color" content="#9c4322" />
+    <meta name="theme-color" content="#d4b896" />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://botlings.github.io/Test/status.html" />
 
@@ -26,110 +26,95 @@
       href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2210%22%20fill%3D%22%2314387f%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2222%22%20fill%3D%22none%22%20stroke%3D%22%23ffc72c%22%20stroke-width%3D%224%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%229%22%20fill%3D%22%23ffc72c%22%2F%3E%3C%2Fsvg%3E"
     />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&family=Share+Tech+Mono&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="styles.css" />
 
     <style>
-      /* Styles propres à la page de statut. Scopés sous .status pour ne pas
-         fuir vers les composants partagés (.card, etc.). Hérite des tokens
-         désert irradié 60's de styles.css (:root). */
+      /* Page de statut — chrome Windows 98 (DA figée 2026-07-12). Scopée sous
+         .status. Hérite des tokens W98 de styles.css (:root : --face, --window,
+         --rust, --ink, --bevel-*). */
       .status {
         max-width: var(--maxw);
-        margin: 0 auto;
-        padding: 2.4rem 1.4rem 4rem;
+        margin: 1.4rem auto;
+        padding: 3px;
+        background: var(--face);
+        box-shadow: var(--bevel-out), var(--drop);
       }
 
       .status__top {
         display: flex;
         flex-wrap: wrap;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
-        gap: 0.6rem 1.2rem;
-        margin-bottom: 1.6rem;
+        gap: 0.5rem 1rem;
+        height: var(--tb-h);
+        padding: 0 6px;
+        background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
       }
 
       .status__brand {
-        font-family: 'Silkscreen', 'VT323', monospace;
-        font-size: clamp(1.5rem, 4vw, 2.2rem);
-        color: var(--pa-rust);
-        letter-spacing: 0.5px;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: 12px;
+        color: #fff;
         line-height: 1;
       }
-      .status__brand a {
-        color: inherit;
-      }
+      .status__brand a { color: inherit; text-decoration: none; }
       .status__home {
-        font-family: 'VT323', monospace;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-size: 0.95rem;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: 11px;
+        color: #fff;
       }
 
       h1.status__title {
-        font-family: 'Silkscreen', 'VT323', monospace;
-        font-size: clamp(1.6rem, 5vw, 2.6rem);
-        color: var(--pa-ink);
-        text-transform: uppercase;
-        line-height: 1.05;
-        margin: 0.2rem 0 1.4rem;
+        font-family: var(--font-ui);
+        font-size: clamp(1.3rem, 5vw, 1.9rem);
+        font-weight: 700;
+        color: var(--rust-deep);
+        text-transform: none;
+        line-height: 1.1;
+        margin: 1rem 1rem 1.2rem;
       }
 
-      /* Bannière globale */
+      /* Bannière globale — panneau W98 enfoncé. */
       .global {
-        border: 3px solid var(--pa-line);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 1.4rem 1.6rem;
+        box-shadow: var(--bevel-in);
+        padding: 1.1rem 1.3rem;
         display: flex;
         align-items: center;
-        gap: 1.1rem;
-        background: var(--pa-paper);
+        gap: 1rem;
+        background: var(--well);
+        margin: 0 1rem;
       }
-      .global[data-state='up'] {
-        background: #e7f6e9;
-        border-color: #1f7a35;
-        box-shadow: 6px 6px 0 rgba(31, 122, 53, 0.55);
-      }
-      .global[data-state='degraded'] {
-        background: #fdf3d6;
-        border-color: var(--pa-ochre-deep);
-        box-shadow: 6px 6px 0 rgba(232, 162, 0, 0.5);
-      }
-      .global[data-state='down'] {
-        background: #f8e0e1;
-        border-color: var(--pa-blood);
-        box-shadow: 6px 6px 0 rgba(151, 21, 25, 0.5);
-      }
+      .global[data-state='up'] { background: #e7f6e9; }
+      .global[data-state='degraded'] { background: #fdf3d6; }
+      .global[data-state='down'] { background: #f8e0e1; }
       .global__badge {
         flex: 0 0 auto;
-        width: 46px;
-        height: 46px;
-        border-radius: 0;
-        border: 3px solid var(--pa-line);
+        width: 42px;
+        height: 42px;
+        box-shadow: var(--bevel-out);
         display: grid;
         place-items: center;
-        font-family: 'Silkscreen', 'VT323', monospace;
-        font-size: 1.5rem;
-        background: var(--pa-sand);
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: 20px;
+        background: var(--face);
       }
-      .global[data-state='up'] .global__badge { background: #1f7a35; color: #fff; border-color: #155523; }
-      .global[data-state='degraded'] .global__badge { background: var(--pa-ochre); color: var(--pa-ink); }
-      .global[data-state='down'] .global__badge { background: var(--pa-blood); color: #fff; border-color: var(--pa-blood-deep); }
+      .global[data-state='up'] .global__badge { background: #1f7a35; color: #fff; }
+      .global[data-state='degraded'] .global__badge { background: var(--ochre); color: var(--ink); }
+      .global[data-state='down'] .global__badge { background: var(--blood); color: #fff; }
       .global__label {
-        font-family: 'Silkscreen', 'VT323', monospace;
-        font-size: clamp(1.05rem, 3vw, 1.4rem);
-        text-transform: uppercase;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: clamp(1rem, 3vw, 1.25rem);
+        text-transform: none;
         line-height: 1.1;
+        color: var(--ink);
       }
       .global__sub {
-        font-size: 0.95rem;
-        color: var(--pa-ink-soft);
+        font-size: 12px;
+        color: var(--ink-soft);
       }
 
       .status__controls {
@@ -137,81 +122,76 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 0.6rem 1rem;
-        margin: 1.4rem 0 0.8rem;
-        font-size: 0.92rem;
-        color: var(--pa-ink-soft);
+        gap: 0.5rem 1rem;
+        margin: 1rem 1rem 0.7rem;
+        font-size: 12px;
+        color: var(--ink-soft);
       }
       .status__controls code {
-        font-family: 'VT323', monospace;
-        background: var(--pa-sand-deep);
-        border: 1px solid var(--pa-line);
-        padding: 0.1rem 0.5rem;
-        border-radius: 0;
-        color: var(--pa-ink);
+        font-family: var(--font-mono);
+        background: var(--well);
+        box-shadow: var(--bevel-in-thin);
+        padding: 0.1rem 0.45rem;
+        color: var(--ink);
       }
       .status__refresh {
-        font-family: 'VT323', monospace;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-size: 0.85rem;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        text-transform: none;
+        font-size: 12px;
         cursor: pointer;
-        background: var(--pa-ochre);
-        color: var(--pa-ink);
-        border: 2.5px solid var(--pa-line);
-        border-radius: 0;
-        padding: 0.45rem 1rem;
-        box-shadow: var(--shadow-soft);
-        transition: transform 0.08s ease;
+        background: var(--face);
+        color: var(--ink);
+        border: none;
+        box-shadow: var(--bevel-out);
+        padding: 0.4rem 1rem;
+        min-height: 26px;
       }
-      .status__refresh:hover { transform: translate(-1px, -1px); }
-      .status__refresh:active { transform: translate(2px, 2px); box-shadow: none; }
+      .status__refresh:hover { background: var(--face-light); }
+      .status__refresh:active { box-shadow: var(--bevel-in); }
 
-      /* Grille de services */
+      /* Grille de services — panneaux W98. */
       .status__grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 1.1rem;
-        margin-top: 1.1rem;
+        gap: 0.9rem;
+        margin: 1rem 1rem;
       }
       .status-card {
-        background: var(--pa-paper);
-        border: 3px solid var(--pa-line);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-soft);
-        padding: 1.1rem 1.2rem;
+        background: var(--face);
+        box-shadow: var(--bevel-out);
+        padding: 1rem 1.1rem;
       }
       .status-card__head {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
-        margin-bottom: 0.55rem;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
       }
       .status-card__dot {
-        width: 15px;
-        height: 15px;
-        border-radius: 0;
-        border: 2px solid var(--pa-line);
+        width: 14px;
+        height: 14px;
+        box-shadow: var(--bevel-out-thin);
         flex: 0 0 auto;
-        background: var(--pa-ink-soft);
+        background: var(--ink-soft);
       }
-      .status-card__dot[data-state='up'] { background: #2bd14e; box-shadow: 0 0 0 3px rgba(43, 209, 78, 0.25); }
-      .status-card__dot[data-state='degraded'] { background: var(--pa-ochre); box-shadow: 0 0 0 3px rgba(255, 199, 44, 0.3); }
-      .status-card__dot[data-state='down'] { background: var(--pa-blood); box-shadow: 0 0 0 3px rgba(200, 38, 44, 0.25); }
-      .status-card__dot[data-state='pending'] { background: var(--pa-ink-soft); animation: blink 1s steps(2, start) infinite; }
+      .status-card__dot[data-state='up'] { background: #2bd14e; }
+      .status-card__dot[data-state='degraded'] { background: var(--ochre); }
+      .status-card__dot[data-state='down'] { background: var(--blood); }
+      .status-card__dot[data-state='pending'] { background: var(--ink-soft); animation: blink 1s steps(2, start) infinite; }
       @keyframes blink { 50% { opacity: 0.3; } }
 
       .status-card__name {
-        font-family: 'Silkscreen', 'VT323', monospace;
-        font-size: 1.02rem;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: none;
+        color: var(--rust-deep);
       }
       .status-card__desc {
-        font-size: 0.88rem;
-        color: var(--pa-ink-soft);
-        margin-bottom: 0.7rem;
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-bottom: 0.6rem;
         min-height: 2.4em;
       }
       .status-card__foot {
@@ -219,33 +199,32 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 0.6rem;
-        border-top: 1.5px dashed var(--pa-line);
-        padding-top: 0.55rem;
+        border-top: 1px solid #cdbf9f;
+        padding-top: 0.5rem;
       }
       .status-card__state {
-        font-family: 'VT323', monospace;
+        font-family: var(--font-ui);
         font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-size: 0.95rem;
+        text-transform: none;
+        font-size: 12px;
       }
       .status-card[data-state='up'] .status-card__state { color: #1f7a35; }
-      .status-card[data-state='degraded'] .status-card__state { color: var(--pa-ochre-deep); }
-      .status-card[data-state='down'] .status-card__state { color: var(--pa-blood); }
+      .status-card[data-state='degraded'] .status-card__state { color: var(--rust-deep); }
+      .status-card[data-state='down'] .status-card__state { color: var(--blood); }
       .status-card__meta {
-        font-family: 'VT323', monospace;
-        font-size: 0.82rem;
-        color: var(--pa-ink-soft);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--ink-soft);
       }
 
       .status__foot {
-        margin-top: 2.4rem;
-        font-size: 0.85rem;
-        color: var(--pa-ink-soft);
+        margin: 1.6rem 1rem 1rem;
+        font-size: 11px;
+        color: var(--ink-soft);
         text-align: center;
         line-height: 1.7;
       }
-      .status__foot a { font-weight: 600; }
+      .status__foot a { font-weight: 700; }
     </style>
   </head>
 

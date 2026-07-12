@@ -1,33 +1,32 @@
 /* Hordes Revival — Tableau de bord de la ville.
    ───────────────────────────────────────────────────────────────
-   DÉCISION FIGÉE (DA PIXEL ART RÉTRO 16-32px, 2026-07-07) :
-   • La VILLE et tout le public sont en PIXEL ART : coins carrés
-     (border-radius 0), polices bitmap (Silkscreen titrage + VT323 corps),
-     ombres dures à décalage entier. JOUR = Lonesome Road sable/rouille,
-     NUIT = cimetière rouge sang. Ces composants utilisent les tokens --pa-*.
-   • Le TERMINAL VERT PHOSPHORE + CRT n'habille QUE les interfaces
-     « informatiques » : carte du désert, inventaire + défense,
-     constantes du citoyen, journal de la ville et rapport de nuit
-     (+ profil joueur = relevé de stats). Ces sous-arbres portent la
-     classe `.terminal` (cf. game.html) ; styles.css y déclare les
-     tokens verts (--crt*, --bg-card, glows) hérités par leurs
-     descendants. Les règles vertes ci-dessous sont donc scopées
-     sous `.terminal` (ou s'appuient sur des classes qui n'existent
-     que dans ces panneaux).
-   • Cycle jour/nuit : voir styles.css (body[data-daytime]).
+   DA FIGÉE — WINDOWS 98 SKEUOMORPHIQUE (décision humaine 2026-07-12).
+   • La VILLE et tout le public sont en chrome Windows 98 : panneaux/boutons
+     en relief biseauté, barres de titre à dégradé, coins droits, police
+     Tahoma. JOUR = W98 teinté sable/rouille, NUIT = W98 noir/rouge sang.
+     Ces composants utilisent les tokens W98 de styles.css (--face, --window,
+     --rust, --ink, --bevel-*).
+   • Les interfaces « informatiques » (carte du désert, inventaire + défense,
+     constantes du citoyen, journal, rapport de nuit, profil) sont des
+     FENÊTRES CMD : cadre W98, zone client NOIRE, texte VERT PHOSPHORE,
+     police Courier. Ces sous-arbres portent la classe `.terminal` ;
+     styles.css y déclare les tokens verts (--crt*, --bg, glows) hérités par
+     leurs descendants. Les règles vertes ci-dessous sont scopées sous
+     `.terminal`.
+   • Cycle jour/nuit : voir styles.css (body[data-daytime]). La phase de jeu
+     (body[data-phase]) durcit l'ambiance de la carte pendant l'assaut.
 
-   ⚠ Ne JAMAIS styler les composants ville avec var(--crt*) : ces
-   variables n'existent pas hors `.terminal`. Et inversement. */
+   ⚠ Ne JAMAIS styler les composants ville avec var(--crt*) et inversement. */
 
 /* ════════════════════════════════════════════════════════════════
    STRUCTURE
    ════════════════════════════════════════════════════════════════ */
 .game-body {
   min-height: 100vh;
-  min-height: 100dvh; /* suit la barre d'adresse mobile (fallback 100vh au-dessus) */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  overflow-x: clip; /* aucune barre de défilement horizontale parasite sur mobile */
+  overflow-x: clip;
 }
 
 .game-main {
@@ -35,14 +34,14 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: clamp(1rem, 3vw, 2rem);
+  padding: clamp(0.8rem, 3vw, 1.6rem);
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
+  gap: 1rem;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   EN-TÊTE DE LA VILLE (réclame post-apo)
+   EN-TÊTE DE LA VILLE — barre W98
    ════════════════════════════════════════════════════════════════ */
 .game-header {
   position: sticky;
@@ -50,83 +49,71 @@
   z-index: 50;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.65rem clamp(0.9rem, 4vw, 2.5rem);
-  background: var(--pa-sand);
-  border-bottom: 3px solid var(--pa-rust);
-  box-shadow: 0 3px 0 rgba(34, 20, 10, 0.12);
+  gap: 0.7rem;
+  padding: 3px clamp(0.6rem, 3vw, 1.4rem);
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  border-bottom: 1px solid var(--dark);
   flex-wrap: wrap;
 }
 
 .game-header__status {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
-  margin-left: 0.6rem;
+  margin-left: 0.5rem;
 }
 
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.7rem;
-  border-radius: 0;
-  background: var(--pa-paper);
-  border: 2px solid var(--pa-ink);
-  color: var(--pa-ink);
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  background: var(--face);
+  box-shadow: var(--bevel-out-thin);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.status-pill--day {
-  color: var(--pa-ochre-deep);
-  border-color: var(--pa-ochre-deep);
-}
-
-.status-pill--phase {
-  color: var(--pa-rust);
-  border-color: var(--pa-rust);
-}
+.status-pill--day { color: var(--rust-deep); }
+.status-pill--phase { color: var(--rust); }
 
 body[data-phase='night'] .status-pill--phase {
-  background: var(--pa-rust-deep);
-  color: var(--pa-ochre);
-  border-color: var(--pa-ochre);
+  background: var(--blood);
+  color: #fff;
 }
 
 .status-pill--threat {
   color: #fff;
-  background: var(--pa-blood);
-  border-color: var(--pa-blood-deep);
+  background: var(--blood);
 }
 
 .game-header__account {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .game-header__email {
-  font-family: 'VT323', monospace;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--pa-ink-soft);
-  letter-spacing: 0.03em;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 
-.game-header__email::before {
-  content: '👤 ';
-}
+.game-header__email::before { content: '\1F464  '; }
 
-/* ── Variantes de bouton (taille / pleine largeur / danger) ── */
+/* ── Variantes de bouton ── */
 .btn--sm {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.9rem;
+  padding: 0.3rem 0.7rem;
+  min-height: 22px;
+  font-size: 11px;
 }
 
 .btn--block {
@@ -136,117 +123,118 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .btn--danger {
-  background: var(--pa-blood);
+  background: var(--blood);
   color: #fff;
-  border-color: var(--pa-ink);
+  box-shadow:
+    inset -1px -1px 0 0 var(--dark),
+    inset  1px  1px 0 0 #d05050,
+    inset -2px -2px 0 0 var(--blood-deep),
+    inset  2px  2px 0 0 #c03030,
+    0 0 0 1px var(--dark);
 }
 
-.btn--danger:hover,
-.btn--danger:focus-visible {
-  background: var(--pa-blood-deep);
-  color: #fff;
+.btn--danger:hover { background: #c02020; }
+.btn--danger:active {
+  box-shadow:
+    inset  1px  1px 0 0 var(--blood-deep),
+    inset -1px -1px 0 0 #d05050,
+    0 0 0 1px var(--dark);
 }
 
 .btn--danger:disabled,
 .btn:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
-  transform: none !important;
-  box-shadow: var(--shadow-soft) !important;
+  opacity: 0.5;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   BANDEAU DE CONFIG API (réclame post-apo — alerte)
+   BANDEAU DE CONFIG API — boîte d'alerte W98
    ════════════════════════════════════════════════════════════════ */
 .api-banner {
-  border: 3px solid var(--pa-blood);
-  background: rgba(200, 38, 44, 0.08);
-  border-radius: var(--radius);
-  padding: 1rem 1.2rem;
-  box-shadow: var(--shadow-soft);
+  background: var(--face);
+  box-shadow: var(--bevel-out), var(--drop);
+  padding: 3px;
 }
 
 .api-banner::before {
-  content: '⚠ Liaison serveur introuvable';
-  display: block;
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  color: var(--pa-blood);
-  text-transform: uppercase;
-  margin-bottom: 0.6rem;
+  content: '\26A0 Liaison serveur introuvable';
+  display: flex;
+  align-items: center;
+  height: var(--tb-h);
+  padding: 0 6px;
+  background: linear-gradient(90deg, var(--blood-deep), var(--blood));
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 0.7rem;
 }
 
 .api-banner__inner {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.6rem;
+  padding: 0 0.8rem 0.8rem;
 }
 
 .api-banner p {
-  color: var(--pa-ink-soft);
-  font-size: 0.95rem;
+  color: var(--ink);
+  font-size: 12px;
 }
 
 .api-banner code {
-  background: var(--pa-rust);
-  padding: 0.05rem 0.45rem;
-  border-radius: 0;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.92rem;
-  color: var(--pa-ochre);
+  background: var(--well);
+  box-shadow: var(--bevel-in-thin);
+  padding: 0.05rem 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--rust-deep);
 }
 
 .api-banner__form {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
   align-items: end;
 }
 
 .api-banner__form label {
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--pa-ink-soft);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ink);
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
   flex: 1 1 240px;
 }
 
 .api-banner__form input {
-  padding: 0.55rem 0.75rem;
-  background: #fff;
-  color: var(--pa-ink);
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
+  padding: 0.4rem 0.55rem;
+  background: var(--well);
+  color: var(--ink);
+  border: none;
+  box-shadow: var(--bevel-in);
+  font-family: var(--font-ui);
+  font-size: 12px;
   min-width: 0;
 }
 
 .api-banner__hint {
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ink-soft);
 }
 
-.api-banner__hint[data-state='error'] { color: var(--pa-blood); }
-.api-banner__hint[data-state='success'] { color: var(--pa-rust); }
+.api-banner__hint[data-state='error'] { color: var(--blood); }
+.api-banner__hint[data-state='success'] { color: var(--rust); }
 
 /* ════════════════════════════════════════════════════════════════
-   CARTES — base réclame post-apo (affiche), surcharge `.terminal` (verte)
+   CARTES — fenêtre W98 (ville) / fenêtre CMD (`.terminal`)
    ════════════════════════════════════════════════════════════════ */
 .card {
-  background: var(--pa-paper);
-  border: 3px solid var(--pa-ink);
-  border-radius: var(--radius);
-  padding: 0;
-  box-shadow: var(--shadow-soft);
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  padding: 3px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -256,105 +244,110 @@ body[data-phase='night'] .status-pill--phase {
 
 .card__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 0.6rem 1rem;
-  background: var(--pa-sand-deep);
-  border-bottom: 3px solid var(--pa-ink);
+  padding: 0 6px;
+  height: var(--tb-h);
+  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
 }
 
+.card__header--with-tabs { height: auto; padding: 4px 6px; }
+
 .card__title {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1rem;
-  font-weight: 400;
-  color: var(--pa-rust);
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .card__sub {
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: none;
 }
 
 .card__count {
   display: inline-block;
-  min-width: 1.6rem;
-  padding: 0 0.45rem;
-  border-radius: 0;
-  background: var(--pa-rust);
-  color: var(--pa-ochre);
-  font-family: 'VT323', monospace;
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  background: var(--well);
+  box-shadow: var(--bevel-in-thin);
+  color: var(--rust-deep);
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 11px;
   text-align: center;
-  margin-left: 0.4rem;
+  margin-left: 0.35rem;
 }
 
 .card > :not(.card__header) {
-  padding-left: clamp(0.9rem, 2vw, 1.3rem);
-  padding-right: clamp(0.9rem, 2vw, 1.3rem);
+  padding-left: clamp(0.6rem, 2vw, 1rem);
+  padding-right: clamp(0.6rem, 2vw, 1rem);
+  background: var(--window);
 }
 
 .card > :last-child:not(.card__header) {
-  padding-bottom: clamp(0.9rem, 2vw, 1.3rem);
+  padding-bottom: clamp(0.6rem, 2vw, 1rem);
 }
 
 .card > :first-child:not(.card__header) {
-  padding-top: clamp(0.9rem, 2vw, 1.3rem);
+  padding-top: clamp(0.6rem, 2vw, 1rem);
 }
 
-/* ── Surcharge TERMINAL (carte du désert, inventaire, journal) ── */
+/* ── Fenêtre CMD (carte du désert, inventaire, journal…) ── */
 .card.terminal {
-  background: var(--bg-card);
-  border: 1px solid var(--crt-faint);
-  border-radius: 0;
-  box-shadow: var(--shadow);
+  background: #000;
+  box-shadow: var(--bevel-out);
+  padding: 2px;
 }
 
 .terminal .card__header {
-  padding: 0.5rem 1rem;
-  background: rgba(46, 255, 107, 0.06);
-  border-bottom: 1px solid var(--crt-faint);
+  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
+  height: var(--tb-h);
 }
 
 .terminal .card__title {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 0.95rem;
-  color: var(--crt-bright);
-  letter-spacing: 0.06em;
-  text-shadow: var(--glow-strong);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: #fff;
+  letter-spacing: 0;
+  text-shadow: none;
 }
 
 .terminal .card__title::before {
-  content: '▌ ';
-  color: var(--crt);
+  content: '\25A0 ';
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .terminal .card__sub {
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 400;
-  font-size: 1rem;
-  color: var(--crt-faint);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .terminal .card__count {
-  border-radius: 0;
-  background: var(--bg);
-  border: 1px solid var(--crt-faint);
+  background: #000;
+  box-shadow: inset 0 0 0 1px var(--crt-faint);
   color: var(--gold);
-  font-family: 'VT323', monospace;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.card.terminal > :not(.card__header) {
+  background: #000;
+  color: var(--crt);
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ÉCRAN AUTH (réclame post-apo)
+   ÉCRAN AUTH — boîte de dialogue de connexion W98
    ════════════════════════════════════════════════════════════════ */
 .screen--auth {
   flex: 1;
@@ -365,164 +358,163 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .auth-card {
-  background: var(--pa-paper);
-  border: 4px solid var(--pa-ink);
-  border-radius: var(--radius);
-  padding: 1.8rem clamp(1.4rem, 3vw, 2.5rem);
-  box-shadow: var(--shadow);
+  background: var(--face);
+  box-shadow: var(--bevel-out), var(--drop);
+  padding: 3px 3px 1.4rem;
   width: 100%;
-  max-width: 460px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1rem;
   position: relative;
 }
 
 .auth-card::before {
-  content: 'Accès Citoyen · Cité 84';
-  display: block;
-  font-family: 'VT323', monospace;
+  content: '\1F512 Accès Citoyen — Cité 84';
+  display: flex;
+  align-items: center;
+  height: var(--tb-h);
+  padding: 0 6px;
+  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
+  color: #fff;
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.14em;
-  color: var(--pa-blood);
-  text-align: center;
-  text-transform: uppercase;
+  font-size: 12px;
 }
 
+.auth-card > * { margin-left: 1.2rem; margin-right: 1.2rem; }
+
 .auth-card__title {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1.6rem;
-  color: var(--pa-rust);
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--rust-deep);
   text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  text-shadow: 2px 2px 0 var(--pa-ochre);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .auth-card__lead {
-  color: var(--pa-ink-soft);
+  color: var(--ink-soft);
   text-align: center;
-  font-size: 1rem;
-  margin-top: -0.5rem;
+  font-size: 12px;
+  margin-top: -0.4rem;
 }
 
+/* Onglets W98 (tabs). */
 .auth-tabs {
   display: flex;
-  background: var(--pa-sand-deep);
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
+  gap: 2px;
   padding: 0;
-  overflow: hidden;
+  border-bottom: 1px solid var(--dark);
 }
 
 .auth-tab {
   flex: 1;
-  background: transparent;
+  background: var(--face);
   border: none;
-  border-right: 3px solid var(--pa-ink);
-  color: var(--pa-ink-soft);
-  padding: 0.55rem 0.8rem;
-  font-family: 'VT323', monospace;
+  box-shadow: var(--bevel-out-thin);
+  color: var(--ink-soft);
+  padding: 0.4rem 0.7rem;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.auth-tab:last-child { border-right: none; }
-
 .auth-tab.is-active {
-  background: var(--pa-rust);
-  color: var(--pa-ochre);
+  background: var(--window);
+  color: var(--rust-deep);
+  box-shadow:
+    inset 1px 1px 0 var(--hilite),
+    inset -1px 0 0 var(--shadow-c);
+  position: relative;
+  z-index: 1;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 0.95rem;
+  gap: 0.8rem;
 }
 
-/* ── Champs de formulaire (réclame post-apo) ───────────────────────── */
+/* ── Champs de formulaire W98 (enfoncés) ── */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .field__label {
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  color: var(--pa-rust);
-  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--ink);
+  text-transform: none;
 }
 
 .field input,
 .field select,
 .field textarea {
-  padding: 0.6rem 0.75rem;
-  background: #fff;
-  color: var(--pa-ink);
-  border: 3px solid var(--pa-ink);
+  padding: 0.4rem 0.55rem;
+  background: var(--well);
+  color: var(--ink);
+  border: none;
+  box-shadow: var(--bevel-in);
   border-radius: 0;
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: var(--font-ui);
+  font-size: 13px;
   min-width: 0;
 }
 
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
-  outline: none;
-  border-color: var(--pa-rust);
-  box-shadow: var(--shadow-soft);
+  outline: 1px dotted var(--ink);
+  outline-offset: -4px;
 }
 
 .field input[aria-invalid='true'] {
-  border-color: var(--pa-blood);
-  background: #fff2f1;
+  color: var(--blood);
+  background: #fdecec;
 }
 
 .form-error {
   color: #fff;
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  padding: 0.5rem 0.75rem;
-  background: var(--pa-blood);
-  border: 2px solid var(--pa-blood-deep);
-  border-radius: 0;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 0.4rem 0.6rem;
+  background: var(--blood);
+  box-shadow: var(--bevel-out-thin);
 }
 
-.form-error::before { content: '⚠ '; }
+.form-error::before { content: '\26A0  '; }
 
 /* ════════════════════════════════════════════════════════════════
-   ÉCRAN LOBBY (réclame post-apo)
+   ÉCRAN LOBBY
    ════════════════════════════════════════════════════════════════ */
 .screen__header h1 {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-  color: var(--pa-rust);
-  text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--pa-ochre);
+  font-family: var(--font-ui);
+  font-size: clamp(1.3rem, 4vw, 1.9rem);
+  font-weight: 700;
+  color: var(--rust-deep);
+  text-transform: none;
+  text-shadow: var(--hero-title-shadow);
 }
 
 .screen__header p {
-  color: var(--pa-ink-soft);
-  margin-top: 0.4rem;
+  color: var(--ink);
+  margin-top: 0.3rem;
   max-width: 60ch;
-  font-size: 1rem;
+  font-size: 13px;
 }
 
 .lobby-grid {
   display: grid;
-  gap: 1.2rem;
+  gap: 1rem;
   grid-template-columns: 1fr;
 }
 
@@ -535,7 +527,7 @@ body[data-phase='night'] .status-pill--phase {
 .lobby-create__form {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.8rem;
 }
 
 .lobby-list {
@@ -544,87 +536,73 @@ body[data-phase='night'] .status-pill--phase {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .town-row {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.75rem 0.95rem;
-  background: rgba(255, 255, 255, 0.5);
-  border: 3px solid var(--pa-ink);
-  border-left-width: 8px;
-  border-left-color: var(--pa-rust);
-  border-radius: 0;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  cursor: pointer;
 }
 
-.town-row:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-soft);
-}
+.town-row:hover { background: var(--face-light); }
+.town-row:active { box-shadow: var(--bevel-in); }
 
 .town-row__main {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
 .town-row__name {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-weight: 400;
-  color: var(--pa-rust);
-  font-size: 1.05rem;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: var(--rust-deep);
+  font-size: 14px;
+  text-transform: none;
 }
 
 .town-row__meta {
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  text-transform: uppercase;
+  gap: 0.5rem;
+  text-transform: none;
 }
 
-.town-row__meta strong {
-  color: var(--pa-ink);
-  font-weight: 700;
-}
+.town-row__meta strong { color: var(--ink); font-weight: 700; }
 
 .badge {
   display: inline-block;
-  padding: 0.1rem 0.55rem;
-  border-radius: 0;
-  font-family: 'VT323', monospace;
-  font-size: 0.78rem;
+  padding: 0.1rem 0.45rem;
+  font-family: var(--font-ui);
+  font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: var(--pa-sand-deep);
-  border: 2px solid var(--pa-ink);
-  color: var(--pa-ink);
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: var(--bevel-out-thin);
+  background: var(--face-light);
+  color: var(--ink);
 }
 
-.badge--normal   { background: var(--pa-rust);   color: #fff; border-color: var(--pa-rust-deep); }
-.badge--hard     { background: var(--pa-ochre); color: var(--pa-ink); border-color: var(--pa-ochre-deep); }
-.badge--hardcore { background: var(--pa-blood);    color: #fff; border-color: var(--pa-blood-deep); }
+.badge--normal   { background: var(--rust);  color: #fff; }
+.badge--hard     { background: var(--ochre); color: var(--ink); }
+.badge--hardcore { background: var(--blood); color: #fff; }
 
 .lobby-empty {
-  padding: 1rem 0.8rem 1.4rem;
-  color: var(--pa-ink-soft);
+  padding: 1rem 0.7rem 1.2rem;
+  color: var(--ink-soft);
   text-align: center;
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-ui);
+  font-size: 13px;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -636,38 +614,38 @@ body[data-phase='night'] .status-pill--phase {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  padding: 0.6rem 0.9rem;
 }
 
 .town-header__title h1 {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-  color: var(--pa-rust);
-  text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--pa-ochre);
+  font-family: var(--font-ui);
+  font-size: clamp(1.3rem, 4vw, 1.9rem);
+  font-weight: 700;
+  color: var(--rust-deep);
+  text-transform: none;
+  text-shadow: var(--hero-title-shadow);
 }
 
-.town-header__title h1::before {
-  content: '⌂ ';
-  color: var(--pa-blood);
-}
+.town-header__title h1::before { content: '\2302  '; color: var(--blood); }
 
 .town-header__sub {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.2rem;
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
-  text-transform: uppercase;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-transform: none;
   flex-wrap: wrap;
 }
 
 .town-grid {
   display: grid;
-  gap: 1.1rem;
+  gap: 1rem;
   grid-template-columns: 1fr;
   grid-template-areas:
     'map'
@@ -709,44 +687,13 @@ body[data-phase='night'] .status-pill--phase {
 .card--buildings { grid-area: buildings; }
 
 /* ════════════════════════════════════════════════════════════════
-   ░░ PANNEAUX « TERMINAL » (vert phosphore + CRT) ░░
+   ░░ FENÊTRES CMD (vert phosphore) ░░
    carte du désert · inventaire · défense · constantes · journal ·
    rapport de nuit · profil. Tout descend de `.terminal`.
    ════════════════════════════════════════════════════════════════ */
 
-/* Scanlines CRT : désormais SUR les panneaux terminal (plus en global). */
-.terminal {
-  position: relative;
-}
-
-.terminal::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.16) 0px,
-    rgba(0, 0, 0, 0.16) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  mix-blend-mode: multiply;
-}
-
-/* Les modales terminal portent déjà leur propre fond ; on évite la double
-   couche de scanlines sur le conteneur plein écran de la modale. */
-.modal.terminal::after { display: none; }
-
-/* CYCLE JOUR/NUIT — protection du terminal (cf. styles.css, body[data-daytime]).
-   La nuit, la ville bascule dans une scène d'horreur (palette cendre/sang) et
-   une brume cramoisie plein écran monte de l'horizon (body::after, screen, z-90).
-   Les panneaux verts « informatiques » doivent rester indépendants du cycle et
-   ne PAS être teintés de rouge : on les remonte EN FLUX au-dessus de la brume
-   (z-95), toujours sous la vignette (body::before, z-100) et les modales (z-150,
-   déjà protégées). Résultat : la ville bascule dans l'horreur, le terminal garde
-   son éclat phosphore. */
+/* La nuit, on remonte les fenêtres CMD au-dessus du « static TV » (z-90),
+   pour qu'elles gardent leur éclat phosphore indépendamment du cycle. */
 .card--map,
 .card--bank,
 .card--log,
@@ -754,39 +701,38 @@ body[data-phase='night'] .status-pill--phase {
   z-index: 95;
 }
 
-/* ── Carte du désert (grille (x,y) autour de la ville) ───── */
+/* ── Carte du désert ── */
 .desert-grid {
   display: grid;
-  gap: 4px;
-  padding: 0.55rem;
-  border: 1px solid var(--crt-faint);
+  gap: 3px;
+  padding: 0.5rem;
+  box-shadow: inset 0 0 0 1px var(--crt-faint);
   background:
     repeating-linear-gradient(
       0deg,
-      rgba(46, 255, 107, 0.04) 0 1px,
+      rgba(0, 255, 65, 0.04) 0 1px,
       transparent 1px 12px
     ),
-    rgba(0, 0, 0, 0.55);
+    #000;
 }
 
 .desert-grid__empty {
   grid-column: 1 / -1;
   text-align: center;
-  font-family: 'VT323', 'Share Tech Mono', monospace;
-  font-size: 1.05rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--crt-soft);
   padding: 1.2rem;
-  letter-spacing: 0.05em;
 }
 
 .desert-cell {
   position: relative;
   aspect-ratio: 1 / 1;
   border: 1px solid var(--crt-faint);
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 30, 8, 0.55);
   color: var(--crt-soft);
-  font-family: 'VT323', 'Share Tech Mono', monospace;
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -794,34 +740,31 @@ body[data-phase='night'] .status-pill--phase {
   justify-content: center;
   gap: 1px;
   cursor: default;
-  transition: border-color 0.12s ease, box-shadow 0.15s ease, background 0.12s ease;
   user-select: none;
 }
 
 .desert-cell--town {
   border-color: var(--crt);
-  background: rgba(46, 255, 107, 0.12);
+  background: rgba(0, 255, 65, 0.12);
   color: var(--crt-bright);
   text-shadow: var(--glow-soft);
 }
 
-.desert-cell--town .desert-cell__terrain { font-size: 1.4rem; }
+.desert-cell--town .desert-cell__terrain { font-size: 20px; }
 
 .desert-cell--undiscovered {
   background:
     repeating-linear-gradient(
       135deg,
-      rgba(46, 255, 107, 0.05) 0 6px,
+      rgba(0, 255, 65, 0.05) 0 6px,
       transparent 6px 12px
     ),
-    rgba(0, 0, 0, 0.85);
+    rgba(0, 0, 0, 0.9);
   color: var(--crt-faint);
 }
 
 .desert-cell--undiscovered .desert-cell__loot,
-.desert-cell--undiscovered .desert-cell__zombies {
-  display: none;
-}
+.desert-cell--undiscovered .desert-cell__zombies { display: none; }
 
 .desert-cell--accessible {
   cursor: pointer;
@@ -830,51 +773,35 @@ body[data-phase='night'] .status-pill--phase {
 
 .desert-cell--accessible:hover,
 .desert-cell--accessible:focus-visible {
-  background: rgba(46, 255, 107, 0.18);
+  background: rgba(0, 255, 65, 0.2);
   box-shadow: var(--glow-soft);
   outline: none;
 }
 
 .desert-cell--current {
   border-color: var(--gold);
-  background: rgba(255, 180, 58, 0.14);
+  background: rgba(255, 200, 58, 0.14);
   color: var(--gold);
-  box-shadow: 0 0 12px rgba(255, 180, 58, 0.35);
+  box-shadow: 0 0 10px rgba(255, 200, 58, 0.35);
 }
 
-.desert-cell--danger-2 { border-color: rgba(255, 180, 58, 0.4); }
+.desert-cell--danger-2 { border-color: rgba(255, 200, 58, 0.4); }
 .desert-cell--danger-3 { border-color: rgba(255, 90, 60, 0.4); }
-.desert-cell--has-zombies {
-  background: rgba(255, 90, 60, 0.08);
-}
+.desert-cell--has-zombies { background: rgba(255, 90, 60, 0.1); }
 
-.desert-cell__terrain {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.desert-cell__loot {
-  font-size: 0.75rem;
-  color: var(--crt-bright);
-  letter-spacing: 0.04em;
-}
-
-.desert-cell__zombies {
-  font-size: 0.78rem;
-  color: var(--danger);
-  letter-spacing: 0.05em;
-}
+.desert-cell__terrain { font-size: 16px; line-height: 1; }
+.desert-cell__loot { font-size: 11px; color: var(--crt-bright); }
+.desert-cell__zombies { font-size: 11px; color: var(--danger); }
 
 .desert-cell__token {
   position: absolute;
   bottom: 2px;
   right: 2px;
-  font-size: 0.65rem;
+  font-size: 10px;
   padding: 0 3px;
   border: 1px solid var(--gold);
   background: rgba(0, 0, 0, 0.8);
   color: var(--gold);
-  letter-spacing: 0.05em;
 }
 
 .desert-cell__token--others {
@@ -884,12 +811,11 @@ body[data-phase='night'] .status-pill--phase {
   color: var(--crt-soft);
 }
 
-/* Événements de zone (Jalon 4) : pastille en haut à droite + halo de la case */
 .desert-cell__event {
   position: absolute;
   top: 2px;
   right: 2px;
-  font-size: 0.8rem;
+  font-size: 12px;
   line-height: 1;
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
   animation: event-pulse 2.4s ease-in-out infinite;
@@ -908,18 +834,17 @@ body[data-phase='night'] .status-pill--phase {
   border-color: rgba(214, 176, 96, 0.75);
   background-image: repeating-linear-gradient(115deg, rgba(214, 176, 96, 0.12) 0 4px, transparent 4px 9px);
 }
-/* Une case en tempête n'est pas cliquable : curseur explicite */
 .desert-cell--event-sandstorm:not(.desert-cell--current) { cursor: not-allowed; }
 
 /* Panneau de détail de la zone courante */
 .zone-detail {
-  margin-top: 0.7rem;
-  padding: 0.7rem 0.85rem 0.85rem;
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.7rem 0.7rem;
   border: 1px solid var(--crt-faint);
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 20, 6, 0.45);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .zone-detail__head {
@@ -933,37 +858,32 @@ body[data-phase='night'] .status-pill--phase {
 
 .zone-detail__title {
   margin: 0;
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
   color: var(--crt-bright);
   text-shadow: var(--glow-soft);
   text-transform: uppercase;
 }
 
 .zone-detail__terrain {
-  font-family: 'VT323', 'Share Tech Mono', monospace;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--gold);
-  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-/* Bandeau d'événement dans le détail de zone */
 .zone-detail__event {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--crt-faint);
   border-left-width: 3px;
   background: rgba(0, 0, 0, 0.5);
 }
 
-.zone-detail__event-icon {
-  font-size: 1.5rem;
-  line-height: 1;
-}
+.zone-detail__event-icon { font-size: 20px; line-height: 1; }
 
 .zone-detail__event-body {
   display: flex;
@@ -972,16 +892,16 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .zone-detail__event-body strong {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
   color: var(--crt-bright);
 }
 
 .zone-detail__event-desc {
-  font-family: 'VT323', 'Share Tech Mono', monospace;
-  font-size: 0.92rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--crt-soft);
   line-height: 1.25;
 }
@@ -997,15 +917,13 @@ body[data-phase='night'] .status-pill--phase {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  font-family: 'VT323', 'Share Tech Mono', monospace;
-  font-size: 1rem;
+  gap: 0.35rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--crt-bright);
 }
 
-.zone-detail__zombies {
-  color: var(--danger);
-}
+.zone-detail__zombies { color: var(--danger); }
 
 .zone-detail__actions {
   display: flex;
@@ -1017,11 +935,10 @@ body[data-phase='night'] .status-pill--phase {
 .canteen {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-family: 'VT323', 'Share Tech Mono', monospace;
-  font-size: 1rem;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--crt-bright);
-  letter-spacing: 0.04em;
   margin-top: 0.3rem;
 }
 
@@ -1032,67 +949,58 @@ body[data-phase='night'] .status-pill--phase {
   display: inline-block;
 }
 
-.canteen__pip.is-full {
-  background: var(--crt);
-  box-shadow: var(--glow-soft);
-}
+.canteen__pip.is-full { background: var(--crt); box-shadow: var(--glow-soft); }
+.canteen.is-empty .canteen__label { color: var(--danger); }
 
-.canteen.is-empty .canteen__label {
-  color: var(--danger);
-}
-
-/* ── Inventaire de la ville (jauges terminal) ──────────────── */
+/* ── Inventaire de la ville (jauges CMD) ── */
 .bank {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0.5rem;
   margin: 0;
 }
 
 .bank__item {
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
-  padding: 0.6rem 0.7rem 0.7rem;
+  padding: 0.5rem 0.6rem 0.6rem;
   text-align: center;
 }
 
 .bank__item dt {
-  font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  color: var(--crt-faint);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-dim);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .bank__item dd {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1.55rem;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
   color: var(--crt-bright);
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
   text-shadow: var(--glow-strong);
   font-variant-numeric: tabular-nums;
 }
 
-.bank__item--wood dd  { color: var(--gold); text-shadow: 0 0 8px rgba(255, 180, 58, 0.65); }
+.bank__item--wood dd  { color: var(--gold); text-shadow: 0 0 8px rgba(255, 200, 58, 0.6); }
 .bank__item--metal dd { color: var(--crt-soft); }
 .bank__item--water dd { color: var(--crt-bright); }
 
-.bank__item.is-flash {
-  animation: bank-flash 0.7s ease;
-}
+.bank__item.is-flash { animation: bank-flash 0.7s ease; }
 
 @keyframes bank-flash {
-  0%   { background: rgba(46, 255, 107, 0.22); box-shadow: var(--glow-strong); }
-  100% { background: rgba(0, 0, 0, 0.45); box-shadow: none; }
+  0%   { background: rgba(0, 255, 65, 0.22); box-shadow: var(--glow-strong); }
+  100% { background: rgba(0, 0, 0, 0.5); box-shadow: none; }
 }
 
-/* ── Défense ─────────────────────────────────────────────── */
+/* ── Défense ── */
 .defense {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
   padding-top: 0.6rem;
   border-top: 1px dashed var(--crt-faint);
   margin-top: 0.6rem;
@@ -1106,16 +1014,15 @@ body[data-phase='night'] .status-pill--phase {
 
 .defense__label {
   color: var(--crt-soft);
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 13px;
   text-transform: uppercase;
 }
 
 .defense__value {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1.3rem;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
   color: var(--crt-bright);
   text-shadow: var(--glow-strong);
   font-variant-numeric: tabular-nums;
@@ -1126,9 +1033,7 @@ body[data-phase='night'] .status-pill--phase {
   height: 14px;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
   overflow: hidden;
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.65);
 }
 
 .defense__bar-fill {
@@ -1136,10 +1041,8 @@ body[data-phase='night'] .status-pill--phase {
   height: 100%;
   background: repeating-linear-gradient(
     90deg,
-    var(--crt) 0,
-    var(--crt) 4px,
-    var(--crt-soft) 4px,
-    var(--crt-soft) 6px
+    var(--crt) 0, var(--crt) 4px,
+    var(--crt-soft) 4px, var(--crt-soft) 6px
   );
   box-shadow: 0 0 8px var(--crt-shadow);
   transition: width 0.35s ease;
@@ -1155,68 +1058,56 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .defense__bar-horde::before {
-  content: '▼';
+  content: '\25BC';
   position: absolute;
   top: -1rem;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.8rem;
+  font-size: 11px;
   color: var(--danger);
 }
 
 .defense__hint {
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--crt-soft);
   text-transform: uppercase;
 }
 
-.defense__hint strong {
-  color: var(--danger);
-  font-weight: 400;
-  text-shadow: 0 0 6px rgba(255, 90, 71, 0.6);
-}
+.defense__hint strong { color: var(--danger); font-weight: 700; text-shadow: 0 0 6px rgba(255, 90, 71, 0.6); }
 
-/* ── Constantes du citoyen (relevé terminal embarqué) ────── */
+/* ── Constantes du citoyen (relevé CMD embarqué) ── */
 .citizen-card {
-  background: var(--bg-card);
+  background: #000;
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
-  padding: 0.75rem 0.9rem;
+  padding: 0.7rem 0.8rem;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.5rem;
   box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5);
 }
 
 .citizen-card__placeholder {
-  color: var(--crt-faint);
-  font-family: 'VT323', monospace;
-  font-size: 1.05rem;
-  letter-spacing: 0.06em;
+  color: var(--crt-dim);
+  font-family: var(--font-mono);
+  font-size: 13px;
   text-align: center;
   text-transform: uppercase;
 }
 
-.citizen-card__placeholder::before { content: '// NO_ID :: '; color: var(--crt-dim); }
+.citizen-card__placeholder::before { content: '// NO_ID :: '; color: var(--crt-faint); }
 
-.citizen-card__head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
+.citizen-card__head { display: flex; align-items: center; gap: 0.6rem; }
 
 .citizen-card__avatar {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 0;
+  width: 2.1rem;
+  height: 2.1rem;
   background: var(--crt);
   border: 1px solid var(--crt-bright);
-  color: var(--bg);
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 0.95rem;
-  font-weight: 400;
+  color: #000;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1224,19 +1115,18 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .citizen-card__name {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1rem;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
   color: var(--crt-bright);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
   text-shadow: var(--glow-strong);
 }
 
 .citizen-card__location {
-  font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  letter-spacing: 0.05em;
-  color: var(--crt-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-dim);
   text-transform: uppercase;
 }
 
@@ -1245,72 +1135,65 @@ body[data-phase='night'] .status-pill--phase {
 .citizen-card__stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
 .stat {
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
-  padding: 0.35rem 0.6rem;
+  padding: 0.35rem 0.55rem;
 }
 
 .stat__label {
   display: block;
-  font-family: 'VT323', monospace;
-  font-size: 0.85rem;
-  color: var(--crt-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--crt-dim);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .stat__value {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1.05rem;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
   color: var(--crt-bright);
   text-shadow: var(--glow-strong);
   font-variant-numeric: tabular-nums;
 }
 
-.stat--warning .stat__value { color: var(--gold); text-shadow: 0 0 6px rgba(255, 180, 58, 0.55); }
+.stat--warning .stat__value { color: var(--gold); text-shadow: 0 0 6px rgba(255, 200, 58, 0.55); }
 .stat--danger  .stat__value { color: var(--danger); text-shadow: 0 0 6px rgba(255, 90, 71, 0.55); }
 
 /* ════════════════════════════════════════════════════════════════
-   ACTIONS DU JOUR (réclame post-apo — surface d'action)
+   ACTIONS DU JOUR — contrôles W98
    ════════════════════════════════════════════════════════════════ */
 .actions__title {
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--pa-rust);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 0.4rem;
+  font-size: 12px;
+  color: var(--rust-deep);
+  text-transform: none;
+  margin-top: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .actions__title::after {
   content: '';
   flex: 1;
-  height: 3px;
-  background: var(--pa-ochre);
-  border-top: 1px solid var(--pa-rust);
-  border-bottom: 1px solid var(--pa-rust);
+  height: 2px;
+  box-shadow: var(--bevel-in-thin);
 }
 
 .actions {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.45rem;
   grid-template-columns: 1fr;
 }
 
 @media (min-width: 480px) {
-  .actions {
-    grid-template-columns: 1fr 1fr;
-  }
+  .actions { grid-template-columns: 1fr 1fr; }
 }
 
 .action {
@@ -1318,74 +1201,60 @@ body[data-phase='night'] .status-pill--phase {
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
   align-items: center;
-  gap: 0.15rem 0.7rem;
-  padding: 0.6rem 0.8rem;
-  background: rgba(255, 255, 255, 0.55);
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  color: var(--pa-ink);
+  gap: 0.1rem 0.6rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  color: var(--ink);
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
 }
 
-.action:hover:not(:disabled),
-.action:focus-visible {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-soft);
-  background: var(--pa-ochre);
-  outline: none;
-}
+.action:hover:not(:disabled) { background: var(--face-light); }
+.action:active:not(:disabled) { box-shadow: var(--bevel-in); }
+.action:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
 
-.action:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
+.action:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .action__icon {
   grid-row: span 2;
-  font-size: 1.35rem;
-  width: 2.4rem;
-  height: 2.4rem;
+  font-size: 18px;
+  width: 2.2rem;
+  height: 2.2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--pa-rust);
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
-  color: var(--pa-ochre);
+  background: var(--rust);
+  box-shadow: var(--bevel-out-thin);
+  color: #fff;
 }
 
 .action__label {
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--pa-rust);
+  font-size: 13px;
+  text-transform: none;
+  color: var(--rust-deep);
 }
 
 .action__cost {
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.8rem;
-  color: var(--pa-ink-soft);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: none;
 }
 
 .actions__hint {
-  font-family: 'VT323', monospace;
-  font-size: 0.9rem;
-  color: var(--pa-ink-soft);
-  letter-spacing: 0.01em;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
 }
 
-.actions__hint::before { content: 'ℹ '; color: var(--pa-rust); }
+.actions__hint::before { content: '\2139  '; color: var(--rust); }
 
 /* ════════════════════════════════════════════════════════════════
-   ROSTER — citoyens de la ville (réclame post-apo)
+   ROSTER — citoyens de la ville (liste W98)
    ════════════════════════════════════════════════════════════════ */
 .roster {
   list-style: none;
@@ -1393,7 +1262,7 @@ body[data-phase='night'] .status-pill--phase {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
   max-height: 360px;
   overflow-y: auto;
 }
@@ -1402,29 +1271,24 @@ body[data-phase='night'] .status-pill--phase {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 0.65rem;
-  background: rgba(255, 255, 255, 0.5);
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  background: var(--face-light);
+  box-shadow: var(--bevel-out-thin);
 }
 
 .roster__item.is-self {
-  border-color: var(--pa-rust);
-  background: rgba(255, 199, 44, 0.2);
+  background: #f3e6c4;
+  box-shadow: var(--bevel-out-thin), inset 0 0 0 1px var(--rust);
 }
 
-.roster__item.is-dead {
-  opacity: 0.55;
-  text-decoration: line-through;
-}
+.roster__item.is-dead { opacity: 0.55; text-decoration: line-through; }
 
 .roster__name {
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.98rem;
-  letter-spacing: 0.01em;
-  color: var(--pa-ink);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1432,114 +1296,80 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .roster__location {
-  font-family: 'VT323', monospace;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: none;
 }
 
 .roster__ap {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-weight: 400;
-  color: var(--pa-ochre-deep);
-  font-size: 0.9rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: var(--rust-deep);
+  font-size: 12px;
   min-width: 2.4rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .roster__dot {
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 0;
-  background: var(--pa-rust);
-  border: 1px solid var(--pa-ink);
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--rust);
+  box-shadow: var(--bevel-out-thin);
 }
 
-.roster__item.is-desert .roster__dot {
-  background: var(--pa-ochre);
-}
-
-.roster__item.is-dead .roster__dot {
-  background: var(--pa-ink-soft);
-}
-
-/* Présence temps réel (jalon 2) : point vif pour un habitant connecté. */
-.roster__item.is-online .roster__dot {
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.55);
-}
+.roster__item.is-desert .roster__dot { background: var(--ochre); }
+.roster__item.is-dead .roster__dot { background: var(--ink-soft); }
+.roster__item.is-online .roster__dot { box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.55); }
 
 .roster__online {
-  font-family: 'VT323', monospace;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
   color: #2f9e44;
-  margin-left: 0.5rem;
+  margin-left: 0.4rem;
   vertical-align: middle;
 }
 
-.roster__role {
-  font-size: 0.85rem;
-  vertical-align: baseline;
-}
-.roster__role--founder { color: var(--pa-rust); }
-.roster__role--manager { color: var(--pa-ochre-deep); }
+.roster__role { font-size: 12px; vertical-align: baseline; }
+.roster__role--founder { color: var(--rust); }
+.roster__role--manager { color: var(--rust-deep); }
 
-.roster__presence {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
+.roster__presence { font-size: 10px; font-weight: 700; }
 .roster__presence--on { color: #2f9e44; }
-.roster__presence--off { color: var(--pa-ink-soft); }
+.roster__presence--off { color: var(--ink-soft); }
 
-/* Ville complète dans le lobby. */
 .badge--full {
   display: inline-block;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.68rem;
-  font-family: 'VT323', monospace;
+  padding: 0.05rem 0.35rem;
+  font-size: 10px;
+  font-family: var(--font-ui);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: var(--pa-blood);
-  color: var(--pa-ochre);
-  border: 1px solid var(--pa-ink);
-  border-radius: 0;
+  background: var(--blood);
+  color: #fff;
+  box-shadow: var(--bevel-out-thin);
 }
 
-/* Gouvernance de la banque commune (carte terminal → tokens --crt*). */
+/* Gouvernance de la banque commune (carte CMD → tokens --crt*). */
 .bank-gov {
-  margin-top: 0.75rem;
-  padding-top: 0.65rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
   border-top: 1px solid var(--crt-faint);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
-.bank-gov__status {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--crt);
-}
+.bank-gov__status { margin: 0; font-family: var(--font-mono); font-size: 12px; color: var(--crt); }
 .bank-gov__status strong { color: var(--crt-bright); }
-
-.bank-gov__hint {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--crt-faint);
-  line-height: 1.35;
-}
-
-.bank-gov .btn {
-  align-self: flex-start;
-}
+.bank-gov__hint { margin: 0; font-family: var(--font-mono); font-size: 11px; color: var(--crt-dim); line-height: 1.35; }
+.bank-gov .btn { align-self: flex-start; }
 
 /* ════════════════════════════════════════════════════════════════
-   JOURNAL DE LA VILLE (terminal — flux temps réel)
+   JOURNAL DE LA VILLE (fenêtre CMD — flux temps réel)
    ════════════════════════════════════════════════════════════════ */
 .log {
   list-style: none;
@@ -1553,16 +1383,14 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .log__item {
-  padding: 0.4rem 0.6rem;
+  padding: 0.35rem 0.55rem;
   background: rgba(0, 0, 0, 0.35);
   border-left: 3px solid var(--crt-faint);
-  border-radius: 0;
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--crt-soft);
   display: flex;
-  gap: 0.55rem;
+  gap: 0.5rem;
   align-items: baseline;
 }
 
@@ -1572,59 +1400,47 @@ body[data-phase='night'] .status-pill--phase {
 .log__item--danger  { border-left-color: var(--danger); color: var(--danger);    }
 
 .log__time {
-  font-family: 'VT323', monospace;
-  font-size: 0.85rem;
-  color: var(--crt-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--crt-dim);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
 .log__empty {
   text-align: center;
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.05em;
-  color: var(--crt-faint);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--crt-dim);
   padding: 0.8rem;
   text-transform: uppercase;
 }
 
-.log__empty::before { content: '// '; color: var(--crt-dim); }
+.log__empty::before { content: '// '; color: var(--crt-faint); }
 
 /* ════════════════════════════════════════════════════════════════
-   TOAST (réclame post-apo)
+   TOAST — info-bulle W98
    ════════════════════════════════════════════════════════════════ */
 .toast {
   position: fixed;
   bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  background: var(--pa-rust);
-  color: var(--pa-ochre);
-  padding: 0.7rem 1.2rem;
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  box-shadow: var(--shadow);
+  background: var(--face);
+  color: var(--ink);
+  padding: 0.5rem 1rem;
+  box-shadow: var(--bevel-out), var(--drop);
   z-index: 200;
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.98rem;
-  letter-spacing: 0.02em;
+  font-size: 12px;
   max-width: calc(100% - 2rem);
   text-align: center;
   animation: toast-in 0.25s ease;
 }
 
-.toast[data-state='error'] {
-  background: var(--pa-blood);
-  color: #fff;
-  border-color: var(--pa-blood-deep);
-}
-
-.toast[data-state='success'] {
-  background: var(--pa-rust);
-  color: var(--pa-ochre);
-}
+.toast[data-state='error'] { background: var(--blood); color: #fff; }
+.toast[data-state='success'] { background: var(--rust); color: #fff; }
 
 @keyframes toast-in {
   from { transform: translate(-50%, 20px); opacity: 0; }
@@ -1632,7 +1448,7 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MODALES — coque réclame post-apo, surcharge `.terminal` (rapport / profil)
+   MODALES — boîtes de dialogue W98 / fenêtres CMD (rapport, profil)
    ════════════════════════════════════════════════════════════════ */
 .modal {
   position: fixed;
@@ -1647,52 +1463,70 @@ body[data-phase='night'] .status-pill--phase {
 .modal__overlay {
   position: absolute;
   inset: 0;
-  background: rgba(12, 18, 36, 0.7);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .modal__card {
   position: relative;
-  background: var(--pa-paper);
-  border: 4px solid var(--pa-ink);
-  border-radius: var(--radius);
-  padding: 1.5rem clamp(1.2rem, 3vw, 2rem);
-  box-shadow: var(--shadow);
+  background: var(--face);
+  box-shadow: var(--bevel-out), 3px 3px 0 rgba(0, 0, 0, 0.4);
+  padding: 3px;
   width: 100%;
   max-width: 500px;
-  /* Sur petit écran, un contenu long (profil, sujet, rapport) doit défiler
-     À L'INTÉRIEUR de la carte : sinon les boutons du bas sortent de l'écran
-     et deviennent inatteignables au doigt. */
   max-height: calc(100dvh - 2.4rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  animation: modal-in 0.25s ease;
+  gap: 0;
+  animation: modal-in 0.2s ease;
 }
 
+/* Barre de titre de la boîte de dialogue. */
+.modal__card > .modal__title,
+.modal__card > .profile-head {
+  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
+  color: #fff;
+  padding: 3px 6px;
+  min-height: var(--tb-h);
+  display: flex;
+  align-items: center;
+}
+
+.modal__card > .modal__body,
+.modal__card > form.modal__body,
+.modal__card > .profile-identity,
+.modal__card > .profile-stats,
+.modal__card > .profile-history,
+.modal__card > .form-error {
+  margin: 0 0.9rem;
+}
+
+.modal__card > .modal__body:first-of-type { margin-top: 0.9rem; }
+.modal__card > *:last-child { margin-bottom: 0.9rem; }
+.modal__card > .btn { margin: 0.9rem; }
+
 @keyframes modal-in {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(16px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
 
 .modal__title {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1.3rem;
-  color: var(--pa-rust);
-  text-transform: uppercase;
-  text-shadow: 2px 2px 0 var(--pa-ochre);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: none;
+  text-shadow: none;
 }
 
 .modal__body {
-  color: var(--pa-ink-soft);
-  font-size: 1rem;
+  color: var(--ink);
+  font-size: 13px;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.6rem;
 }
 
 .modal__actions {
@@ -1702,49 +1536,27 @@ body[data-phase='night'] .status-pill--phase {
   margin-top: 0.7rem;
 }
 
-.modal__card--wide {
-  max-width: 720px;
-}
+.modal__card--wide { max-width: 720px; }
 
-/* ── Surcharge TERMINAL des modales (rapport de nuit + profil) ── */
-.modal.terminal .modal__overlay {
-  background: rgba(0, 0, 0, 0.78);
-}
+/* ── Fenêtre CMD pour les modales (rapport de nuit + profil) ── */
+.modal.terminal .modal__overlay { background: rgba(0, 0, 0, 0.72); }
 
 .modal.terminal .modal__card {
-  background: var(--bg-card);
-  border: 1px solid var(--crt);
-  border-radius: 0;
-  box-shadow: var(--glow-strong), inset 0 0 0 4px var(--bg-card),
-    inset 0 0 0 5px var(--crt-faint);
+  background: #000;
+  box-shadow: var(--bevel-out), 3px 3px 0 rgba(0, 0, 0, 0.5);
+  padding: 2px;
 }
 
-.modal.terminal .modal__card::before {
-  content: '>>> TERMINAL — RELEVÉ';
-  display: block;
-  font-family: 'VT323', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.14em;
-  color: var(--crt-faint);
-  text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 0.2rem;
-}
-
-.modal.terminal .modal__title {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  color: var(--crt-bright);
-  text-shadow: var(--glow-strong);
-}
-
+.modal.terminal .modal__card > .modal__body { color: var(--crt-soft); background: #000; }
 .modal.terminal .modal__body {
   color: var(--crt-soft);
-  font-family: 'VT323', monospace;
-  font-size: 1.05rem;
-  letter-spacing: 0.03em;
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
-/* Contenu du rapport de nuit (uniquement dans #night-modal.terminal) */
+.modal.terminal .modal__title { color: #fff; }
+
+/* Contenu du rapport de nuit */
 .modal__body .report-row {
   display: flex;
   justify-content: space-between;
@@ -1753,11 +1565,7 @@ body[data-phase='night'] .status-pill--phase {
   text-transform: uppercase;
 }
 
-.modal__body .report-row strong {
-  color: var(--crt-bright);
-  font-weight: 400;
-  text-shadow: var(--glow-soft);
-}
+.modal__body .report-row strong { color: var(--crt-bright); font-weight: 700; text-shadow: var(--glow-soft); }
 
 .modal__body .report-deaths {
   list-style: none;
@@ -1771,37 +1579,20 @@ body[data-phase='night'] .status-pill--phase {
 .modal__body .report-deaths li {
   background: rgba(255, 90, 71, 0.08);
   border-left: 3px solid var(--danger);
-  padding: 0.35rem 0.65rem;
-  border-radius: 0;
+  padding: 0.35rem 0.6rem;
   color: var(--danger);
-  font-size: 1rem;
-  letter-spacing: 0.04em;
+  font-size: 13px;
   text-transform: uppercase;
 }
 
-.modal__body .report-deaths li::before { content: '† '; color: var(--danger); }
+.modal__body .report-deaths li::before { content: '\2020 '; color: var(--danger); }
 
-.modal__body .report-breach {
-  color: var(--danger);
-  font-weight: 400;
-  text-shadow: 0 0 6px rgba(255, 90, 71, 0.6);
-}
-
-.modal__body .report-safe {
-  color: var(--crt-bright);
-  font-weight: 400;
-  text-shadow: var(--glow-strong);
-}
-
-.modal__body .report-victory {
-  color: var(--gold);
-  font-weight: 400;
-  font-size: 1.1rem;
-  text-shadow: 0 0 10px rgba(255, 180, 58, 0.7);
-}
+.modal__body .report-breach { color: var(--danger); font-weight: 700; text-shadow: 0 0 6px rgba(255, 90, 71, 0.6); }
+.modal__body .report-safe { color: var(--crt-bright); font-weight: 700; text-shadow: var(--glow-strong); }
+.modal__body .report-victory { color: var(--gold); font-weight: 700; font-size: 15px; text-shadow: 0 0 10px rgba(255, 200, 58, 0.7); }
 
 /* ════════════════════════════════════════════════════════════════
-   PROFIL JOUEUR (terminal — relevé de stats + historique)
+   PROFIL JOUEUR (fenêtre CMD — relevé de stats + historique)
    ════════════════════════════════════════════════════════════════ */
 .profile-head {
   display: flex;
@@ -1810,79 +1601,73 @@ body[data-phase='night'] .status-pill--phase {
   gap: 1rem;
 }
 
+.profile-head .modal__title { flex: 1; }
+
 .profile-identity {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding-bottom: 0.8rem;
+  gap: 0.2rem;
+  padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--crt-faint);
 }
 
 .profile-identity__email {
-  font-family: 'VT323', monospace;
-  font-size: 1.15rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  font-size: 15px;
   color: var(--crt-bright);
   text-transform: uppercase;
   text-shadow: var(--glow-soft);
 }
 
-.profile-identity__email::before { content: 'USR: '; color: var(--crt-faint); }
+.profile-identity__email::before { content: 'USR: '; color: var(--crt-dim); }
 
 .profile-identity__meta {
-  font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  color: var(--crt-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-dim);
   text-transform: uppercase;
 }
 
-.profile-loading {
-  color: var(--crt-soft);
-  font-family: 'VT323', monospace;
-  margin: 0;
-}
+.profile-loading { color: var(--crt-soft); font-family: var(--font-mono); margin: 0; }
 
 .profile-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 0.55rem;
+  gap: 0.5rem;
   margin: 0.4rem 0 0.6rem;
 }
 
 .profile-stat {
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.7rem;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
 
 .profile-stat__label {
-  font-family: 'VT323', monospace;
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--crt-faint);
+  color: var(--crt-dim);
 }
 
 .profile-stat__value {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 1.3rem;
+  font-family: var(--font-mono);
+  font-size: 18px;
   color: var(--gold);
-  font-weight: 400;
-  text-shadow: 0 0 6px rgba(255, 180, 58, 0.55);
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 200, 58, 0.55);
   font-variant-numeric: tabular-nums;
 }
 
 .profile-history__title {
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 0.95rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
   color: var(--crt-bright);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   margin: 0 0 0.4rem;
   text-shadow: var(--glow-soft);
 }
@@ -1893,31 +1678,25 @@ body[data-phase='night'] .status-pill--phase {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.4rem;
   max-height: 320px;
   overflow-y: auto;
 }
 
-.profile-history__empty {
-  color: var(--crt-faint);
-  font-family: 'VT323', monospace;
-  padding: 0.6rem 0;
-}
+.profile-history__empty { color: var(--crt-dim); font-family: var(--font-mono); padding: 0.6rem 0; }
 
 .history-entry {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.25rem 0.9rem;
-  padding: 0.6rem 0.8rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
   background: rgba(0, 0, 0, 0.4);
 }
 
 .history-entry__name {
-  font-family: 'VT323', monospace;
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 14px;
   color: var(--crt-bright);
   display: flex;
   align-items: center;
@@ -1927,60 +1706,49 @@ body[data-phase='night'] .status-pill--phase {
 }
 
 .history-entry__status {
-  font-family: 'VT323', monospace;
-  font-size: 0.85rem;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 11px;
   padding: 0.05rem 0.5rem;
   border: 1px solid var(--crt-faint);
-  border-radius: 0;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .history-entry__status--alive { color: var(--crt-bright); border-color: var(--crt); }
 .history-entry__status--dead  { color: var(--danger);     border-color: var(--danger); }
-.history-entry__status--over  { color: var(--crt-faint); }
+.history-entry__status--over  { color: var(--crt-dim); }
 
 .history-entry__meta {
   grid-column: 1 / -1;
   color: var(--crt-soft);
-  font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-transform: uppercase;
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem 1rem;
 }
 
-.history-entry__meta strong {
-  color: var(--crt-bright);
-  font-weight: 400;
-}
+.history-entry__meta strong { color: var(--crt-bright); font-weight: 700; }
 
 .history-entry__cause {
   grid-column: 1 / -1;
   color: var(--danger);
-  font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-transform: uppercase;
 }
 
-.history-entry__cause::before { content: '† '; color: var(--danger); }
+.history-entry__cause::before { content: '\2020 '; color: var(--danger); }
 
 .history-entry__resume {
-  background: transparent;
+  background: #000;
   border: 1px solid var(--crt-faint);
   color: var(--crt-soft);
-  padding: 0.25rem 0.65rem;
-  border-radius: 0;
-  font-family: 'VT323', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.2s ease;
 }
 
 .history-entry__resume::before { content: '['; color: var(--crt-faint); }
@@ -1993,18 +1761,12 @@ body[data-phase='night'] .status-pill--phase {
   box-shadow: var(--glow-soft);
 }
 
-/* ── Phase nuit (assaut en jeu) : on durcit l'ambiance de la carte ── */
-body[data-phase='night'] .card--map {
-  border-color: var(--crt);
-  box-shadow: var(--glow-soft);
-}
-
-body[data-phase='night'] .desert-grid {
-  filter: saturate(0.8) brightness(0.92);
-}
+/* ── Phase nuit (assaut) : on durcit l'ambiance de la carte ── */
+body[data-phase='night'] .card--map { box-shadow: var(--bevel-out), var(--glow-soft); }
+body[data-phase='night'] .desert-grid { filter: saturate(0.85) brightness(0.92); }
 
 /* ════════════════════════════════════════════════════════════════
-   FORUM DE VILLE (réclame post-apo — surface sociale)
+   FORUM DE VILLE — onglets + listes W98
    ════════════════════════════════════════════════════════════════ */
 .card--forum {
   grid-column: span 2;
@@ -2012,53 +1774,37 @@ body[data-phase='night'] .desert-grid {
 }
 
 @media (max-width: 1080px) {
-  .card--forum {
-    grid-column: 1 / -1;
-  }
-}
-
-.card__header--with-tabs {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  .card--forum { grid-column: 1 / -1; }
 }
 
 .forum-tabs {
   display: inline-flex;
-  background: var(--pa-paper);
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
-  overflow: hidden;
+  gap: 2px;
 }
 
 .forum-tab {
-  background: transparent;
-  border: 0;
-  border-right: 2px solid var(--pa-ink);
-  color: var(--pa-ink-soft);
-  padding: 0.3rem 0.85rem;
+  background: var(--face);
+  border: none;
+  box-shadow: var(--bevel-out-thin);
+  color: var(--ink-soft);
+  padding: 0.25rem 0.7rem;
   cursor: pointer;
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: color 0.15s ease, background 0.15s ease;
+  font-size: 11px;
+  text-transform: none;
 }
 
-.forum-tab:last-child { border-right: none; }
-
 .forum-tab.is-active {
-  color: var(--pa-ochre);
-  background: var(--pa-rust);
+  color: var(--rust-deep);
+  background: var(--window);
+  box-shadow: var(--bevel-in-thin);
 }
 
 .forum-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.6rem;
   margin-top: 0.6rem;
 }
 
@@ -2070,13 +1816,12 @@ body[data-phase='night'] .desert-grid {
 }
 
 .forum-toolbar__hint {
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-size: 11px;
 }
 
-.forum-toolbar__hint::before { content: 'ℹ '; color: var(--pa-rust); }
+.forum-toolbar__hint::before { content: '\2139  '; color: var(--rust); }
 
 .forum-threads,
 .activity-feed {
@@ -2092,35 +1837,23 @@ body[data-phase='night'] .desert-grid {
 
 .forum-threads__empty,
 .activity-feed__empty {
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-size: 12px;
   padding: 0.7rem 0.4rem;
 }
 
 .thread-row {
-  padding: 0.6rem 0.8rem;
-  border: 3px solid var(--pa-ink);
-  border-left-width: 8px;
-  border-left-color: var(--pa-rust);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.5);
+  padding: 0.5rem 0.7rem;
+  background: var(--face-light);
+  box-shadow: var(--bevel-out);
+  border-left: 4px solid var(--rust);
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.thread-row:hover,
-.thread-row:focus-visible {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-soft);
-  outline: none;
-}
-
-.thread-row.is-closed {
-  opacity: 0.7;
-  border-left-color: var(--pa-ink-soft);
-}
+.thread-row:hover { background: #f0e4c9; }
+.thread-row:active { box-shadow: var(--bevel-in); }
+.thread-row.is-closed { opacity: 0.7; border-left-color: var(--ink-soft); }
 
 .thread-row__head {
   display: flex;
@@ -2130,86 +1863,68 @@ body[data-phase='night'] .desert-grid {
 }
 
 .thread-row__badge {
-  font-family: 'VT323', monospace;
-  font-size: 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.1rem 0.5rem;
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
+  padding: 0.1rem 0.45rem;
+  box-shadow: var(--bevel-out-thin);
 }
 
-.thread-row__badge--discussion { color: var(--pa-ink); background: var(--pa-ochre); border-color: var(--pa-ochre-deep); }
-.thread-row__badge--vote       { color: #fff; background: var(--pa-rust); border-color: var(--pa-rust-deep); }
-.thread-row__badge--closed     { color: var(--pa-ink-soft); background: var(--pa-sand-deep); }
+.thread-row__badge--discussion { color: var(--ink); background: var(--ochre); }
+.thread-row__badge--vote       { color: #fff; background: var(--rust); }
+.thread-row__badge--closed     { color: var(--ink-soft); background: var(--face); }
 
 .thread-row__title {
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.01em;
-  color: var(--pa-rust);
+  font-size: 13px;
+  color: var(--rust-deep);
   flex: 1 1 auto;
 }
 
 .thread-row__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem 0.9rem;
+  gap: 0.3rem 0.8rem;
   margin-top: 0.3rem;
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  text-transform: none;
 }
 
-.thread-row__meta strong {
-  color: var(--pa-ink);
-  font-weight: 700;
-}
+.thread-row__meta strong { color: var(--ink); font-weight: 700; }
 
 .activity-feed__item {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 0.5rem 0.75rem;
+  gap: 0.5rem 0.7rem;
   align-items: baseline;
-  padding: 0.45rem 0.4rem;
-  border-bottom: 2px solid var(--pa-sand-deep);
+  padding: 0.4rem 0.4rem;
+  border-bottom: 1px solid #d9cdb2;
 }
 
-.activity-feed__item:last-child {
-  border-bottom: 0;
-}
+.activity-feed__item:last-child { border-bottom: 0; }
 
-.activity-feed__icon {
-  font-size: 1rem;
-  width: 1.3rem;
-  text-align: center;
-  color: var(--pa-rust);
-}
+.activity-feed__icon { font-size: 14px; width: 1.3rem; text-align: center; color: var(--rust); }
 
 .activity-feed__text {
-  color: var(--pa-ink);
-  font-family: 'VT323', monospace;
-  font-size: 0.92rem;
-  letter-spacing: 0.01em;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 12px;
 }
 
-.activity-feed__text strong {
-  color: var(--pa-rust);
-  font-weight: 700;
-}
+.activity-feed__text strong { color: var(--rust-deep); font-weight: 700; }
 
 .activity-feed__time {
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Modales forum (création + lecture) — réclame post-apo ──────── */
+/* ── Modales forum (création + lecture) ── */
 .vote-options {
   display: flex;
   flex-direction: column;
@@ -2221,88 +1936,76 @@ body[data-phase='night'] .desert-grid {
 .thread-view__reply-form textarea,
 #thread-create-form textarea {
   width: 100%;
-  padding: 0.55rem 0.7rem;
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  background: #fff;
-  color: var(--pa-ink);
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
+  padding: 0.4rem 0.55rem;
+  border: none;
+  box-shadow: var(--bevel-in);
+  background: var(--well);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
 }
 
 .thread-view__reply-form textarea,
-#thread-create-form textarea {
-  resize: vertical;
-}
+#thread-create-form textarea { resize: vertical; }
 
 .vote-option-input:focus,
 .thread-view__reply-form textarea:focus,
 #thread-create-form textarea:focus {
-  border-color: var(--pa-rust);
-  outline: none;
-  box-shadow: var(--shadow-soft);
+  outline: 1px dotted var(--ink);
+  outline-offset: -4px;
 }
 
 .thread-view__meta {
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
-  margin: 0.2rem 0 0;
-  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  margin: 0.1rem 0 0;
+  text-transform: none;
 }
 
 .thread-view__vote {
   margin-bottom: 0.8rem;
-  padding: 0.7rem 0.8rem;
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  background: rgba(255, 199, 44, 0.15);
+  padding: 0.6rem 0.7rem;
+  background: var(--face-light);
+  box-shadow: var(--bevel-in-thin);
 }
 
 .thread-view__vote-title {
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 700;
-  color: var(--pa-rust);
-  text-transform: uppercase;
-  margin-bottom: 0.55rem;
+  color: var(--rust-deep);
+  text-transform: none;
+  margin-bottom: 0.5rem;
 }
 
-.thread-view__vote-title::before { content: '☑ '; color: var(--pa-blood); }
+.thread-view__vote-title::before { content: '\2611  '; color: var(--blood); }
 
 .vote-option-row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.35rem 0;
+  padding: 0.3rem 0;
 }
 
 .vote-option-row__label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  letter-spacing: 0.01em;
-  color: var(--pa-ink);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink);
 }
 
-.vote-option-row__radio {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--pa-rust);
-}
+.vote-option-row__radio { width: 15px; height: 15px; accent-color: var(--rust); }
 
 .vote-option-row__bar {
   position: relative;
   flex: 1 1 auto;
-  height: 10px;
-  background: var(--pa-sand-deep);
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
+  height: 12px;
+  background: var(--well);
+  box-shadow: var(--bevel-in-thin);
   overflow: hidden;
   margin-left: 0.4rem;
 }
@@ -2312,31 +2015,27 @@ body[data-phase='night'] .desert-grid {
   left: 0;
   top: 0;
   bottom: 0;
-  background: var(--pa-rust);
+  background: var(--rust);
   transition: width 0.25s ease;
 }
 
 .vote-option-row__count {
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.vote-option-row.is-my-choice .vote-option-row__label {
-  color: var(--pa-rust);
+  font-size: 11px;
   font-weight: 700;
 }
+
+.vote-option-row.is-my-choice .vote-option-row__label { color: var(--rust-deep); font-weight: 700; }
 
 .thread-view__vote-total {
   margin-top: 0.4rem;
   text-align: right;
-  font-family: 'VT323', monospace;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: none;
 }
 
 .thread-view__messages {
@@ -2351,54 +2050,44 @@ body[data-phase='night'] .desert-grid {
 }
 
 .thread-view__message {
-  padding: 0.55rem 0.7rem;
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.55);
+  padding: 0.5rem 0.6rem;
+  background: var(--face-light);
+  box-shadow: var(--bevel-out-thin);
 }
 
 .thread-view__message-head {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  font-family: 'VT323', monospace;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-  color: var(--pa-ink-soft);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: none;
   margin-bottom: 0.3rem;
 }
 
-.thread-view__message-head strong {
-  color: var(--pa-rust);
-  font-weight: 700;
-}
+.thread-view__message-head strong { color: var(--rust-deep); font-weight: 700; }
 
 .thread-view__message-body {
   white-space: pre-wrap;
-  font-family: 'VT323', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.01em;
-  color: var(--pa-ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
   line-height: 1.5;
 }
 
-.thread-view__messages-empty {
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  padding: 0.5rem 0;
-}
+.thread-view__messages-empty { color: var(--ink-soft); font-family: var(--font-ui); padding: 0.5rem 0; }
 
 .thread-view__closed-hint {
   margin: 0.5rem 0 0;
-  color: var(--pa-ink-soft);
-  font-family: 'VT323', monospace;
-  font-weight: 600;
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+  font-weight: 700;
   text-align: center;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   CONSTRUCTIONS / catalogue de bâtiments (réclame post-apo — blueprints)
+   CONSTRUCTIONS / catalogue de bâtiments — panneaux W98
    ════════════════════════════════════════════════════════════════ */
 .buildings {
   list-style: none;
@@ -2406,104 +2095,85 @@ body[data-phase='night'] .desert-grid {
   padding: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.7rem;
+  gap: 0.6rem;
 }
 
 @media (min-width: 540px) {
-  .buildings {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .buildings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1100px) {
-  .buildings {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  .buildings { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .buildings__empty {
   grid-column: 1 / -1;
   padding: 0.9rem;
-  border: 3px dashed var(--pa-ink);
-  border-radius: 0;
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--pa-ink-soft);
+  box-shadow: var(--bevel-in-thin);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink-soft);
   text-align: center;
-  letter-spacing: 0.02em;
 }
 
 .building {
   position: relative;
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.55);
-  padding: 0.8rem 0.85rem 0.9rem;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  padding: 0.7rem 0.75rem 0.8rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.building.is-available:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-soft);
-}
-
-.building.is-blocked {
-  opacity: 0.75;
-}
+.building.is-available:hover { background: var(--face-light); }
+.building.is-blocked { opacity: 0.8; }
 
 .building.is-maxed {
-  border-color: var(--pa-ochre-deep);
   background:
     repeating-linear-gradient(
       45deg,
-      rgba(255, 199, 44, 0.18) 0 10px,
+      rgba(217, 154, 43, 0.18) 0 10px,
       transparent 10px 20px
     ),
-    rgba(255, 255, 255, 0.55);
+    var(--face);
 }
 
 .building__head {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.5rem;
   padding-bottom: 0.35rem;
-  border-bottom: 2px solid var(--pa-sand-deep);
+  border-bottom: 1px solid #cdbf9f;
 }
 
-.building__icon {
-  font-size: 1.5rem;
-}
+.building__icon { font-size: 20px; }
 
 .building__name {
   flex: 1;
-  font-family: 'Silkscreen', 'VT323', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.01em;
-  color: var(--pa-rust);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rust-deep);
+  text-transform: none;
 }
 
 .building__count {
-  font-family: 'VT323', monospace;
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--pa-ochre);
-  letter-spacing: 0.03em;
-  padding: 0.05rem 0.45rem;
-  border-radius: 0;
-  background: var(--pa-rust);
+  font-size: 11px;
+  color: #fff;
+  padding: 0.05rem 0.4rem;
+  background: var(--rust);
+  box-shadow: var(--bevel-out-thin);
   white-space: nowrap;
 }
 
 .building__desc {
   margin: 0;
-  font-family: 'VT323', monospace;
-  font-size: 0.86rem;
-  color: var(--pa-ink-soft);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft);
   line-height: 1.45;
 }
 
@@ -2513,143 +2183,124 @@ body[data-phase='night'] .desert-grid {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  font-family: 'VT323', monospace;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--pa-ink);
+  gap: 0.15rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
 }
 
-.building__effects li::before {
-  content: '▸ ';
-  color: var(--pa-blood);
-}
+.building__effects li::before { content: '\25B8  '; color: var(--blood); }
 
 .building__cost {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-  font-family: 'VT323', monospace;
-  font-size: 0.86rem;
-  color: var(--pa-ink-soft);
-  letter-spacing: 0.01em;
+  gap: 0.3rem 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 
 .building__cost-item {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  padding: 0.05rem 0.45rem;
-  border: 2px solid var(--pa-ink);
-  border-radius: 0;
-  background: var(--pa-sand-deep);
+  padding: 0.05rem 0.4rem;
+  box-shadow: var(--bevel-out-thin);
+  background: var(--face-light);
 }
 
-.building__cost-item.is-missing {
-  color: #fff;
-  background: var(--pa-blood);
-  border-color: var(--pa-blood-deep);
-}
+.building__cost-item.is-missing { color: #fff; background: var(--blood); }
 
 .building__action {
   appearance: none;
-  border: 3px solid var(--pa-ink);
-  border-radius: 0;
-  background: var(--pa-rust);
-  color: var(--pa-ochre);
-  font-family: 'VT323', monospace;
+  border: none;
+  background: var(--rust);
+  color: #fff;
+  box-shadow: var(--bevel-out);
+  font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  text-transform: none;
+  padding: 0.4rem 0.7rem;
   cursor: pointer;
-  box-shadow: var(--shadow-soft);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
 }
 
-.building__action:hover:not(:disabled) {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow);
-  background: var(--pa-rust-deep);
-}
-
-.building__action:focus-visible {
-  outline: 3px dashed var(--pa-blood);
-  outline-offset: 2px;
-}
+.building__action:hover:not(:disabled) { background: var(--rust-bright); }
+.building__action:active:not(:disabled) { box-shadow: var(--bevel-in); }
+.building__action:focus-visible { outline: 1px dotted #fff; outline-offset: -4px; }
 
 .building__action:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
-  background: var(--pa-sand-deep);
-  color: var(--pa-ink-soft);
+  opacity: 0.6;
+  background: var(--face);
+  color: var(--ink-soft);
 }
 
-.building__action.is-just-built {
-  animation: building-flash 0.9s ease-out;
-}
+.building__action.is-just-built { animation: building-flash 0.9s ease-out; }
 
 @keyframes building-flash {
-  0%   { background: var(--pa-ochre); color: var(--pa-ink); box-shadow: var(--shadow); }
-  100% { background: var(--pa-rust); color: var(--pa-ochre); box-shadow: var(--shadow-soft); }
+  0%   { background: var(--ochre); color: var(--ink); }
+  100% { background: var(--rust); color: #fff; }
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCROLLBARS
+   SCROLLBARS — épaisses, style Windows 98
    ════════════════════════════════════════════════════════════════ */
 .roster,
 .forum-threads,
 .activity-feed,
 .thread-view__messages {
-  scrollbar-width: thin;
-  scrollbar-color: var(--pa-ink-soft) transparent;
+  scrollbar-width: auto;
+  scrollbar-color: var(--face) var(--face-light);
 }
 
 .roster::-webkit-scrollbar,
 .forum-threads::-webkit-scrollbar,
 .activity-feed::-webkit-scrollbar,
 .thread-view__messages::-webkit-scrollbar {
-  width: 8px;
+  width: 16px;
+  background: var(--face-light);
+}
+
+.roster::-webkit-scrollbar-track,
+.forum-threads::-webkit-scrollbar-track,
+.activity-feed::-webkit-scrollbar-track,
+.thread-view__messages::-webkit-scrollbar-track {
+  background:
+    repeating-conic-gradient(#cabf9f 0% 25%, #ded2b3 0% 50%) 0 0 / 2px 2px;
 }
 
 .roster::-webkit-scrollbar-thumb,
 .forum-threads::-webkit-scrollbar-thumb,
 .activity-feed::-webkit-scrollbar-thumb,
 .thread-view__messages::-webkit-scrollbar-thumb {
-  background: var(--pa-ink-soft);
-  border-radius: 0;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  border: 1px solid var(--dark);
 }
 
-.roster::-webkit-scrollbar-thumb:hover,
-.forum-threads::-webkit-scrollbar-thumb:hover,
-.activity-feed::-webkit-scrollbar-thumb:hover,
-.thread-view__messages::-webkit-scrollbar-thumb:hover {
-  background: var(--pa-rust);
-}
-
-/* Scrollbars des panneaux terminal (vert) */
+/* Scrollbars des fenêtres CMD (vertes). */
 .log,
 .profile-history__list {
-  scrollbar-width: thin;
-  scrollbar-color: var(--crt-faint) transparent;
+  scrollbar-width: auto;
+  scrollbar-color: var(--crt-faint) #000;
 }
 
 .log::-webkit-scrollbar,
 .profile-history__list::-webkit-scrollbar {
-  width: 8px;
+  width: 14px;
+  background: #001200;
 }
 
 .log::-webkit-scrollbar-thumb,
 .profile-history__list::-webkit-scrollbar-thumb {
-  background: var(--crt-faint);
-  border-radius: 0;
+  background: #002a0e;
+  border: 1px solid var(--crt-faint);
 }
 
 .log::-webkit-scrollbar-thumb:hover,
-.profile-history__list::-webkit-scrollbar-thumb:hover {
-  background: var(--crt);
-}
+.profile-history__list::-webkit-scrollbar-thumb:hover { background: var(--crt-dim); }
 
 /* ════════════════════════════════════════════════════════════════
    ACCESSIBILITÉ
@@ -2662,23 +2313,13 @@ body[data-phase='night'] .desert-grid {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MOBILE / TACTILE — jouabilité smartphone (iOS Safari + Android Chrome)
-   ────────────────────────────────────────────────────────────────
-   Objectifs : cibles tactiles ≥ 44 px, pas de zoom au focus des champs,
-   pas de délai de tap, respect des encoches (notch / barre gestuelle),
-   modales et grille du désert exploitables au doigt. Ces règles
-   COMPLÈTENT la mise en page desktop (aucune valeur de token touchée).
+   MOBILE / TACTILE — jouabilité smartphone
    ════════════════════════════════════════════════════════════════ */
-
-/* iOS : n'inflate pas la typographie en paysage. */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-/* Pointeur grossier (doigt) = tous smartphones/tablettes, quelle que soit la
-   largeur. On y garantit des cibles confortables et on tue le highlight bleu
-   au tap ainsi que le délai de 300 ms. */
 @media (pointer: coarse) {
   .btn,
   .action,
@@ -2690,185 +2331,65 @@ html {
     touch-action: manipulation;
   }
 
-  /* Cible tactile minimale : Apple HIG / Material = 44 px. */
-  .btn {
-    min-height: 44px;
-  }
-
-  .btn--sm {
-    min-height: 40px;
-    padding: 0.45rem 0.9rem;
-  }
-
+  .btn { min-height: 40px; }
+  .btn--sm { min-height: 34px; padding: 0.35rem 0.8rem; }
   .auth-tab,
-  .forum-tab {
-    min-height: 44px;
-  }
+  .forum-tab { min-height: 40px; }
 
-  /* Les boutons d'action de zone (fouiller / chasser / butin / rentrer) et
-     les petits ghost (↻, ✕) restent souvent à l'étroit : on les élargit. */
-  .zone-detail__actions .btn {
-    min-height: 44px;
-    flex: 1 1 auto;
-  }
+  .zone-detail__actions .btn { min-height: 40px; flex: 1 1 auto; }
 }
 
-/* ── Téléphones (≤ 640 px) : compaction et ergonomie ── */
 @media (max-width: 640px) {
-  .game-main {
-    padding: 0.85rem;
-    gap: 1rem;
-  }
+  .game-main { padding: 0.7rem; gap: 0.8rem; }
 
-  /* En-tête collant : on l'allège pour ne pas manger l'écran, tout en
-     gardant les infos essentielles (jour / phase / menace). */
-  .game-header {
-    padding: 0.55rem 0.8rem;
-    gap: 0.6rem;
-    row-gap: 0.5rem;
-  }
+  .game-header { padding: 3px 0.7rem; gap: 0.5rem; row-gap: 0.4rem; }
 
-  .brand__name {
-    font-size: 1rem;
-  }
+  .brand__name { font-size: 12px; }
 
-  .game-header__status {
-    margin-left: 0;
-    order: 3;
-    flex-basis: 100%;
-  }
+  .game-header__status { margin-left: 0; order: 3; flex-basis: 100%; }
+  .game-header__account { gap: 0.35rem; }
+  .game-header__email { display: none; }
 
-  .game-header__account {
-    gap: 0.4rem;
-  }
+  .status-pill { font-size: 10px; padding: 0.15rem 0.45rem; }
 
-  /* L'email complet prend trop de place à côté des boutons : on le masque
-     (retrouvable dans « Mon profil »). */
-  .game-header__email {
-    display: none;
-  }
+  .town-grid { gap: 0.7rem; }
+  .action { padding: 0.6rem 0.75rem; }
 
-  .status-pill {
-    font-size: 0.78rem;
-    padding: 0.18rem 0.55rem;
-  }
+  .zone-detail__actions { flex-direction: column; align-items: stretch; }
+  .zone-detail__actions .btn { width: 100%; }
 
-  /* La grille de ville reste en une colonne (déjà le cas < 720 px) ; on
-     resserre l'espacement. */
-  .town-grid {
-    gap: 0.85rem;
-  }
-
-  /* Actions du jour : pleine largeur, plus lisibles au doigt. */
-  .action {
-    padding: 0.7rem 0.85rem;
-  }
-
-  /* Boutons de zone : passage en pile pleine largeur (au lieu de s'entasser
-     sur une ligne trop étroite). */
-  .zone-detail__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .zone-detail__actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* Modale : bord à bord, on récupère chaque pixel horizontal. */
   .modal {
-    padding: 0.7rem;
-    padding-bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
-    align-items: flex-end; /* la carte glisse depuis le bas, pouce-friendly */
+    padding: 0.6rem;
+    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    align-items: flex-end;
   }
+  .modal__card { max-height: calc(100dvh - 1.4rem); }
+  .modal__title { font-size: 12px; }
+  .modal__actions { flex-wrap: wrap; }
+  .modal__actions .btn { flex: 1 1 auto; }
 
-  .modal__card {
-    padding: 1.1rem 1rem;
-    max-height: calc(100dvh - 1.4rem);
-    border-radius: 0;
-  }
-
-  .modal__title {
-    font-size: 1.15rem;
-  }
-
-  /* Les actions de modale s'étalent sur la largeur (annuler + publier). */
-  .modal__actions {
-    flex-wrap: wrap;
-  }
-
-  .modal__actions .btn {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-
-  /* Carte du désert : moins de padding pour agrandir les cases tactiles ;
-     la grille 7×7 tient alors mieux sur un écran étroit. */
-  .desert-grid {
-    gap: 3px;
-    padding: 0.35rem;
-  }
-
-  .desert-cell {
-    font-size: 0.7rem;
-  }
-
-  .desert-cell__terrain {
-    font-size: 1rem;
-  }
-
+  .desert-grid { gap: 2px; padding: 0.35rem; }
+  .desert-cell { font-size: 10px; }
+  .desert-cell__terrain { font-size: 14px; }
   .desert-cell__loot,
-  .desert-cell__zombies {
-    font-size: 0.62rem;
-  }
+  .desert-cell__zombies { font-size: 9px; }
 
-  /* Barre d'outils du forum : les boutons ne débordent pas. */
-  .forum-toolbar .btn {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
+  .forum-toolbar .btn { flex: 1 1 auto; }
+  .forum-toolbar__hint { flex-basis: 100%; }
 
-  .forum-toolbar__hint {
-    flex-basis: 100%;
-  }
-
-  /* Listes défilantes plus courtes pour éviter des cartes géantes. */
   .roster,
   .forum-threads,
-  .activity-feed {
-    max-height: 300px;
-  }
+  .activity-feed { max-height: 300px; }
 }
 
-/* ── Très petits écrans (≤ 380 px, iPhone SE / mini) ── */
 @media (max-width: 380px) {
-  .action {
-    grid-template-columns: auto 1fr;
-  }
-
-  .action__label {
-    font-size: 0.92rem;
-  }
-
-  .town-header__title h1 {
-    font-size: 1.5rem;
-  }
-
-  /* Onglets d'auth : évite le retour à la ligne disgracieux. */
-  .auth-tab {
-    padding-left: 0.6rem;
-    padding-right: 0.6rem;
-  }
+  .action { grid-template-columns: auto 1fr; }
+  .action__label { font-size: 12px; }
+  .town-header__title h1 { font-size: 1.4rem; }
+  .auth-tab { padding-left: 0.5rem; padding-right: 0.5rem; }
 }
 
-/* ── Paysage bas de plafond (téléphone couché) : modale scrollable court ── */
 @media (max-height: 480px) and (orientation: landscape) {
-  .modal {
-    align-items: stretch;
-  }
-
-  .modal__card {
-    max-height: calc(100dvh - 1rem);
-  }
+  .modal { align-items: stretch; }
+  .modal__card { max-height: calc(100dvh - 1rem); }
 }
