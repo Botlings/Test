@@ -20,6 +20,7 @@ import type { RealtimeHub } from '../realtime/hub.js';
 import type { NightReport } from '../domain/index.js';
 import type { ServerMessage } from '../realtime/protocol.js';
 import { publishActivity } from './activity.js';
+import { awardNightAchievements } from './achievements.js';
 
 export type NightTrigger = 'manual' | 'scheduler';
 
@@ -155,6 +156,10 @@ export async function resolveNight(
         },
       });
     }
+
+    // Hauts faits de nuit : Héros Nocturne, Survivant 7 jours, Sauveur de la
+    // Ville — attribués à chaque membre dont le citoyen a survécu à l'assaut.
+    await awardNightAchievements(store, current, out);
     return out;
   });
   return { report };

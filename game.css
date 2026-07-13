@@ -1717,7 +1717,8 @@ body[data-phase='night'] .status-pill--phase {
   font-variant-numeric: tabular-nums;
 }
 
-.profile-history__title {
+.profile-history__title,
+.profile-achievements__title {
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
@@ -1726,6 +1727,81 @@ body[data-phase='night'] .status-pill--phase {
   margin: 0 0 0.4rem;
   text-shadow: var(--glow-soft);
 }
+
+.profile-achievements { margin: 0.2rem 0 0.9rem; }
+
+.profile-achievements__count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.achievement-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.45rem;
+}
+
+.achievement {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--crt-faint);
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.achievement--unlocked {
+  border-color: rgba(255, 200, 58, 0.55);
+  box-shadow: inset 0 0 10px rgba(255, 200, 58, 0.12);
+}
+
+.achievement--locked { opacity: 0.55; filter: grayscale(0.6); }
+
+.achievement__icon { font-size: 22px; line-height: 1; }
+
+.achievement--locked .achievement__icon { filter: grayscale(1) brightness(0.7); }
+
+.achievement__body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+
+.achievement__name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--crt-bright);
+}
+
+.achievement--unlocked .achievement__name {
+  color: var(--gold);
+  text-shadow: 0 0 6px rgba(255, 200, 58, 0.4);
+}
+
+.achievement__meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--crt-dim);
+  line-height: 1.25;
+}
+
+.achievement__check {
+  color: var(--gold);
+  font-size: 15px;
+  text-shadow: 0 0 6px rgba(255, 200, 58, 0.6);
+}
+
+.profile-public-link {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.profile-public-link a { color: var(--crt-bright); text-decoration: none; }
+.profile-public-link a:hover { text-decoration: underline; text-shadow: var(--glow-soft); }
 
 .profile-history__list {
   list-style: none;
@@ -2461,4 +2537,33 @@ html {
 
 .game-footer .tech-label {
   opacity: 0.85;
+}
+
+/* =========================================================================
+ *  Page profil publique autonome (profile.html)
+ * =======================================================================*/
+
+.profile-page {
+  max-width: 860px;
+  margin: 1.4rem auto;
+  padding: 0 1rem 2.5rem;
+}
+
+.profile-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.2rem 0.2rem;
+}
+
+.profile-loading--error {
+  color: var(--danger, #ff6b57);
+  text-shadow: 0 0 6px rgba(255, 90, 70, 0.4);
+}
+
+.game-header__actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }

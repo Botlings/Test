@@ -652,9 +652,21 @@
               <span class="profile-stat__value" id="stat-deaths">0</span>
             </div>
             <div class="profile-stat">
+              <span class="profile-stat__label">Victoires</span>
+              <span class="profile-stat__value" id="stat-victories">0</span>
+            </div>
+            <div class="profile-stat">
               <span class="profile-stat__label">Meilleur jour</span>
               <span class="profile-stat__value" id="stat-best-day">—</span>
             </div>
+          </section>
+          <section class="profile-achievements">
+            <h3 class="profile-achievements__title">
+              Hauts faits <span class="profile-achievements__count" id="profile-achievements-count"></span>
+            </h3>
+            <ul class="achievement-grid" id="profile-achievements-list">
+              <li class="profile-history__empty">Chargement…</li>
+            </ul>
           </section>
           <section class="profile-history">
             <h3 class="profile-history__title">Historique des parties</h3>
@@ -662,6 +674,11 @@
               <li class="profile-history__empty">Aucune partie pour le moment.</li>
             </ul>
           </section>
+          <p class="profile-public-link" id="profile-public-link" hidden>
+            <a href="#" id="profile-public-anchor" target="_blank" rel="noopener">
+              Voir mon profil public ↗
+            </a>
+          </p>
         </div>
       </div>
     </div>

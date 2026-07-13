@@ -11,6 +11,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { Game } from '../domain/game.js';
+import type { AchievementId } from '../domain/achievements.js';
 import type { GameConfig } from '../domain/config.js';
 import { DEFAULT_CONFIG } from '../domain/config.js';
 import { seedFromString } from '../domain/desert.js';
@@ -23,6 +24,7 @@ import {
   compareGameResults,
   type AccountRecord,
   type AccountTownEntry,
+  type AchievementUnlock,
   type ActivityEntry,
   type ActivityInput,
   type BankPolicy,
@@ -134,6 +136,8 @@ export class MemoryStore implements Store {
   /** Résultat final par ville (clé : townId). Un seul résultat par partie. */
   private readonly gameResults = new Map<Id, Omit<LeaderboardEntry, 'rank'>>();
   private readonly membershipJoinedAt = new Map<string, Date>();
+  /** Hauts faits débloqués par compte : achievementId → date de déblocage. */
+  private readonly achievements = new Map<Id, Map<AchievementId, Date>>();
   /** Horodatage d'entrée en file d'attente, clé `${townId}|${accountId}`. */
   private readonly queuedAt = new Map<string, Date>();
   private readonly forumThreads = new Map<Id, ForumThreadRecord>();
@@ -422,6 +426,7 @@ export class MemoryStore implements Store {
         currentDay: status.day,
         phase: status.phase,
         gameOver: status.gameOver,
+        outcome: status.outcome,
         closed: town.closed,
         citizen: {
           id: citizen.id,
@@ -433,6 +438,27 @@ export class MemoryStore implements Store {
     }
     entries.sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime());
     return entries;
+  }
+
+  /* --------------------------- Hauts faits ------------------------------ */
+
+  async unlockAchievement(accountId: Id, achievementId: AchievementId): Promise<boolean> {
+    let owned = this.achievements.get(accountId);
+    if (!owned) {
+      owned = new Map();
+      this.achievements.set(accountId, owned);
+    }
+    if (owned.has(achievementId)) return false;
+    owned.set(achievementId, new Date());
+    return true;
+  }
+
+  async listAccountAchievements(accountId: Id): Promise<AchievementUnlock[]> {
+    const owned = this.achievements.get(accountId);
+    if (!owned) return [];
+    return [...owned.entries()]
+      .map(([achievementId, unlockedAt]) => ({ achievementId, unlockedAt }))
+      .sort((a, b) => a.unlockedAt.getTime() - b.unlockedAt.getTime());
   }
 
   async saveTown(_town: TownRecord): Promise<void> {

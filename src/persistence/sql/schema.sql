@@ -214,6 +214,20 @@ CREATE TABLE IF NOT EXISTS forum_votes (
   PRIMARY KEY (thread_id, account_id)
 );
 
+-- Hauts faits (achievements) débloqués par compte. Un badge permanent par
+-- ligne ; le couple (account_id, achievement_id) est unique (déblocage
+-- idempotent). `achievement_id` référence le catalogue applicatif
+-- (`src/domain/achievements.ts`) — volontairement pas de contrainte d'enum
+-- côté SQL pour ne pas migrer la base à chaque nouveau badge.
+CREATE TABLE IF NOT EXISTS account_achievements (
+  account_id     uuid          NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  achievement_id text          NOT NULL,
+  unlocked_at    timestamptz   NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, achievement_id)
+);
+CREATE INDEX IF NOT EXISTS account_achievements_account_idx
+  ON account_achievements(account_id, unlocked_at ASC);
+
 -- Journal d'activité d'une ville : qui a fait quoi, quand.
 -- `details` est un JSONB libre (montant, destination, etc.).
 CREATE TABLE IF NOT EXISTS activity_log (

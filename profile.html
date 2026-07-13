@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Hordes Revival — Profil du survivant</title>
+    <meta
+      name="description"
+      content="Profil public d'un survivant de Hordes Revival : hauts faits débloqués, statistiques globales de survie et historique des parties."
+    />
+    <meta name="theme-color" content="#c0b088" />
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%228%22%20fill%3D%22%23050a07%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2224%22%20fill%3D%22none%22%20stroke%3D%22%232eff6b%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2243%22%20text-anchor%3D%22middle%22%20font-family%3D%22monospace%22%20font-size%3D%2228%22%20font-weight%3D%22bold%22%20fill%3D%22%232eff6b%22%3E%E2%9C%A6%3C%2Ftext%3E%3C%2Fsvg%3E"
+    />
+
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="game.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#profile-main">Aller au contenu</a>
+
+    <header class="game-header">
+      <a class="brand" href="./" aria-label="Hordes Revival — retour à l'accueil">
+        <span class="brand__mark" aria-hidden="true">✦</span>
+        <span class="brand__name">Hordes Revival</span>
+      </a>
+      <nav class="game-header__actions">
+        <a class="btn btn--ghost" href="game.html">Jouer →</a>
+      </nav>
+    </header>
+
+    <main class="profile-page" id="profile-main">
+      <article class="card terminal profile-card">
+        <header class="card__header">
+          <h1 class="card__title" id="profile-title">Profil du survivant</h1>
+          <p class="card__sub" id="profile-sub">Chargement du dossier…</p>
+        </header>
+
+        <div class="profile-card__body" id="profile-body">
+          <p class="profile-loading" id="profile-state">Chargement du profil…</p>
+
+          <section class="profile-stats" id="profile-stats" hidden>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Parties jouées</span>
+              <span class="profile-stat__value" id="stat-total">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Victoires</span>
+              <span class="profile-stat__value" id="stat-victories">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Citoyens vivants</span>
+              <span class="profile-stat__value" id="stat-alive">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Disparus</span>
+              <span class="profile-stat__value" id="stat-deaths">0</span>
+            </div>
+            <div class="profile-stat">
+              <span class="profile-stat__label">Meilleur jour</span>
+              <span class="profile-stat__value" id="stat-best-day">—</span>
+            </div>
+          </section>
+
+          <section class="profile-achievements" id="profile-achievements-section" hidden>
+            <h2 class="profile-achievements__title">
+              Hauts faits
+              <span class="profile-achievements__count" id="profile-achievements-count"></span>
+            </h2>
+            <ul class="achievement-grid" id="profile-achievements-list"></ul>
+          </section>
+
+          <section class="profile-history" id="profile-history-section" hidden>
+            <h2 class="profile-history__title">Historique des parties</h2>
+            <ul class="profile-history__list" id="profile-history-list"></ul>
+          </section>
+        </div>
+      </article>
+    </main>
+
+    <script src="daynight.js"></script>
+    <script src="profile.js"></script>
+  </body>
+</html>

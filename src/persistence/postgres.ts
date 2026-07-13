@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { Pool, type PoolClient, type PoolConfig } from 'pg';
 import { Game } from '../domain/game.js';
+import type { AchievementId } from '../domain/achievements.js';
 import { sanitizeBuildingState } from '../domain/buildings.js';
 import { sanitizeDesertMap, seedFromString } from '../domain/desert.js';
 import type { Citizen, Location, NightReport, Phase } from '../domain/types.js';
@@ -30,6 +31,7 @@ import {
   StoreError,
   type AccountRecord,
   type AccountTownEntry,
+  type AchievementUnlock,
   type ActivityEntry,
   type ActivityInput,
   type ActivityKind,
@@ -689,6 +691,7 @@ export class PgStore implements Store {
         currentDay: status.day,
         phase: status.phase,
         gameOver: status.gameOver,
+        outcome: status.outcome,
         closed: town.closed,
         citizen: {
           id: citizen.id,
@@ -700,6 +703,32 @@ export class PgStore implements Store {
     }
     entries.sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime());
     return entries;
+  }
+
+  /* --------------------------- Hauts faits ------------------------------ */
+
+  async unlockAchievement(accountId: Id, achievementId: AchievementId): Promise<boolean> {
+    const res = await this.pool.query(
+      `INSERT INTO account_achievements (account_id, achievement_id)
+       VALUES ($1, $2)
+       ON CONFLICT (account_id, achievement_id) DO NOTHING`,
+      [accountId, achievementId],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  async listAccountAchievements(accountId: Id): Promise<AchievementUnlock[]> {
+    const res = await this.pool.query<{ achievement_id: AchievementId; unlocked_at: Date }>(
+      `SELECT achievement_id, unlocked_at
+         FROM account_achievements
+        WHERE account_id = $1
+        ORDER BY unlocked_at ASC`,
+      [accountId],
+    );
+    return res.rows.map((r) => ({
+      achievementId: r.achievement_id,
+      unlockedAt: r.unlocked_at,
+    }));
   }
 
   async saveTown(town: TownRecord): Promise<void> {

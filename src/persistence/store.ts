@@ -14,7 +14,8 @@
  * un 409 côté API, pas s'enchaîner par hasard.
  */
 import type { Game } from '../domain/game.js';
-import type { NightReport, Phase } from '../domain/types.js';
+import type { GameOutcome, NightReport, Phase } from '../domain/types.js';
+import type { AchievementId } from '../domain/achievements.js';
 import type { Id } from './types.js';
 
 /** Issue finale enregistrée d'une partie (jamais `ongoing`). */
@@ -307,6 +308,8 @@ export interface AccountTownEntry {
   readonly currentDay: number;
   readonly phase: Phase;
   readonly gameOver: boolean;
+  /** Issue de la partie : `ongoing`, `victory` ou `defeat`. */
+  readonly outcome: GameOutcome;
   readonly closed: boolean;
   readonly citizen: {
     readonly id: string;
@@ -314,6 +317,12 @@ export interface AccountTownEntry {
     readonly alive: boolean;
     readonly causeOfDeath: string | null;
   };
+}
+
+/** Un haut fait débloqué par un compte, avec la date de déblocage. */
+export interface AchievementUnlock {
+  readonly achievementId: AchievementId;
+  readonly unlockedAt: Date;
 }
 
 export interface Store {
@@ -385,6 +394,21 @@ export interface Store {
    * récente à la plus ancienne. Utilisé par `/auth/me/history`.
    */
   listAccountTowns(accountId: Id): Promise<AccountTownEntry[]>;
+
+  /* --------------------------- Hauts faits ------------------------------ */
+  /**
+   * Débloque un haut fait pour un compte. Idempotent : si le badge est déjà
+   * acquis, ne change rien et renvoie `false` ; sinon l'enregistre (avec sa
+   * date de déblocage) et renvoie `true`. Permet aux routes de ne notifier
+   * l'utilisateur que lors d'un déblocage réellement nouveau.
+   */
+  unlockAchievement(accountId: Id, achievementId: AchievementId): Promise<boolean>;
+
+  /**
+   * Liste les hauts faits débloqués par un compte, du plus ancien au plus
+   * récent (ordre de déblocage). Alimente la page profil.
+   */
+  listAccountAchievements(accountId: Id): Promise<AchievementUnlock[]>;
 
   /**
    * Persiste l'état courant du moteur (`town.game.snapshot()`) et le drapeau

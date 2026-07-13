@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth-guard.js';
 import type { Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
+import { buildAchievements as buildProfileAchievements } from '../profile.js';
 import {
   fingerprintToken,
   generateRefreshToken,
@@ -176,7 +177,9 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     const history = await store.listAccountTowns(accountId);
     const aliveGames = history.filter((h) => h.citizen.alive).length;
     const totalGames = history.length;
+    const victories = history.filter((h) => h.outcome === 'victory').length;
     const bestDay = history.reduce((acc, h) => Math.max(acc, h.currentDay), 0);
+    const achievements = await buildProfileAchievements(store, accountId);
     return reply.code(200).send({
       userId: account.id,
       email: account.email,
@@ -187,6 +190,26 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         deathsCount: totalGames - aliveGames,
         bestDay,
       },
+      victories,
+      achievements,
+      achievementCount: achievements.filter((a) => a.unlocked).length,
+    });
+  });
+
+  /* ----------------------- /auth/me/achievements -------------------------- */
+  /**
+   * Catalogue complet des hauts faits, enrichi de l'état de déblocage du
+   * compte authentifié (badge obtenu ou non, date). Alimente l'onglet
+   * « Hauts faits » du profil.
+   */
+  app.get('/auth/me/achievements', async (request, reply) => {
+    const accountId = requireAuth(request, reply, { jwtSecret });
+    if (!accountId) return;
+    const achievements = await buildProfileAchievements(store, accountId);
+    return reply.code(200).send({
+      achievements,
+      unlockedCount: achievements.filter((a) => a.unlocked).length,
+      total: achievements.length,
     });
   });
 
@@ -208,6 +231,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         joinedAt: h.joinedAt.toISOString(),
         currentDay: h.currentDay,
         phase: h.phase,
+        outcome: h.outcome,
         gameOver: h.gameOver,
         closed: h.closed,
         citizen: h.citizen,

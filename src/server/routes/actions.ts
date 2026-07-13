@@ -34,6 +34,7 @@ import type { RealtimeHub } from '../../realtime/hub.js';
 import type { NightScheduler } from '../night-scheduler.js';
 import { publishTownSnapshot, resolveNight } from '../night-resolver.js';
 import { publishActivity } from '../activity.js';
+import { awardBuildAchievements, awardScavengeAchievements } from '../achievements.js';
 
 interface ActionsDeps {
   readonly store: Store;
@@ -184,6 +185,10 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             kind: 'citizen.scavenge',
             details: { ...gained, foundItem: scav.foundItem ?? null },
           });
+          await awardScavengeAchievements(store, accountId, {
+            resource: Object.keys(gained).some((k) => k !== 'item'),
+            item: !!scav.foundItem,
+          });
           break;
         }
         case 'build': {
@@ -213,6 +218,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             kind: 'citizen.build',
             details: { defense },
           });
+          await awardBuildAchievements(store, accountId);
           break;
         }
         case 'construct': {
@@ -251,6 +257,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
               defense: result.townDefense,
             },
           });
+          await awardBuildAchievements(store, accountId);
           break;
         }
         case 'move-zone': {
@@ -293,6 +300,10 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             kind: 'citizen.scavenge-zone',
             details: { picked, foundItem: result.foundItem ?? null },
           });
+          await awardScavengeAchievements(store, accountId, {
+            resource: !!result.picked,
+            item: !!result.foundItem,
+          });
           break;
         }
         case 'fight': {
@@ -329,6 +340,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
               water: result.gained.water,
             },
           });
+          await awardScavengeAchievements(store, accountId, { event: true });
           break;
         }
         default:

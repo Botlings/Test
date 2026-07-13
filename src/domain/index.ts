@@ -43,6 +43,16 @@ export {
   type NightThreatDef,
   type ZombieConfig,
 } from './zombies.js';
+export {
+  ACHIEVEMENT_CATALOG,
+  getAchievementDef,
+  isKnownAchievementId,
+  buildAchievements,
+  scavengeAchievements,
+  nightAchievements,
+  type AchievementId,
+  type AchievementDef,
+} from './achievements.js';
 export type {
   AttackWave,
   Citizen,

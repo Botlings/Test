@@ -493,10 +493,50 @@
     $('stat-total').textContent = String(stats.totalGames);
     $('stat-alive').textContent = String(stats.aliveGames);
     $('stat-deaths').textContent = String(stats.deathsCount);
+    var victoriesEl = $('stat-victories');
+    if (victoriesEl) victoriesEl.textContent = String(me.victories || 0);
     $('stat-best-day').textContent = stats.bestDay > 0 ? 'Jour ' + stats.bestDay : '—';
     show($('profile-stats'));
 
+    renderProfileAchievements(me.achievements || []);
     renderProfileHistory(history);
+
+    var publicLink = $('profile-public-link');
+    var anchor = $('profile-public-anchor');
+    if (publicLink && anchor && me.userId) {
+      anchor.setAttribute('href', 'profile.html?id=' + encodeURIComponent(me.userId));
+      show(publicLink);
+    }
+  }
+
+  function renderProfileAchievements(achievements) {
+    var listEl = $('profile-achievements-list');
+    var countEl = $('profile-achievements-count');
+    if (!listEl) return;
+    var unlocked = achievements.filter(function (a) { return a.unlocked; }).length;
+    if (countEl) countEl.textContent = unlocked + ' / ' + achievements.length;
+    if (!achievements.length) {
+      listEl.innerHTML = '<li class="profile-history__empty">Aucun haut fait disponible.</li>';
+      return;
+    }
+    listEl.innerHTML = achievements
+      .map(function (a) {
+        var cls = 'achievement' + (a.unlocked ? ' achievement--unlocked' : ' achievement--locked');
+        var meta = a.unlocked && a.unlockedAt
+          ? 'Débloqué le ' + new Date(a.unlockedAt).toLocaleDateString('fr-FR', {
+              day: '2-digit', month: 'short', year: 'numeric',
+            })
+          : escapeHtml(a.hint || '');
+        return '<li class="' + cls + '" title="' + escapeHtml(a.description || '') + '">' +
+          '<span class="achievement__icon" aria-hidden="true">' + escapeHtml(a.icon || '🏅') + '</span>' +
+          '<span class="achievement__body">' +
+          '<span class="achievement__name">' + escapeHtml(a.name || '') + '</span>' +
+          '<span class="achievement__meta">' + meta + '</span>' +
+          '</span>' +
+          (a.unlocked ? '<span class="achievement__check" aria-hidden="true">✔</span>' : '') +
+          '</li>';
+      })
+      .join('');
   }
 
   function renderProfileHistory(history) {
