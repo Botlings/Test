@@ -1,122 +1,160 @@
-/* Hordes Revival — feuille de styles partagée (landing + design system).
+/* Hordes Revival — feuille de styles partagée (landing publique + design system).
    ═══════════════════════════════════════════════════════════════════
-   DA FIGÉE — WINDOWS 98 SKEUOMORPHIQUE (décision humaine 2026-07-12).
-   Reconstruction from scratch : toute la DA pixel-art / CGA / rétro 80's
-   précédente a été supprimée. On repart d'un langage « chrome Windows 98 » :
+   DA FIGÉE — « LONESOME ROAD / CRT PHOSPHORE » (décision 2026-07-12, CTO via
+   chat — REMPLACE la refonte Windows 98 abandonnée le même jour).
 
-     • Chrome gris skeuomorphique : boutons/panneaux en RELIEF biseauté
-       (bevel 2px outset/inset simulé en box-shadow inset), coins DROITS.
-     • Barres de titre à dégradé (fenêtres), polices bitmap système
-       Tahoma / MS Sans Serif 11-13px.
-     • Contrôles de saisie ENFONCÉS (bevel inset), scrollbars épaisses,
-       boîtes de dialogue à angles droits.
-     • Icônes/illustrations pixel conservées (sprites SVG) dans le cadre W98.
+   Deux couches, deux logiques :
 
-   DEUX THÈMES commutés par body[data-daytime] (posé par daynight.js depuis
-   l'heure locale — nuit 20 h → 6 h). Ce n'est PAS un simple assombrissement :
-       • JOUR = chrome W98 teinté SABLE / ROUILLE (post-apo désertique) :
-         fond fenêtres #D4B896, barres de titre rouille, bureau sable.
-       • NUIT = chrome W98 NOIR / ROUGE SANG : barres de titre #8B0000,
-         fond fenêtres #1A0000, bureau noir, léger « static TV » sur les bords.
+   1. LE MONDE (HUD, panneaux, cartes, décor, landing) est en palette CHAUDE
+      et bascule JOUR ⇆ NUIT via `body[data-phase]` :
+        • JOUR = désert brûlant « Lonesome Road » : sable / rouille.
+        • NUIT = apocalypse rouge sang / cimetière.
+      Ce n'est PAS un assombrissement : chaque token change de température.
+      L'attribut `data-phase` est posé par daynight.js (horloge + bascule
+      manuelle, sur la landing) et par game.js (phase de jeu réelle, en ville).
 
-   TERMINAL = FENÊTRE CMD (classe `.terminal`) : cadre W98 gris, zone client
-   NOIRE #000, texte VERT PHOSPHORE #00FF41, police Courier monospace, curseur
-   clignotant. Réservé aux interfaces « informatiques » (carte du désert,
-   inventaire, stats, journaux, rapport de nuit, profil). Ne JAMAIS l'étendre
-   ailleurs.
+   2. LES INTERFACES « INFORMATIQUES » (terminal, carte du désert, inventaire,
+      constantes, radar, journaux, rapport de nuit, profil) restent en CRT
+      VERT PHOSPHORE sur noir — INCHANGÉES dans les deux phases. Elles portent
+      la classe `.terminal` (ou `.crt-grid`) et déclarent leurs propres tokens
+      `--crt*` (voir tout en bas). game.css hérite de ces tokens.
 
-   game.css n'AJOUTE que des composants de ville et hérite des tokens W98
-   ci-dessous (la cascade suffit). */
+   Typographie : 100 % SYSTÈME, zéro Google Font, zéro asset distant.
+     • Corps + interfaces : monospace (Consolas / Courier New).
+     • Titres display : Impact / Arial Narrow condensé, capitales.
+
+   Marques fictives maison : VELTRIX SYSTEMS (constructeur), GRID-OS (l'OS).
+
+   ⚠ TOUTE la DA est pilotée par les TOKENS ci-dessous. Pour ré-équilibrer une
+   teinte, éditer les VARIABLES, jamais les composants. Ne JAMAIS styler un
+   composant « monde » avec var(--crt*) ni l'inverse. */
 
 /* ════════════════════════════════════════════════════════════════
-   JOUR — TOKENS PAR DÉFAUT (chrome Windows 98 teinté sable / rouille)
+   JOUR — TOKENS PAR DÉFAUT (désert brûlant « Lonesome Road »)
+   Appliqués sur :root → aucun flash avant que daynight.js pose data-phase.
    ════════════════════════════════════════════════════════════════ */
 :root {
-  /* ── Bureau & fenêtres ──────────────────────────────────────── */
-  --desktop: #b19a6b;            /* fond « bureau » sable */
-  --window: #d4b896;             /* fond des fenêtres (décision : #D4B896) */
-  --face: #d8c6a2;               /* face des contrôles (boutons, panneaux 3D) */
-  --face-light: #e6d8bd;         /* zones claires (listes, champs pâles) */
-  --well: #fbf4e4;               /* champs de saisie / zones blanches enfoncées */
+  /* ── Monde chaud (source de vérité : theme.html) ────────────────── */
+  --bg: #c9ad82;                 /* fond « bureau » / désert */
+  --panel: #d8c39c;              /* fond des panneaux */
+  --panel-2: #cbb488;            /* panneaux enfoncés / cartes */
+  --edge: #8f7048;               /* liseré clair */
+  --edge-2: #6f5333;             /* liseré appuyé (bordures) */
+  --ink: #2c2015;                /* texte principal (brun-noir sur sable) */
+  --ink-soft: #6c563b;           /* texte secondaire */
+  --rust: #b0532a;               /* rouille — accents, titres, marque */
+  --rust-2: #8a3d1e;             /* rouille profonde */
+  --danger: #a8331c;             /* alerte / menace */
+  --scan: rgba(0, 0, 0, 0.05);   /* scanlines de l'overlay CRT (douces le jour) */
+  --vignette: rgba(60, 35, 10, 0.28);
 
-  /* Bevels 3D Windows 98 : highlight clair en haut-gauche, ombre en bas-droite. */
-  --hilite: #ffffff;             /* liseré le plus clair */
-  --light: #efe6d2;             /* second liseré clair */
-  --shadow-c: #8a7856;           /* second liseré sombre (teinté sable) */
-  --dark: #3d3221;               /* liseré le plus sombre */
+  /* Décor du monde (dégradé ciel + sol, astre) */
+  --world-sky-1: #e6c893;
+  --world-sky-2: #cf9a5f;
+  --world-ground: #9a6238;
+  --orb: #d9772e;
+  --orb-glow: rgba(230, 150, 60, 0.55);
 
-  /* ── Couleurs sémantiques (rouille / sang) ──────────────────── */
-  --rust: #9c4a12;               /* rouille — barres de titre, titres, marque */
-  --rust-deep: #6e3208;
+  /* ── Phosphore vert (interfaces informatiques) : identique en jour ET
+     nuit. Défini au global pour que la carte du désert (.card--map) puisse
+     l'utiliser hors d'un sous-arbre .terminal. Le skin .terminal (bas de
+     fichier) reprend ces mêmes valeurs. ── */
+  --crt: #00ff41;
+  --crt-bright: #b6ffcf;
+  --crt-soft: #33cc66;
+  --crt-dim: #178a3a;
+  --crt-faint: #0d5c26;
+  --crt-shadow: rgba(0, 255, 65, 0.2);
+  --crt-bg: #08130b;
+  --glow-strong: 0 0 6px rgba(0, 255, 65, 0.75), 0 0 14px rgba(0, 255, 65, 0.4);
+  --glow-soft: 0 0 4px rgba(0, 255, 65, 0.5);
+
+  /* Accents chauds complémentaires */
+  --ochre: #d99a2b;
+  --gold: #e6b23a;
+  --blood: #a8331c;              /* alias monde de --danger (compat game.css) */
+  --blood-deep: #6e1d12;
+
+  /* ── Alias de compatibilité pour l'existant (styles.css + game.css) ──
+     Les composants historiques consomment des noms « W98 » : on les mappe
+     tous sur la palette chaude ci-dessus pour rester cohérent SANS toucher
+     à game.css. Le relief biseauté W98 est remplacé par un langage PLAT :
+     bordure nette + ombre portée dure décalée (cf. --bevel-* plus bas). */
+  --desktop: var(--bg);
+  --window: var(--panel);
+  --face: var(--panel);
+  --face-light: var(--panel-2);
+  --well: #efe0c2;               /* champs de saisie (zone claire enfoncée) */
+  --hilite: var(--edge);
+  --light: var(--edge);
+  --shadow-c: var(--edge-2);
+  --dark: var(--edge-2);
+  --rust-deep: var(--rust-2);
   --rust-bright: #c6641f;
-  --ochre: #d99a2b;              /* ocre — accents, surlignage */
-  --blood: #a01818;              /* rouge sang — alerte, danger, CTA */
-  --blood-deep: #5e0d0d;
-  --ink: #241a0c;                /* texte principal (brun-noir sur sable) */
-  --ink-soft: #5a4a30;           /* texte secondaire */
-  --titlebar-a: #8a3a0e;         /* dégradé barre de titre — début */
-  --titlebar-b: #c06a2a;         /* dégradé barre de titre — fin */
-  --titlebar-text: #ffffff;
-  --select: #9c4a12;             /* sélection = rouille */
-  --select-text: #ffffff;
+  --select: var(--rust);
+  --select-text: #fff;
+  --titlebar-a: var(--rust);
+  --titlebar-b: var(--rust-2);
+  --titlebar-text: #fff;
 
-  /* ── Alias de compatibilité (--pa-*) : d'anciennes règles / SVG y font
-     encore référence ; on les mappe sur la palette W98 pour rester cohérent. */
-  --pa-sand: var(--window);
-  --pa-sand-deep: var(--face);
-  --pa-paper: var(--face-light);
+  /* Alias --pa-* encore référencés par d'anciennes règles / SVG. */
+  --pa-sand: var(--panel);
+  --pa-sand-deep: var(--panel-2);
+  --pa-paper: var(--well);
   --pa-rust: var(--rust);
-  --pa-rust-deep: var(--rust-deep);
+  --pa-rust-deep: var(--rust-2);
   --pa-rust-bright: var(--rust-bright);
   --pa-ochre: var(--ochre);
-  --pa-ochre-deep: var(--rust-deep);
+  --pa-ochre-deep: var(--rust-2);
   --pa-blood: var(--blood);
   --pa-blood-deep: var(--blood-deep);
   --pa-ink: var(--ink);
   --pa-ink-soft: var(--ink-soft);
-  --pa-line: var(--dark);
+  --pa-line: var(--edge-2);
 
   --maxw: 1080px;
-  --radius: 0;                   /* Windows 98 : coins droits partout */
-  --tb-h: 22px;                  /* hauteur des barres de titre */
+  --radius: 0;                   /* coins nets partout (rétro) */
+  --tb-h: 24px;                  /* hauteur des barres de titre / en-têtes */
 
-  /* Bevels composites (box-shadow inset). --bevel-out = relief (bouton relâché,
-     panneau) ; --bevel-in = enfoncé (champ, zone client, bouton pressé). */
+  /* ── Langage PLAT (remplace les bevels W98) ─────────────────────────
+     Les composants appliquent `box-shadow: var(--bevel-*)` SANS bordure :
+     on bake donc la bordure dans l'ombre (anneau inset) + une ombre portée
+     dure décalée pour le relief « imprimé ». */
   --bevel-out:
-    inset -1px -1px 0 0 var(--dark),
-    inset  1px  1px 0 0 var(--hilite),
-    inset -2px -2px 0 0 var(--shadow-c),
-    inset  2px  2px 0 0 var(--light);
-  --bevel-in:
-    inset  1px  1px 0 0 var(--shadow-c),
-    inset -1px -1px 0 0 var(--hilite),
-    inset  2px  2px 0 0 var(--dark),
-    inset -2px -2px 0 0 var(--light);
+    inset 0 0 0 2px var(--edge-2),
+    4px 4px 0 0 rgba(0, 0, 0, 0.30);
   --bevel-out-thin:
-    inset  1px  1px 0 0 var(--hilite),
-    inset -1px -1px 0 0 var(--shadow-c);
+    inset 0 0 0 2px var(--edge-2),
+    2px 2px 0 0 rgba(0, 0, 0, 0.24);
+  --bevel-in:
+    inset 0 0 0 2px var(--edge),
+    inset 0 2px 6px rgba(0, 0, 0, 0.30);
   --bevel-in-thin:
-    inset  1px  1px 0 0 var(--shadow-c),
-    inset -1px -1px 0 0 var(--hilite);
-  /* Ombre portée douce W98 (fenêtres flottantes / dialogues). */
-  --drop: 2px 2px 0 0 rgba(0, 0, 0, 0.35);
-
-  /* Typographie : polices système bitmap de Windows 98. */
-  --font-ui: Tahoma, 'MS Sans Serif', 'Segoe UI', Geneva, sans-serif;
-  --font-display: var(--font-ui);
-  --font-body: var(--font-ui);
-  --font-mono: 'Courier New', 'Lucida Console', Consolas, monospace;
-
-  /* Compat : anciens noms d'ombres pixel → drop douce W98. */
+    inset 0 0 0 1px var(--edge);
+  --drop: 4px 4px 0 0 rgba(0, 0, 0, 0.30);
   --shadow: var(--drop);
-  --shadow-soft: var(--drop);
-  --hero-title-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4);
+  --shadow-soft: 2px 2px 0 0 rgba(0, 0, 0, 0.24);
+  --hero-title-shadow: 3px 3px 0 rgba(0, 0, 0, 0.28);
 
-  --bg-gradient: var(--desktop);
+  /* Typographie système (aucune police distante). */
+  --font-ui: "Consolas", "Courier New", "DejaVu Sans Mono", monospace;
+  --font-body: var(--font-ui);
+  --font-mono: "Consolas", "Courier New", "DejaVu Sans Mono", monospace;
+  --font-display: "Impact", "Haettenschweiler", "Arial Narrow Bold", "Arial Narrow", sans-serif;
+
+  --bg-gradient: var(--bg);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RESET & BASE
+   ════════════════════════════════════════════════════════════════ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 * {
-  box-sizing: border-box;
   margin: 0;
 }
 
@@ -127,17 +165,16 @@ html {
 }
 
 body {
-  background: var(--desktop);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.45;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
   min-height: 100vh;
+  transition: background 0.6s ease, color 0.6s ease;
 }
 
-/* Sprites et illustrations pixel : rendu net, jamais interpolé. */
+/* Sprites / illustrations pixel : rendu net, jamais interpolé. */
 img,
 svg,
 canvas {
@@ -150,9 +187,8 @@ a {
   text-decoration: none;
   font-weight: 700;
 }
-
 a:hover {
-  color: var(--blood);
+  color: var(--danger);
   text-decoration: underline;
 }
 
@@ -160,10 +196,9 @@ p {
   color: var(--ink);
 }
 
-h1, h2, h3 {
-  font-family: var(--font-ui);
-  line-height: 1.3;
-  color: var(--rust-deep);
+h1, h2, h3, h4 {
+  line-height: 1.15;
+  color: var(--ink);
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -178,8 +213,9 @@ h1, h2, h3 {
   display: none !important;
 }
 
-.visually-hidden {
-  position: absolute;
+.visually-hidden,
+.visible-hidden {
+  position: absolute !important;
   width: 1px;
   height: 1px;
   padding: 0;
@@ -190,1155 +226,842 @@ h1, h2, h3 {
   border: 0;
 }
 
+/* Typo display condensée pour les gros titres. */
+.display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 0.95;
+  font-weight: 400;
+}
+
+/* Libellé technique : mono 11px capitales, interlettrage large, rouille. */
+.tech-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--rust);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   OVERLAY CRT PLEIN ÉCRAN (scanlines + vignette, piloté par tokens)
+   ════════════════════════════════════════════════════════════════ */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--scan) 0,
+      var(--scan) 1px,
+      transparent 1px,
+      transparent 3px),
+    radial-gradient(
+      ellipse at center,
+      transparent 55%,
+      var(--vignette) 100%);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ACCESSIBILITÉ — lien d'évitement & focus visible
+   ════════════════════════════════════════════════════════════════ */
 .skip-link {
   position: absolute;
-  left: -999px;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 0.6rem 1rem;
+  background: var(--rust);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
-
 .skip-link:focus {
-  left: 1rem;
-  top: 1rem;
-  z-index: 200;
-  background: var(--face);
-  color: var(--ink);
-  padding: 0.5rem 0.9rem;
-  box-shadow: var(--bevel-out);
-  font-weight: 700;
+  left: 0.5rem;
+  top: 0.5rem;
+  box-shadow: var(--drop);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--rust);
+  outline-offset: 2px;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PRIMITIVE : FENÊTRE WINDOWS 98 (.win / .win__title / .win__body)
-   Réutilisable en tant que patron. Le hero et les sections l'imitent.
-   ════════════════════════════════════════════════════════════════ */
-.win {
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  padding: 3px;
-}
-
-.win__title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  height: var(--tb-h);
-  padding: 0 3px 0 5px;
-  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
-  color: var(--titlebar-text);
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.win__title-controls {
-  margin-left: auto;
-  display: flex;
-  gap: 2px;
-}
-
-.win__ctrl {
-  width: 16px;
-  height: 14px;
-  background: var(--face);
-  box-shadow: var(--bevel-out-thin);
-  color: var(--ink);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 14px;
-  text-align: center;
-}
-
-.win__body {
-  background: var(--window);
-  padding: 0.8rem;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   BOUTONS — contrôle Windows 98 classique
+   BOUTONS (langage plat : rouille pleine + ombre dure décalée)
    ════════════════════════════════════════════════════════════════ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.4rem 1rem;
-  min-height: 26px;
-  border: none;
-  border-radius: 0;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--ink);
-  background: var(--face);
-  box-shadow: var(--bevel-out);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   cursor: pointer;
-  transition: none;
-}
-
-.btn:hover {
-  background: var(--face-light);
-}
-
-.btn:active,
-.btn.is-active {
-  box-shadow: var(--bevel-in);
-  padding: calc(0.4rem + 1px) calc(1rem - 1px) calc(0.4rem - 1px) calc(1rem + 1px);
-}
-
-.btn:focus-visible {
-  outline: 1px dotted var(--ink);
-  outline-offset: -4px;
-}
-
-/* Bouton primaire = même chrome, bord d'accent (focus par défaut W98). */
-.btn--primary {
+  padding: 0.7rem 1.2rem;
+  min-height: 40px;
   color: #fff;
   background: var(--rust);
-  box-shadow:
-    inset -1px -1px 0 0 var(--dark),
-    inset  1px  1px 0 0 var(--rust-bright),
-    inset -2px -2px 0 0 var(--rust-deep),
-    inset  2px  2px 0 0 var(--rust-bright),
-    0 0 0 1px var(--dark);
+  border: 2px solid var(--rust-2);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 0.05s linear, box-shadow 0.05s linear;
+}
+.btn:hover {
+  color: #fff;
+  text-decoration: none;
+  background: var(--rust-2);
+}
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
 
+.btn--primary {
+  background: var(--rust);
+  border-color: var(--ink);
+}
 .btn--primary:hover {
-  background: var(--rust-bright);
-}
-
-.btn--primary:active {
-  box-shadow:
-    inset  1px  1px 0 0 var(--rust-deep),
-    inset -1px -1px 0 0 var(--rust-bright),
-    0 0 0 1px var(--dark);
+  background: var(--rust-2);
 }
 
 .btn--ghost {
-  background: var(--face);
+  background: transparent;
+  color: var(--ink);
+  border: 2px solid var(--edge-2);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
+}
+.btn--ghost:hover {
+  background: var(--panel-2);
   color: var(--ink);
 }
 
 /* ════════════════════════════════════════════════════════════════
-   BANDEAU DÉFILANT (marquee W98 — barre d'infos enfoncée)
+   BASCULE JOUR / NUIT (injectée par daynight.js)
+   ════════════════════════════════════════════════════════════════ */
+.daynight-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  padding: 0.5rem 0.8rem;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 2px solid var(--edge-2);
+  border-left: 5px solid var(--rust);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+}
+.daynight-toggle:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+.daynight-toggle__icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BANDEAU DÉFILANT (ticker)
    ════════════════════════════════════════════════════════════════ */
 .ticker {
-  background: var(--face);
-  color: var(--ink);
-  box-shadow: var(--bevel-in-thin);
   overflow: hidden;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--dark);
+  background: var(--rust);
+  color: #fff;
+  border-bottom: 3px solid var(--rust-2);
 }
-
 .ticker__track {
   display: inline-flex;
-  gap: 2.5rem;
-  padding: 0.3rem 0;
-  font-family: var(--font-ui);
+  gap: 3rem;
+  padding: 0.35rem 0;
+  white-space: nowrap;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--rust-deep);
-  animation: ticker-scroll 30s linear infinite;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  animation: ticker-scroll 26s linear infinite;
 }
-
 .ticker__track span {
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
-
 @keyframes ticker-scroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
 
 /* ════════════════════════════════════════════════════════════════
-   EN-TÊTE — barre de menu Windows 98
+   EN-TÊTE DU SITE
    ════════════════════════════════════════════════════════════════ */
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  padding: 3px clamp(0.5rem, 3vw, 1.4rem);
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  border-bottom: 1px solid var(--dark);
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem clamp(0.8rem, 4vw, 2rem);
+  background: var(--panel);
+  border-bottom: 3px solid var(--edge-2);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.22);
 }
 
-/* La marque = « bouton Démarrer » en relief. */
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.25rem 0.7rem;
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  color: var(--rust-deep);
-  font-family: var(--font-ui);
+  gap: 0.5rem;
+  color: var(--ink);
   font-weight: 700;
-  font-size: 13px;
-  text-transform: none;
 }
-
-.brand:hover { text-decoration: none; background: var(--face-light); }
-
+.brand:hover {
+  text-decoration: none;
+  color: var(--ink);
+}
 .brand__mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   background: var(--rust);
   color: #fff;
-  font-size: 12px;
-  box-shadow: var(--bevel-out-thin);
+  border: 2px solid var(--rust-2);
+  font-size: 15px;
+}
+.brand__name {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 22px;
+  color: var(--rust);
 }
 
 .site-nav {
   display: flex;
-  gap: 0.15rem;
-  margin-left: auto;
-  flex-wrap: wrap;
   align-items: center;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  letter-spacing: 0;
-  text-transform: none;
+  gap: clamp(0.5rem, 2vw, 1.3rem);
+  flex-wrap: wrap;
 }
-
 .site-nav a {
   color: var(--ink);
-  font-weight: 400;
-  padding: 0.3rem 0.6rem;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
 }
-
-.site-nav a:not(.site-nav__cta):hover {
+.site-nav a:hover {
+  color: var(--rust);
   text-decoration: none;
-  color: var(--select-text);
-  background: var(--select);
 }
-
 .site-nav__cta {
-  padding: 0.35rem 0.9rem;
+  padding: 0.45rem 0.9rem;
   background: var(--rust);
   color: #fff !important;
-  font-weight: 700;
-  box-shadow: var(--bevel-out);
+  border: 2px solid var(--rust-2);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
 }
-
 .site-nav__cta:hover {
-  background: var(--rust-bright);
-  text-decoration: none;
+  background: var(--rust-2);
 }
-
-.site-nav__cta:active { box-shadow: var(--bevel-in); }
 
 /* ════════════════════════════════════════════════════════════════
-   HERO — fenêtre W98 principale
+   HÉRO
    ════════════════════════════════════════════════════════════════ */
 .hero {
   position: relative;
-  max-width: var(--maxw);
-  margin: 1.2rem auto 0;
-  background: var(--face);
-  box-shadow: var(--bevel-out), var(--drop);
-  padding: 3px;
+  overflow: hidden;
+  padding: clamp(2rem, 6vw, 4.5rem) clamp(0.8rem, 4vw, 2rem);
 }
-
-/* Barre de titre de la fenêtre hero. */
-.hero::before {
-  content: '★ Hordes Revival — Bienvenue';
-  display: flex;
-  align-items: center;
-  height: var(--tb-h);
-  padding: 0 6px;
-  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
-  color: var(--titlebar-text);
-  font-weight: 700;
-  font-size: 12px;
+.hero__sunburst {
+  position: absolute;
+  top: -12%;
+  right: 6%;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: var(--orb);
+  box-shadow: 0 0 120px 60px var(--orb-glow);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
 }
-
-/* Le halo « soleil » d'origine devient un léger fond de bureau ; retiré. */
-.hero__sunburst { display: none; }
-
 .hero__inner {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1.6rem;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  display: flex;
   align-items: center;
-  background: var(--window);
-  padding: clamp(1.4rem, 4vw, 2.4rem);
+  gap: clamp(1.5rem, 5vw, 3.5rem);
+  flex-wrap: wrap;
+}
+.hero__text {
+  flex: 1 1 340px;
+  min-width: 0;
 }
 
 .hero__eyebrow {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.6rem;
-  text-transform: none;
-  letter-spacing: 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
   color: var(--ink-soft);
-  margin-bottom: 0.8rem;
+  margin-bottom: 1rem;
 }
-
 .hero__eyebrow-tag {
+  padding: 0.2rem 0.55rem;
   background: var(--rust);
   color: #fff;
-  padding: 0.2rem 0.6rem;
-  font-weight: 700;
-  font-size: 11px;
-  box-shadow: var(--bevel-out-thin);
+  letter-spacing: 0.14em;
 }
 
 .hero__title {
-  font-family: var(--font-ui);
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
-  line-height: 1.2;
-  font-weight: 700;
-  color: var(--rust-deep);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+  font-weight: 400;
+  font-size: clamp(2.4rem, 7vw, 4.4rem);
+  color: var(--ink);
   text-shadow: var(--hero-title-shadow);
 }
 
 .hero__lead {
-  margin-top: 1rem;
-  font-size: 14px;
-  color: var(--ink);
-  max-width: 52ch;
+  margin-top: 1.1rem;
+  max-width: 46ch;
+  font-size: 1.02rem;
+  color: var(--ink-soft);
 }
 
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-top: 1.5rem;
+  gap: 0.8rem;
+  margin-top: 1.6rem;
 }
-
-.hero__actions .btn { min-height: 32px; padding: 0.5rem 1.3rem; }
 
 .hero__meta {
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.5rem 1rem;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--ink);
-}
-
-.hero__meta li {
+  margin: 1.6rem 0 0;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.6rem;
-  background: var(--face-light);
-  box-shadow: var(--bevel-in-thin);
+  flex-wrap: wrap;
+  gap: 0.6rem 1.4rem;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
 }
-
+.hero__meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 .hero__meta span {
-  color: var(--blood);
+  color: var(--rust);
 }
 
 .hero__notice {
   margin-top: 1.6rem;
-  font-size: 12px;
-  color: var(--ink);
-  background: var(--well);
-  box-shadow: var(--bevel-in-thin);
-  padding: 0.6rem 0.8rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--panel-2);
+  border-left: 5px solid var(--rust);
+  box-shadow: var(--shadow-soft);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
 }
-
 .hero__notice::before {
-  content: '\26A0 ';
-  color: var(--blood);
+  content: '\26A0  ';
+  color: var(--danger);
 }
 
-/* ── Fenêtre d'affiche (poster) à droite du hero ──────────────── */
+/* ── Affiche / poster pixel à droite du héro ──────────────────── */
 .hero__poster {
-  --size: clamp(200px, 24vw, 300px);
+  --size: clamp(220px, 26vw, 320px);
   position: relative;
+  flex: 0 0 auto;
   width: var(--size);
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
-  padding: 3px;
-  background: var(--face);
-  box-shadow: var(--bevel-out);
+  gap: 0.7rem;
+  padding: 10px;
+  background: var(--panel);
+  border: 2px solid var(--edge-2);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
 }
-
-.hero__poster::before {
-  content: '\25A0 Cité 84.bmp';
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  height: 18px;
-  padding: 0 5px;
-  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-
 .hero-emblem {
-  width: 92%;
-  margin-top: 0.4rem;
-  background: #000;
-  box-shadow: var(--bevel-in-thin);
-  padding: 4px;
+  width: 100%;
 }
-
 .hero-emblem svg {
   display: block;
   width: 100%;
   height: auto;
-  image-rendering: pixelated;
 }
-
+/* Par défaut (jour) : on montre l'emblème jour, on masque la nuit. */
+.hero-emblem--night { display: none; }
 .hero__poster-stamp {
   font-family: var(--font-ui);
   font-size: 11px;
-  font-weight: 700;
-  text-transform: none;
-  color: var(--rust-deep);
-  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--rust);
+  text-align: center;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SECTIONS — « group boxes » Windows 98
+   TITRES DE SECTION
    ════════════════════════════════════════════════════════════════ */
-section {
-  scroll-margin-top: 5rem;
-}
-
-.cycle,
-.coop,
-.survive,
-.leaderboard,
-.roadmap,
-.faq {
-  max-width: var(--maxw);
-  margin: 1.4rem auto;
-  padding: 1.4rem clamp(0.9rem, 3vw, 1.6rem);
-  background: var(--window);
-  box-shadow: var(--bevel-out);
-  position: relative;
-}
-
-/* Légende de group box : encadré posé à cheval sur le bord supérieur. */
 .section-title {
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--rust-deep);
-  background: var(--face);
-  box-shadow: var(--bevel-out-thin);
-  padding: 0.25rem 0.9rem;
-  margin: -1.9rem 0 1rem;
-  text-align: left;
-  left: auto;
-  transform: none;
-}
-
-.section-title::before,
-.section-title::after { content: none; }
-
-.section-intro {
-  text-align: left;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.98;
+  font-weight: 400;
+  font-size: clamp(1.8rem, 4.5vw, 2.9rem);
+  text-align: center;
   color: var(--ink);
-  max-width: 68ch;
-  margin: 0 0 1rem;
-  font-size: 13px;
+}
+.section-title::after {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 4px;
+  margin: 0.7rem auto 0;
+  background: var(--rust);
+}
+.section-intro {
+  max-width: 62ch;
+  margin: 1rem auto 0;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 1rem;
 }
 
-/* ── Panneaux (cycle / coop / survive) — panneaux 3D en relief ──── */
-.phase,
-.feature,
-.survive .card {
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  position: relative;
+/* Espacement générique des sections de contenu. */
+main > section {
+  padding: clamp(2.4rem, 6vw, 4rem) clamp(0.8rem, 4vw, 2rem);
+  max-width: calc(var(--maxw) + 4rem);
+  margin: 0 auto;
 }
+.hero { max-width: none; }
 
-/* ── Cycle ─────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   CYCLE JOUR / NUIT (deux phases)
+   ════════════════════════════════════════════════════════════════ */
 .cycle__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.phase {
-  padding: 0 0 1rem;
-  overflow: hidden;
-}
-
-.phase__tag {
-  display: block;
-  font-family: var(--font-ui);
-  letter-spacing: 0;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: none;
-  color: #fff;
-  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
-  padding: 0.25rem 0.7rem;
-}
-
-.phase--day .phase__tag {
-  background: linear-gradient(90deg, #8a5a12, var(--ochre));
-}
-.phase--night .phase__tag {
-  background: linear-gradient(90deg, var(--blood-deep), var(--blood));
-}
-
-.phase__title {
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0.8rem 1rem 0.6rem;
-  color: var(--rust-deep);
-}
-
-.phase p {
-  padding: 0 1rem;
-  font-size: 13px;
-}
-
-/* ── Coopérer (features) ───────────────────────────────────── */
-.coop__grid {
-  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.9rem;
-  margin-top: 1rem;
+  gap: 1.2rem;
+  margin-top: 2rem;
 }
-
-.feature {
-  padding: 1rem;
+.phase {
+  padding: 1.4rem;
+  background: var(--panel);
+  border: 2px solid var(--edge-2);
+  border-top: 6px solid var(--rust);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.28);
 }
-
-.feature__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  box-shadow: var(--bevel-out-thin);
-  background: var(--face-light);
-  font-size: 20px;
-  margin-bottom: 0.7rem;
+.phase--night {
+  border-top-color: var(--danger);
 }
-
-.feature__title {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
+.phase__tag {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
   margin-bottom: 0.5rem;
-  color: var(--rust-deep);
 }
-
-.feature p {
-  font-size: 13px;
+.phase__title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 400;
+  font-size: 1.6rem;
+  color: var(--rust);
+  margin-bottom: 0.6rem;
 }
+.phase--night .phase__title { color: var(--danger); }
+.phase p { color: var(--ink-soft); font-size: 0.95rem; }
 
-/* ── Survivre ──────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════
+   GRILLES DE CARTES (coopération, survie)
+   ════════════════════════════════════════════════════════════════ */
+.coop__grid,
 .survive__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.9rem;
-  margin-top: 1rem;
+  gap: 1.2rem;
+  margin-top: 2rem;
 }
-
-.survive .card {
-  padding: 1rem;
-  display: block;
+.feature,
+.card {
+  padding: 1.3rem;
+  background: var(--panel-2);
+  border: 2px solid var(--edge-2);
+  border-left: 5px solid var(--rust);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
 }
-
-.survive .card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 0.6rem;
-  box-shadow: var(--bevel-out-thin);
-  background: var(--rust);
-  color: #fff;
-  font-size: 20px;
-}
-
-.survive .card__title {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
+.feature__icon,
+.card__icon {
+  display: inline-block;
+  font-size: 1.7rem;
   margin-bottom: 0.5rem;
-  color: var(--rust-deep);
+  filter: saturate(0.85);
 }
-
-.survive .card p {
-  font-size: 13px;
+.feature__title,
+.card__title {
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--rust-2);
+  margin-bottom: 0.5rem;
+}
+.feature p,
+.card p {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   CLASSEMENT — vue « liste » Windows 98
+   CLASSEMENT
    ════════════════════════════════════════════════════════════════ */
 .leaderboard__panel {
-  margin: 1rem 0 0;
-  max-width: 820px;
-  background: var(--well);
-  box-shadow: var(--bevel-in);
-  padding: 0.6rem;
+  margin-top: 2rem;
+  background: var(--panel);
+  border: 2px solid var(--edge-2);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.28);
 }
-
 .leaderboard__status {
-  text-align: center;
+  padding: 1rem 1.2rem;
   color: var(--ink-soft);
-  margin: 0.5rem 0;
-  font-size: 12px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
-
 .leaderboard__scroll {
   overflow-x: auto;
 }
-
 .leaderboard__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-  background: var(--well);
+  font-size: 0.9rem;
 }
-
-.leaderboard__table thead th {
+.leaderboard__table th,
+.leaderboard__table td {
+  padding: 0.6rem 0.9rem;
   text-align: left;
-  font-family: var(--font-ui);
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 11px;
-  color: var(--ink);
-  padding: 0.35rem 0.6rem;
-  background: var(--face);
-  box-shadow: var(--bevel-out-thin);
-  white-space: nowrap;
+  border-bottom: 1px solid var(--edge);
 }
-
-.leaderboard__table tbody td {
-  padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid #d9cdb2;
-  color: var(--ink);
-}
-
-.leaderboard__table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.leaderboard__table tbody tr.is-victory {
-  background: #f3e6c4;
-}
-
-.leaderboard__rank {
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--blood);
-  width: 2.4rem;
-  text-align: center;
-}
-
-.leaderboard__town { font-weight: 700; }
-
-.leaderboard__num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.leaderboard__badge {
-  display: inline-block;
-  padding: 0.1rem 0.45rem;
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0;
-  box-shadow: var(--bevel-out-thin);
-  white-space: nowrap;
-}
-
-.leaderboard__badge--win {
-  background: var(--ochre);
-  color: var(--ink);
-}
-
-.leaderboard__badge--loss {
-  background: var(--blood);
+.leaderboard__table thead th {
+  background: var(--rust);
   color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+}
+.leaderboard__table tbody tr:nth-child(even) {
+  background: var(--panel-2);
+}
+.leaderboard__num,
+.leaderboard__rank {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ROADMAP / jalons — liste de progression
+   FEUILLE DE ROUTE (jalons)
    ════════════════════════════════════════════════════════════════ */
 .milestones {
   list-style: none;
   padding: 0;
-  margin: 1rem 0 0;
-  max-width: 740px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  counter-reset: milestone;
+  margin: 2rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.1rem;
 }
-
 .milestone {
-  position: relative;
-  padding: 0.9rem 1rem 1rem 3rem;
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  counter-increment: milestone;
+  padding: 1.2rem;
+  background: var(--panel);
+  border: 2px solid var(--edge-2);
+  border-left: 6px solid var(--edge-2);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.26);
 }
-
-.milestone::before {
-  content: 'M' counter(milestone, decimal-leading-zero);
-  position: absolute;
-  top: 0.9rem;
-  left: 0.7rem;
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 12px;
+.milestone h3 {
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0.5rem 0;
+  color: var(--ink);
+}
+.milestone p {
   color: var(--ink-soft);
+  font-size: 0.9rem;
 }
-
-.milestone--done::before { color: var(--rust); }
-.milestone--active::before { color: var(--blood); }
-
 .milestone__status {
   display: inline-block;
-  font-family: var(--font-ui);
-  font-weight: 700;
-  letter-spacing: 0;
-  font-size: 11px;
-  text-transform: none;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
   padding: 0.15rem 0.5rem;
-  box-shadow: var(--bevel-out-thin);
-  background: var(--face-light);
+  background: var(--panel-2);
   color: var(--ink-soft);
+  border: 1px solid var(--edge);
 }
-
+.milestone--done {
+  border-left-color: var(--crt-dim);
+}
 .milestone--done .milestone__status {
+  background: var(--crt-dim);
+  color: #001a06;
+  border-color: var(--crt-dim);
+}
+.milestone--active {
+  border-left-color: var(--rust);
+}
+.milestone--active .milestone__status {
   background: var(--rust);
   color: #fff;
+  border-color: var(--rust-2);
 }
-
-.milestone--active .milestone__status {
-  background: var(--blood);
-  color: #fff;
-}
-
-.milestone h3 {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0.5rem 0 0.4rem;
-  color: var(--rust-deep);
-}
-
-.milestone p { font-size: 13px; }
 
 /* ════════════════════════════════════════════════════════════════
-   FAQ — panneaux dépliants W98
+   FAQ (details / summary)
    ════════════════════════════════════════════════════════════════ */
 .faq__list {
+  max-width: 760px;
+  margin: 2rem auto 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: 740px;
-  margin: 1rem 0 0;
+  gap: 0.7rem;
 }
-
 .faq-item {
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  padding: 0 0.8rem;
+  background: var(--panel);
+  border: 2px solid var(--edge-2);
+  border-left: 5px solid var(--rust);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.24);
 }
-
 .faq-item summary {
-  list-style: none;
   cursor: pointer;
-  padding: 0.6rem 0;
-  font-family: var(--font-ui);
+  padding: 0.9rem 1.1rem;
   font-weight: 700;
-  font-size: 13px;
-  line-height: 1.3;
-  color: var(--rust-deep);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.92rem;
+  color: var(--rust-2);
+  list-style: none;
 }
-
 .faq-item summary::-webkit-details-marker { display: none; }
-
-.faq-item summary::after {
-  content: '+';
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background: var(--face);
-  box-shadow: var(--bevel-out-thin);
-  font-weight: 700;
-  color: var(--ink);
-  flex-shrink: 0;
+.faq-item summary::before {
+  content: '\25B8  ';
+  color: var(--rust);
 }
-
-.faq-item[open] summary::after { content: '\2013'; }
-
-.faq-item summary:focus-visible {
-  outline: 1px dotted var(--ink);
-  outline-offset: 2px;
+.faq-item[open] summary::before {
+  content: '\25BE  ';
 }
-
 .faq-item p {
-  color: var(--ink);
-  font-size: 13px;
-  padding: 0 0 0.9rem;
-  max-width: 64ch;
+  padding: 0 1.1rem 1rem;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
 }
 
 /* ════════════════════════════════════════════════════════════════
-   NEWSLETTER — boîte de dialogue W98
+   NEWSLETTER
    ════════════════════════════════════════════════════════════════ */
-.newsletter {
-  position: relative;
-  padding: clamp(1.6rem, 4vw, 2.6rem) clamp(0.9rem, 3vw, 1.6rem);
-  margin: 1.4rem auto;
-  max-width: var(--maxw);
-  background: var(--desktop);
-}
-
 .newsletter__inner {
-  max-width: 560px;
+  max-width: 640px;
   margin: 0 auto;
-  text-align: left;
-  background: var(--face);
-  box-shadow: var(--bevel-out), var(--drop);
-  padding: 3px;
-  position: relative;
+  text-align: center;
+  padding: clamp(1.6rem, 5vw, 2.6rem);
+  background: var(--panel);
+  border: 2px solid var(--edge-2);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
 }
-
-.newsletter__inner::before {
-  content: '\2709 Liste d\2019attente';
-  display: flex;
-  align-items: center;
-  height: var(--tb-h);
-  padding: 0 6px;
-  background: linear-gradient(90deg, var(--titlebar-a), var(--titlebar-b));
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
 .newsletter__eyebrow {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0;
   font-size: 11px;
-  color: var(--blood);
-  margin: 0 1rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--rust);
 }
-
 .newsletter__title {
-  font-size: clamp(1.1rem, 2.6vw, 1.4rem);
-  line-height: 1.2;
-  font-weight: 700;
-  color: var(--rust-deep);
-  margin: 0 1rem;
-}
-
-.newsletter__lead {
-  margin: 0.7rem 1rem 0;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+  font-size: clamp(1.5rem, 4vw, 2.3rem);
   color: var(--ink);
-  font-size: 13px;
+  margin: 0.6rem 0;
 }
-
+.newsletter__lead {
+  color: var(--ink-soft);
+  font-size: 0.96rem;
+}
 .newsletter__form {
   display: flex;
-  gap: 0.5rem;
-  margin: 1.2rem 1rem 0;
-  max-width: 480px;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 1.4rem 0 0.6rem;
 }
-
 .newsletter__input {
-  flex: 1;
+  flex: 1 1 240px;
   min-width: 0;
-  padding: 0.45rem 0.6rem;
-  border: none;
-  background: var(--well);
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-ui);
+  font-size: 1rem;               /* ≥16px → pas de zoom-au-focus iOS */
   color: var(--ink);
-  box-shadow: var(--bevel-in);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  background: var(--well);
+  border: 2px solid var(--edge-2);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.18);
 }
-
-.newsletter__input::placeholder { color: #9a8b6a; }
-
-.newsletter__input:focus {
-  outline: 1px dotted var(--ink);
-  outline-offset: -4px;
+.newsletter__input:focus-visible {
+  outline: 3px solid var(--rust);
+  outline-offset: 1px;
 }
-
-.newsletter__input[aria-invalid='true'] {
-  color: var(--blood);
-  background: #fdecec;
-}
-
-.newsletter__submit { flex-shrink: 0; }
-
-.newsletter__submit[disabled] {
-  opacity: 0.6;
-  cursor: progress;
-}
-
 .newsletter__status {
-  min-height: 1.4em;
-  margin: 0.9rem 1rem 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--ink-soft);
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--rust-2);
 }
-
-.newsletter__status[data-state='error'] { color: var(--blood); font-weight: 700; }
-.newsletter__status[data-state='success'] { color: var(--rust); font-weight: 700; }
-
+.newsletter__status.is-error { color: var(--danger); }
+.newsletter__status.is-success { color: var(--rust-2); }
 .newsletter__privacy {
-  margin: 1rem 1rem 0;
-  max-width: 520px;
-  font-size: 11px;
+  margin-top: 0.8rem;
+  font-size: 0.76rem;
   color: var(--ink-soft);
-  line-height: 1.45;
 }
-
 .newsletter__bullets {
   list-style: none;
   padding: 0;
-  margin: 1.2rem 1rem 0.8rem;
+  margin: 1.2rem 0 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.2rem;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--ink);
+  justify-content: center;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-
-.newsletter__bullets li {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.newsletter__bullets span { color: var(--rust); font-weight: 700; }
+.newsletter__bullets span { color: var(--rust); }
 
 /* ════════════════════════════════════════════════════════════════
-   PIED DE PAGE — barre d'état Windows 98
+   PIED DE PAGE
    ════════════════════════════════════════════════════════════════ */
 .site-footer {
+  padding: 2rem clamp(0.8rem, 4vw, 2rem);
   text-align: center;
-  padding: 0.5rem clamp(0.9rem, 3vw, 1.6rem);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: 12px;
-  letter-spacing: 0;
-  background: var(--face);
-  box-shadow: var(--bevel-out);
-  border-top: 1px solid var(--dark);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem 1rem;
-}
-
-.site-footer > * {
-  padding: 0.25rem 0.7rem;
-  box-shadow: var(--bevel-in-thin);
-}
-
-.site-footer__brand {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  color: var(--rust-deep);
-  font-size: 12px;
-}
-
-.site-footer__meta {
+  background: var(--panel);
+  border-top: 3px solid var(--edge-2);
   color: var(--ink-soft);
-  font-size: 12px;
+  font-size: 0.85rem;
 }
+.site-footer p { color: var(--ink-soft); margin: 0.3rem 0; }
+.site-footer__brand {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 1.4rem;
+  color: var(--rust) !important;
+}
+.site-footer__meta { font-size: 0.78rem; }
 
 /* ════════════════════════════════════════════════════════════════
-   BASCULE JOUR / NUIT (bouton injecté par daynight.js)
+   NUIT — apocalypse rouge sang / cimetière (bascule via data-phase)
+   ────────────────────────────────────────────────────────────────
+   Ne réécrit QUE les tokens du MONDE : la même cascade repeint la landing
+   ET la ville. Les interfaces .terminal (phosphore vert) sont indépendantes.
    ════════════════════════════════════════════════════════════════ */
-.daynight-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-shrink: 0;
-  padding: 0.3rem 0.6rem;
-  min-height: 24px;
-  border: none;
-  background: var(--face);
-  color: var(--ink);
-  box-shadow: var(--bevel-out);
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0;
-  text-transform: none;
-  cursor: pointer;
+body[data-phase='night'] {
+  --bg: #0e0609;
+  --panel: #190c10;
+  --panel-2: #211216;
+  --edge: #4d1f27;
+  --edge-2: #6a1b26;
+  --ink: #ecdcc6;
+  --ink-soft: #9c8076;
+  --rust: #c31b2c;
+  --rust-2: #8b1220;
+  --danger: #e51d33;
+  --scan: rgba(0, 0, 0, 0.32);
+  --vignette: rgba(120, 0, 10, 0.5);
+
+  --world-sky-1: #2a0810;
+  --world-sky-2: #14060a;
+  --world-ground: #0c0406;
+  --orb: #6e0f16;
+  --orb-glow: rgba(190, 20, 30, 0.5);
+
+  /* Réalignement des alias de compat sur la palette nuit. */
+  --rust-deep: var(--rust-2);
+  --rust-bright: #e0344a;
+  --blood: var(--danger);
+  --blood-deep: #4a0a10;
+  --well: #120a10;
+  --titlebar-a: var(--rust);
+  --titlebar-b: var(--rust-2);
 }
 
-.daynight-toggle:hover { background: var(--face-light); }
-.daynight-toggle:active { box-shadow: var(--bevel-in); }
+/* Emblème du héro : on bascule jour ⇆ nuit selon la phase. */
+body[data-phase='night'] .hero-emblem--day { display: none; }
+body[data-phase='night'] .hero-emblem--night { display: block; }
 
-.daynight-toggle:focus-visible {
-  outline: 1px dotted var(--ink);
-  outline-offset: -4px;
-}
-
-.daynight-toggle__icon { font-size: 13px; line-height: 1; }
+/* La nuit, les champs blancs deviennent sombres → texte clair. */
+body[data-phase='night'] .newsletter__input { color: var(--ink); }
 
 /* ════════════════════════════════════════════════════════════════
-   RESPONSIVE (landing)
+   RESPONSIVE
    ════════════════════════════════════════════════════════════════ */
-@media (max-width: 860px) {
-  .hero__inner {
-    grid-template-columns: 1fr;
-    text-align: left;
-  }
-  .hero__poster { margin: 0.5rem auto 0; }
-}
-
 @media (max-width: 720px) {
-  .site-header {
-    flex-wrap: wrap;
-    gap: 0.5rem 0.7rem;
-  }
-  .site-nav {
-    order: 3;
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-  }
-  .newsletter__form { flex-direction: column; }
-  .newsletter__submit { width: 100%; }
+  .site-header { justify-content: center; }
+  .hero__inner { flex-direction: column; }
+  .hero__poster { order: -1; --size: clamp(180px, 60vw, 260px); }
 }
 
-@media (max-width: 420px) {
-  .hero__meta { grid-template-columns: 1fr; }
+@media (pointer: coarse) {
+  .btn, .site-nav__cta, .daynight-toggle, .faq-item summary {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   RÉDUCTION DE MOUVEMENT
+   ════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .ticker__track { animation: none; }
+  body { transition: none; }
 }
 
 /* ════════════════════════════════════════════════════════════════
-   THÈME NUIT — chrome Windows 98 NOIR / ROUGE SANG
+   TERMINAL = FENÊTRE « INFORMATIQUE » — CRT VERT PHOSPHORE
    ────────────────────────────────────────────────────────────────
-   body[data-daytime='night'] (posé par daynight.js, 20 h → 6 h) réécrit
-   la palette : bureau noir, fenêtres #1A0000, barres de titre #8B0000.
-   Léger « static TV » sur les bords (body::after). Le terminal CMD garde
-   ses propres tokens verts (indépendant du cycle).
-   ════════════════════════════════════════════════════════════════ */
-body[data-daytime='night'] {
-  --desktop: #0a0000;
-  --window: #1a0000;
-  --face: #2a0e0e;
-  --face-light: #3a1616;
-  --well: #140404;
-
-  --hilite: #7a3030;
-  --light: #4a1c1c;
-  --shadow-c: #1a0606;
-  --dark: #000000;
-
-  --rust: #c62828;
-  --rust-deep: #7a1010;
-  --rust-bright: #ff4d4d;
-  --ochre: #d99a2b;
-  --blood: #8b0000;
-  --blood-deep: #4a0000;
-  --ink: #f0d8d8;
-  --ink-soft: #b48a8a;
-  --titlebar-a: #4a0000;
-  --titlebar-b: #8b0000;
-  --titlebar-text: #ffe0e0;
-  --select: #8b0000;
-  --select-text: #ffffff;
-
-  --hero-title-shadow: 1px 1px 0 #000;
-}
-
-/* Static TV sur les bords, nuit uniquement (vignette de bruit léger). */
-body[data-daytime='night']::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 90;
-  opacity: 0.5;
-  background:
-    radial-gradient(circle, transparent 58%, rgba(139, 0, 0, 0.22) 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  mix-blend-mode: screen;
-  animation: tv-static 0.5s steps(3) infinite;
-}
-
-@keyframes tv-static {
-  0% { transform: translate(0, 0); }
-  50% { transform: translate(-2px, 1px); }
-  100% { transform: translate(1px, -1px); }
-}
-
-/* Le poster montre le sprite du jour ou de la nuit selon le thème. */
-.hero-emblem--night { display: none; }
-body[data-daytime='night'] .hero-emblem--day { display: none; }
-body[data-daytime='night'] .hero-emblem--night { display: block; }
-
-body[data-daytime='night'] .hero::before {
-  content: '\2620 Hordes Revival — Nuit d\2019assaut';
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body[data-daytime='night']::after { animation: none; }
-}
-
-/* ════════════════════════════════════════════════════════════════
-   TERMINAL = FENÊTRE CMD (invite de commandes Windows 98)
-   ────────────────────────────────────────────────────────────────
-   Réservé aux interfaces « informatiques » (classe `.terminal`) : carte du
-   désert, inventaire/défense, constantes du citoyen, journaux, rapport de
-   nuit, profil. Cadre W98 gris (hérité), zone client NOIRE, texte VERT
-   PHOSPHORE, police Courier, curseur clignotant. Indépendant du cycle
-   jour/nuit. game.css y ajoute les composants (ils héritent de ces tokens).
+   Réservé aux interfaces informatiques (classe `.terminal`) : carte du
+   désert, inventaire/défense, constantes du citoyen, radar, journaux,
+   rapport de nuit, profil. Zone client NOIRE, texte VERT PHOSPHORE #00FF41,
+   police Courier, curseur clignotant. INDÉPENDANT du cycle jour/nuit :
+   les tokens --crt* sont redéclarés ici à l'identique dans les deux phases.
+   game.css y ajoute les composants (ils héritent de ces tokens).
    ════════════════════════════════════════════════════════════════ */
 .terminal {
-  /* Palette phosphore verte (inchangée sémantiquement pour game.css). */
   --crt: #00ff41;
   --crt-bright: #b6ffcf;
   --crt-soft: #33cc66;

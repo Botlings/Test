@@ -8,7 +8,7 @@
       name="description"
       content="Hordes Revival : browser game multijoueur coopératif de survie. Une ville d'humains résiste, jour après jour, aux hordes de zombies. Inscrivez-vous à la newsletter pour suivre le développement."
     />
-    <meta name="theme-color" content="#d4b896" />
+    <meta name="theme-color" content="#c9ad82" />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://botlings.github.io/Test/" />
 
@@ -52,6 +52,10 @@
   </head>
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+    <!-- Overlay CRT purement décoratif : scanlines + vignette, pilotés par
+         les tokens --scan / --vignette (varient jour ⇆ nuit via data-phase). -->
+    <div class="crt-overlay" aria-hidden="true"></div>
 
     <div class="ticker" role="presentation" aria-hidden="true">
       <div class="ticker__track">
@@ -616,6 +620,7 @@
         © <span id="year">2026</span> Hordes Revival ·
         <a href="status.html">État des services</a>
       </p>
+      <p class="tech-label">GRID-OS v2.7 · VELTRIX SYSTEMS</p>
     </footer>
 
     <script src="daynight.js" defer></script>

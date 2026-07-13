@@ -1,17 +1,18 @@
 /**
- * Cycle jour / nuit — Hordes Revival (décision figée 2026-06-12).
+ * Cycle jour / nuit — Hordes Revival (DA « Lonesome Road / CRT », 2026-07-12).
  *
- * Pose l'attribut `data-daytime` ("day" | "night") sur <body>. Ce seul
- * attribut commute DEUX THÈMES radicalement distincts (pas un assombrissement) :
- * JOUR = désert brûlant 60's, NUIT = invasion zombie. Tout vit dans styles.css
- * (palette, typographie, illustrations et textures réécrites par thème).
- * Partagé entre la landing publique (main.js) et le terminal de ville
- * (game.js) : un seul comportement, une seule clé de préférence.
+ * Pose l'attribut `data-phase` ("day" | "night") sur <body>. Ce seul attribut
+ * commute la TEMPÉRATURE du monde (pas un assombrissement) : JOUR = désert
+ * brûlant sable/rouille, NUIT = apocalypse rouge sang/cimetière. Tout vit dans
+ * styles.css (tokens réécrits par phase).
  *
- * Pilotage : par défaut l'heure LOCALE du joueur (mode « auto »), avec une
- * bascule manuelle injectée dans l'en-tête qui cycle auto → jour → nuit →
- * auto. Le choix manuel est mémorisé en localStorage ; en mode auto, l'écran
- * suit l'horloge (réévaluation chaque minute, y compris au passage 7 h / 20 h).
+ * ⚠ RÉPARTITION DES RÔLES sur `data-phase` :
+ *   • Landing publique → CE module pilote la phase (horloge « auto » + bascule
+ *     manuelle auto → jour → nuit → auto, mémorisée en localStorage).
+ *   • Ville (game.html, présence de `.game-body`) → c'est game.js qui pose
+ *     `data-phase` depuis la phase de jeu RÉELLE. Ce module se met alors en
+ *     retrait (ni application horloge, ni bascule, ni intervalle) pour ne pas
+ *     entrer en conflit avec la partie.
  *
  * Les panneaux .terminal (vert phosphore) déclarent leurs propres tokens et
  * ne dépendent pas de ce cycle.
@@ -19,7 +20,7 @@
 'use strict';
 
 (function () {
-  var PREF_KEY = 'hordes-revival:daytime'; // '' / absent = auto ; sinon 'day' | 'night'
+  var PREF_KEY = 'hordes-revival:phase'; // '' / absent = auto ; sinon 'day' | 'night'
   var DAY_START = 6; // 06:00 → jour (désert brûlant)
   var NIGHT_START = 20; // 20:00 → nuit (invasion zombie) ; nuit = 20 h → 6 h
 
@@ -53,7 +54,12 @@
   }
 
   function apply(daytime) {
-    if (document.body) document.body.setAttribute('data-daytime', daytime);
+    if (document.body) document.body.setAttribute('data-phase', daytime);
+  }
+
+  /** Sur la page « ville », game.js pilote data-phase : on ne fait rien. */
+  function isGamePage() {
+    return !!(document.body && document.body.classList.contains('game-body'));
   }
 
   // ── Bouton de bascule ─────────────────────────────────────────
@@ -109,6 +115,9 @@
 
   // ── Orchestration ─────────────────────────────────────────────
   function init() {
+    // En ville, game.js est seul maître de data-phase : on se retire.
+    if (isGamePage()) return;
+
     var mode = readPref();
     apply(resolve(mode));
 

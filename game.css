@@ -1,20 +1,21 @@
 /* Hordes Revival — Tableau de bord de la ville.
    ───────────────────────────────────────────────────────────────
-   DA FIGÉE — WINDOWS 98 SKEUOMORPHIQUE (décision humaine 2026-07-12).
-   • La VILLE et tout le public sont en chrome Windows 98 : panneaux/boutons
-     en relief biseauté, barres de titre à dégradé, coins droits, police
-     Tahoma. JOUR = W98 teinté sable/rouille, NUIT = W98 noir/rouge sang.
-     Ces composants utilisent les tokens W98 de styles.css (--face, --window,
-     --rust, --ink, --bevel-*).
+   DA FIGÉE — « LONESOME ROAD / CRT PHOSPHORE » (2026-07-12, CTO via chat).
+   • La VILLE et tout le public sont en palette CHAUDE PLATE (bordure nette +
+     ombre portée dure décalée) qui bascule JOUR ⇆ NUIT via body[data-phase] :
+     JOUR = sable/rouille « Lonesome Road », NUIT = rouge sang/cimetière.
+     Ces composants consomment les tokens monde de styles.css (--face, --window,
+     --panel, --rust, --ink, --bevel-* — tous mappés sur la palette chaude).
    • Les interfaces « informatiques » (carte du désert, inventaire + défense,
      constantes du citoyen, journal, rapport de nuit, profil) sont des
-     FENÊTRES CMD : cadre W98, zone client NOIRE, texte VERT PHOSPHORE,
+     FENÊTRES CMD / CRT : zone client NOIRE, texte VERT PHOSPHORE #00FF41,
      police Courier. Ces sous-arbres portent la classe `.terminal` ;
      styles.css y déclare les tokens verts (--crt*, --bg, glows) hérités par
      leurs descendants. Les règles vertes ci-dessous sont scopées sous
      `.terminal`.
-   • Cycle jour/nuit : voir styles.css (body[data-daytime]). La phase de jeu
-     (body[data-phase]) durcit l'ambiance de la carte pendant l'assaut.
+   • Cycle jour/nuit : un seul attribut, body[data-phase], posé ICI par game.js
+     depuis la phase de jeu RÉELLE (styles.css repeint le monde en conséquence).
+     Sur la landing publique c'est daynight.js qui le pose (horloge + bascule).
 
    ⚠ Ne JAMAIS styler les composants ville avec var(--crt*) et inversement. */
 
@@ -2392,4 +2393,18 @@ html {
 @media (max-height: 480px) and (orientation: landscape) {
   .modal { align-items: stretch; }
   .modal__card { max-height: calc(100dvh - 1rem); }
+}
+
+/* ── Pied de page « signature système » (marques fictives maison) ──────
+   Bandeau discret, aligné sur le langage plat de la ville. */
+.game-footer {
+  margin: 1.5rem auto 0;
+  padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  max-width: var(--maxw);
+  text-align: center;
+  border-top: 2px solid var(--edge-2);
+}
+
+.game-footer .tech-label {
+  opacity: 0.85;
 }
