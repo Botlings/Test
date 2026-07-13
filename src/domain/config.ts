@@ -1,4 +1,5 @@
 import { DEFAULT_DESERT_CONFIG, type DesertConfig } from './desert.js';
+import { DEFAULT_ZOMBIE_CONFIG, type ZombieConfig } from './zombies.js';
 import type { ResourceBank } from './types.js';
 
 /**
@@ -46,6 +47,13 @@ export interface GameConfig {
   survivalDays: number;
   /** Paramètres de la carte du désert (rayon, gourde, coûts d'exploration). */
   desert: DesertConfig;
+  /**
+   * Probabilité de base (0..1) qu'une fouille de zone fasse aussi remonter un
+   * objet du désert, majorée avec la distance à la ville.
+   */
+  itemDropChance: number;
+  /** Planning et effets des zombies spéciaux de l'assaut nocturne. */
+  zombie: ZombieConfig;
 }
 
 /** Configuration de partie par défaut, calibrée pour une montée en difficulté progressive. */
@@ -65,4 +73,6 @@ export const DEFAULT_CONFIG: GameConfig = {
   scavengeYield: { wood: 4, metal: 2, water: 1 },
   survivalDays: 7,
   desert: DEFAULT_DESERT_CONFIG,
+  itemDropChance: 0.35,
+  zombie: DEFAULT_ZOMBIE_CONFIG,
 };

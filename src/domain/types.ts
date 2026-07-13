@@ -7,6 +7,8 @@
  * horde résolu automatiquement).
  */
 
+import type { NightThreatCounts } from './zombies.js';
+
 /** Phase courante d'une journée de jeu. */
 export type Phase = 'day' | 'night';
 
@@ -76,8 +78,21 @@ export interface DefenseBreakdown {
   readonly buildingsWallBonus: number;
   /** Bonus de défense par guetteur fourni par les bâtiments (subdivision de `watchers`). */
   readonly buildingsWatchBonus: number;
-  /** Somme `walls + watchers`. */
+  /**
+   * Défense de mur perforée par les colosses (`brute`) — soustraite du total.
+   * `0` si aucun colosse dans la horde.
+   */
+  readonly wallsPenetrated: number;
+  /** Défense effective opposée à la horde : `walls - wallsPenetrated + watchers`. */
   readonly total: number;
+}
+
+/** Bilan du sabotage nocturne infligé par les zombies `sapper` (Sournois). */
+export interface SabotageReport {
+  /** Défense de mur détruite durablement cette nuit. */
+  readonly defenseLost: number;
+  /** Ressources dérobées à la banque. */
+  readonly looted: { readonly wood: number; readonly metal: number; readonly water: number };
 }
 
 /**
@@ -109,8 +124,19 @@ export interface DeathsBySource {
 export interface NightReport {
   /** Numéro du jour dont la nuit vient d'être résolue. */
   readonly day: number;
-  /** Puissance d'attaque de la horde cette nuit. */
+  /**
+   * Puissance d'attaque effective de la horde cette nuit (après amplification
+   * des hurleurs et retranchement des pièges). La somme des `waves` la vaut.
+   */
   readonly hordePower: number;
+  /** Puissance de horde brute, avant zombies spéciaux et pièges. */
+  readonly baseHordePower: number;
+  /** Composition en zombies spéciaux de la horde de la nuit. */
+  readonly threats: NightThreatCounts;
+  /** Puissance de horde neutralisée par les pièges (avant l'assaut). */
+  readonly hordeDeterrence: number;
+  /** Sabotage infligé par les Sournois, ou `null` si aucun. */
+  readonly sabotage: SabotageReport | null;
   /** Défense totale de la ville opposée à la horde (alias de `defense.total`). */
   readonly townDefense: number;
   /** Détail des sources de défense. */
@@ -186,6 +212,10 @@ export interface GameStatus {
   readonly survivalDays: number;
   /** Compteur d'instances par bâtiment construit (catalogue `buildings.ts`). */
   readonly buildings: Readonly<Record<string, number>>;
+  /** Stock d'objets du désert (catalogue `items.ts`), indexé par id. */
+  readonly items: Readonly<Record<string, number>>;
+  /** Composition en zombies spéciaux prévue pour l'assaut de la nuit à venir. */
+  readonly threatsTonight: NightThreatCounts;
   /** Carte du désert (rayon + zones). */
   readonly desert: DesertSnapshot;
 }

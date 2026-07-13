@@ -6,9 +6,27 @@ import {
   totalWallDefenseFromBuildings,
   totalWatchBonusFromBuildings,
   totalWaterPerDawnFromBuildings,
+  totalHordeDeterrenceFromBuildings,
+  totalCasualtyReductionFromBuildings,
   type BuildingId,
   type BuildingState,
 } from './buildings.js';
+import {
+  foodItemsByAbundance,
+  getItemDef,
+  pickDroppableItem,
+  sanitizeItemStock,
+  stockCoversCost,
+  type ItemCost,
+  type ItemId,
+  type ItemStock,
+} from './items.js';
+import {
+  bruteWallPierce,
+  computeNightThreats,
+  screamerHordeBonus,
+  type NightThreatCounts,
+} from './zombies.js';
 import {
   cloneDesertMap,
   dawnTickDesert,
@@ -40,6 +58,7 @@ import type {
   Phase,
   ResourceBank,
   ResourceKind,
+  SabotageReport,
 } from './types.js';
 
 /** Erreur levée lorsqu'une action de jeu est invalide dans l'état courant. */
@@ -89,6 +108,11 @@ export interface GameSnapshot {
   readonly desert?: DesertMap;
   /** Graine d'origine de la carte du désert (pour régénérer si besoin). */
   readonly desertSeed?: number;
+  /**
+   * Stock d'objets du désert (catalogue `items.ts`). Optionnel pour la
+   * rétro-compatibilité des snapshots antérieurs à l'introduction des objets.
+   */
+  readonly items?: ItemStock;
 }
 
 /**
@@ -110,6 +134,8 @@ export class Game {
   private nextCitizenSeq = 1;
   /** Compteur d'instances par bâtiment construit (catalogue `buildings.ts`). */
   private _buildings: Partial<Record<BuildingId, number>> = {};
+  /** Stock d'objets du désert (catalogue `items.ts`). */
+  private _items: Partial<Record<ItemId, number>> = {};
   /** Graine de la carte du désert (stable pour une partie donnée). */
   private _desertSeed: number;
   /** Carte du désert vivante (mutée par les actions d'exploration). */
@@ -165,6 +191,7 @@ export class Game {
       });
     }
     game._buildings = { ...sanitizeBuildingState(snapshot.buildings ?? {}) };
+    game._items = { ...sanitizeItemStock(snapshot.items ?? {}) };
     game._desert = sanitizeDesertMap(snapshot.desert, seedFallback);
     return game;
   }
@@ -184,6 +211,7 @@ export class Game {
       outcome: this._outcome,
       nextCitizenSeq: this.nextCitizenSeq,
       buildings: { ...this._buildings },
+      items: { ...this._items },
       desert: cloneDesertMap(this._desert),
       desertSeed: this._desertSeed,
     };
@@ -366,9 +394,22 @@ export class Game {
         `Ressources insuffisantes pour bâtir « ${def.name} » (coût : ${def.cost.wood} bois, ${def.cost.metal} métal).`,
       );
     }
+    if (!stockCoversCost(this._items, def.itemCost)) {
+      throw new GameRuleError(
+        `Objets manquants pour bâtir « ${def.name} » : ${this.describeItemCost(def.itemCost)}.`,
+      );
+    }
     this.spendActionPoints(citizen, def.actionPointCost);
     this._bank.wood -= def.cost.wood;
     this._bank.metal -= def.cost.metal;
+    // Consomme les objets exigés (le coût a déjà été vérifié comme couvert).
+    if (def.itemCost) {
+      for (const id of Object.keys(def.itemCost) as ItemId[]) {
+        const need = def.itemCost[id] ?? 0;
+        this._items[id] = Math.max(0, (this._items[id] ?? 0) - need);
+        if (this._items[id] === 0) delete this._items[id];
+      }
+    }
     const nextCount = currentCount + 1;
     this._buildings[def.id] = nextCount;
     return { count: nextCount, townDefense: this.totalWallDefense() };
@@ -383,7 +424,7 @@ export class Game {
    * qui tire l'objet depuis le stock de la zone. Sinon (compat ancien client
    * sans coordonnées), on applique l'ancien rendement forfaitaire.
    */
-  scavenge(citizenId: string): { picked?: ResourceKind; legacy: boolean } {
+  scavenge(citizenId: string): { picked?: ResourceKind; foundItem?: ItemId; legacy: boolean } {
     this.assertPlayable();
     const citizen = this.requireAliveCitizen(citizenId);
     if (citizen.location !== 'desert') {
@@ -391,7 +432,11 @@ export class Game {
     }
     if (citizen.position) {
       const result = this.scavengeZoneInternal(citizen);
-      return { ...(result.picked ? { picked: result.picked } : {}), legacy: false };
+      return {
+        ...(result.picked ? { picked: result.picked } : {}),
+        ...(result.foundItem ? { foundItem: result.foundItem } : {}),
+        legacy: false,
+      };
     }
     // Compat : pas de position connue → rendement forfaitaire historique.
     this.spendActionPoints(citizen, this.config.scavengeActionPointCost);
@@ -408,7 +453,11 @@ export class Game {
    * faut les chasser d'abord). Renvoie la ressource récoltée ou `undefined`
    * si la zone est désormais vide.
    */
-  scavengeZone(citizenId: string): { picked?: ResourceKind; zoneLoot: { wood: number; metal: number; water: number } } {
+  scavengeZone(citizenId: string): {
+    picked?: ResourceKind;
+    foundItem?: ItemId;
+    zoneLoot: { wood: number; metal: number; water: number };
+  } {
     this.assertPlayable();
     const citizen = this.requireAliveCitizen(citizenId);
     if (citizen.location !== 'desert' || !citizen.position) {
@@ -419,6 +468,7 @@ export class Game {
 
   private scavengeZoneInternal(citizen: Citizen): {
     picked?: ResourceKind;
+    foundItem?: ItemId;
     zoneLoot: { wood: number; metal: number; water: number };
   } {
     const pos = citizen.position!;
@@ -442,10 +492,45 @@ export class Game {
     if (picked) {
       this._bank[picked] += 1;
     }
+    // Drop d'objet du désert : tirage indépendant (seed dédiée) pour ne pas
+    // perturber la mécanique de loot des ressources. Chance majorée avec la
+    // distance ; l'objet tiré dépend de sa rareté et de la distance minimale.
+    const foundItem = this.rollItemDrop(zone.x, zone.y, zone.distance, citizen.id);
     return {
       ...(picked ? { picked } : {}),
+      ...(foundItem ? { foundItem } : {}),
       zoneLoot: { ...zone.loot },
     };
+  }
+
+  /**
+   * Tire un éventuel drop d'objet du désert pour une fouille donnée. Déterministe
+   * (seed dédiée `item-…`). Verse l'objet au stock de la ville et le renvoie, ou
+   * `undefined` si rien n'est trouvé.
+   */
+  private rollItemDrop(x: number, y: number, distance: number, citizenId: string): ItemId | undefined {
+    const rng = mulberry32(
+      seedFromString(`item-${this._desertSeed}-${x}-${y}-${this._day}-${citizenId}`),
+    );
+    const chance = Math.min(0.75, this.config.itemDropChance + 0.1 * Math.max(0, distance - 1));
+    if (rng.next() >= chance) return undefined;
+    const found = pickDroppableItem(distance, rng.next());
+    if (!found) return undefined;
+    this._items[found] = (this._items[found] ?? 0) + 1;
+    return found;
+  }
+
+  /** Résumé lisible d'un coût en objets pour les messages d'erreur. */
+  private describeItemCost(cost: ItemCost | undefined): string {
+    if (!cost) return '';
+    return (Object.keys(cost) as ItemId[])
+      .map((id) => {
+        const need = cost[id] ?? 0;
+        const have = this._items[id] ?? 0;
+        const name = getItemDef(id)?.name ?? id;
+        return `${need}× ${name} (${have} en stock)`;
+      })
+      .join(', ');
   }
 
   /**
@@ -558,7 +643,9 @@ export class Game {
     this._phase = 'night';
 
     const deaths: Death[] = [];
-    const hordePower = this.hordePower(this._day);
+    const baseHordePower = this.hordePower(this._day);
+    // Composition en zombies spéciaux de la nuit (déterministe selon le jour).
+    const threats = computeNightThreats(this._day, this.config.zombie);
 
     // 1. Désert : carnage immédiat.
     for (const citizen of this._citizens) {
@@ -577,23 +664,36 @@ export class Game {
     const walls = this._townDefense + buildingsWallBonus;
     const watchers =
       watcherCount * (this.config.watchDefensePerCitizen + buildingsWatchBonus);
+    // Colosses (`brute`) : perforent une part de la défense des murs.
+    const wallsPenetrated = bruteWallPierce(threats, this.config.zombie, walls);
+    const defenseTotal = Math.max(0, walls - wallsPenetrated + watchers);
     const defense: DefenseBreakdown = {
       walls,
       watchers,
       watcherCount,
       buildingsWallBonus,
       buildingsWatchBonus,
-      total: walls + watchers,
+      wallsPenetrated,
+      total: defenseTotal,
     };
 
-    // 3. Décomposition de l'assaut en trois vagues.
+    // 3. Puissance effective de la horde : les Hurleurs (`screamer`) amplifient,
+    //    les pièges (bâtiment `trap-field`) retranchent en amont.
+    const screamerBonus = screamerHordeBonus(baseHordePower, threats, this.config.zombie);
+    const hordeDeterrence = totalHordeDeterrenceFromBuildings(this._buildings);
+    const hordePower = Math.max(0, baseHordePower + screamerBonus - hordeDeterrence);
+
+    // 4. Décomposition de l'assaut en trois vagues.
     const waves = this.splitWaves(hordePower, defense.total);
 
-    // 4. Calcul des décès sur la base du débordement total.
+    // 5. Calcul des décès sur la base du débordement total.
     const overflow = Math.max(0, hordePower - defense.total);
     const breached = overflow > 0;
     if (breached) {
-      const victimsCount = Math.ceil(overflow / this.config.killThreshold);
+      const rawVictims = Math.ceil(overflow / this.config.killThreshold);
+      // Infirmerie / bunker : stabilisent des blessés, épargnant des victimes.
+      const spared = totalCasualtyReductionFromBuildings(this._buildings);
+      const victimsCount = Math.max(0, rawVictims - spared);
       const sheltered = this._citizens.filter(
         (c) => c.alive && c.location === 'town',
       );
@@ -621,6 +721,10 @@ export class Game {
       }
     }
 
+    // 6. Sabotage des Sournois (`sapper`) : pillage de la banque et dégâts
+    //    durables aux fortifications (persistent au-delà de cette nuit).
+    const sabotage = this.applySabotage(threats);
+
     const nightDay = this._day;
     const survivorsAfterNight = this.aliveCount;
 
@@ -631,6 +735,10 @@ export class Game {
       return this.buildReport({
         nightDay,
         hordePower,
+        baseHordePower,
+        threats,
+        hordeDeterrence,
+        sabotage,
         defense,
         waves,
         overflow,
@@ -651,6 +759,10 @@ export class Game {
       return this.buildReport({
         nightDay,
         hordePower,
+        baseHordePower,
+        threats,
+        hordeDeterrence,
+        sabotage,
         defense,
         waves,
         overflow,
@@ -675,6 +787,10 @@ export class Game {
     return this.buildReport({
       nightDay,
       hordePower,
+      baseHordePower,
+      threats,
+      hordeDeterrence,
+      sabotage,
       defense,
       waves,
       overflow,
@@ -717,6 +833,10 @@ export class Game {
   private buildReport(input: {
     nightDay: number;
     hordePower: number;
+    baseHordePower: number;
+    threats: NightThreatCounts;
+    hordeDeterrence: number;
+    sabotage: SabotageReport | null;
     defense: DefenseBreakdown;
     waves: AttackWave[];
     overflow: number;
@@ -740,6 +860,10 @@ export class Game {
     return {
       day: input.nightDay,
       hordePower: input.hordePower,
+      baseHordePower: input.baseHordePower,
+      threats: input.threats,
+      hordeDeterrence: input.hordeDeterrence,
+      sabotage: input.sabotage,
       townDefense: input.defense.total,
       defense: input.defense,
       waves: input.waves,
@@ -754,9 +878,36 @@ export class Game {
     };
   }
 
-  /** Puissance d'attaque de la horde pour un jour donné. */
+  /** Puissance d'attaque (brute) de la horde pour un jour donné. */
   hordePower(day: number): number {
     return this.config.hordeBaseAttack + this.config.hordeGrowthPerDay * (day - 1);
+  }
+
+  /**
+   * Applique le sabotage des Sournois (`sapper`) : pille la banque de la ville
+   * (priorité métal > bois > eau) puis détruit durablement de la défense de mur
+   * (`_townDefense`, plancher 0). Renvoie le bilan ou `null` si aucun Sournois
+   * (ou aucun effet, ville déjà à sec et sans défense).
+   */
+  private applySabotage(threats: NightThreatCounts): SabotageReport | null {
+    if (threats.sapper <= 0) return null;
+    const cfg = this.config.zombie.sapper;
+    let toLoot = threats.sapper * cfg.bankLootPerZombie;
+    const looted = { wood: 0, metal: 0, water: 0 };
+    for (const kind of ['metal', 'wood', 'water'] as ResourceKind[]) {
+      if (toLoot <= 0) break;
+      const take = Math.min(this._bank[kind], toLoot);
+      this._bank[kind] -= take;
+      looted[kind] += take;
+      toLoot -= take;
+    }
+    const before = this._townDefense;
+    this._townDefense = Math.max(0, this._townDefense - threats.sapper * cfg.sabotagePerZombie);
+    const defenseLost = before - this._townDefense;
+    if (defenseLost === 0 && looted.wood + looted.metal + looted.water === 0) {
+      return null;
+    }
+    return { defenseLost, looted };
   }
 
   /** État public complet de la partie. */
@@ -776,8 +927,15 @@ export class Game {
       outcome: this._outcome,
       survivalDays: this.config.survivalDays,
       buildings: { ...this._buildings } as Record<string, number>,
+      items: { ...this._items } as Record<string, number>,
+      threatsTonight: computeNightThreats(this._day, this.config.zombie),
       desert: this.desertSnapshot(),
     };
+  }
+
+  /** Stock d'objets du désert (immutable côté appelant). */
+  items(): ItemStock {
+    return { ...this._items };
   }
 
   /** Vue publique de la carte (zones triées). */
@@ -863,12 +1021,21 @@ export class Game {
     if (waterProduced > 0) {
       this._bank.water += waterProduced;
     }
+    // Crédit de rations disponible ce matin, débité à mesure qu'un citoyen
+    // sans eau est nourri sur les vivres du stock (une unité couvre plusieurs
+    // rations selon `ItemDef.rations`).
+    let rationCredit = 0;
     for (const citizen of this._citizens) {
       if (!citizen.alive) {
         continue;
       }
       if (this._bank.water > 0) {
         this._bank.water -= 1;
+        citizen.consecutiveThirstDays = 0;
+        citizen.actionPoints = this.config.startingActionPoints;
+      } else if (rationCredit > 0 || (rationCredit = this.drawFoodRations()) > 0) {
+        // Plus d'eau : on puise dans les vivres de secours (empêche la soif).
+        rationCredit -= 1;
         citizen.consecutiveThirstDays = 0;
         citizen.actionPoints = this.config.startingActionPoints;
       } else {
@@ -890,6 +1057,24 @@ export class Game {
     }
     // La carte du désert respire : nouveaux zombies, repop ponctuel de loot.
     dawnTickDesert(this._desert, this._day);
+  }
+
+  /**
+   * Consomme une unité de vivres du stock (la plus commune d'abord, pour
+   * préserver les denrées rares) et renvoie le nombre de rations qu'elle
+   * couvre. Renvoie 0 si le garde-manger est vide.
+   */
+  private drawFoodRations(): number {
+    for (const def of foodItemsByAbundance()) {
+      const have = this._items[def.id] ?? 0;
+      if (have > 0) {
+        const next = have - 1;
+        if (next === 0) delete this._items[def.id];
+        else this._items[def.id] = next;
+        return Math.max(1, def.rations);
+      }
+    }
+    return 0;
   }
 
   private kill(citizen: Citizen, cause: string): void {

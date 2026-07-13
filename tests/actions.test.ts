@@ -225,6 +225,33 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
     const barricades = body.buildings.find((b) => b.id === 'barricades')!;
     expect(barricades.cost.wood).toBeGreaterThan(0);
     expect(barricades.maxCount).toBeGreaterThan(1);
+    // Bâtiments de seconde génération présents avec coût en objets exposé.
+    expect(ids).toContain('rampart');
+    expect(ids).toContain('trap-field');
+    const rampart = body.buildings.find((b) => b.id === 'rampart') as unknown as {
+      itemCost: Record<string, number>;
+    };
+    expect(rampart.itemCost['steel-beam']).toBe(2);
+  });
+
+  it('GET /items/catalog expose les 10 objets récupérables (public)', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const res = await ctx.app.inject({ method: 'GET', url: '/items/catalog' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { items: Array<{ id: string; category: string }> };
+    expect(body.items).toHaveLength(10);
+    const cats = new Set(body.items.map((i) => i.category));
+    expect([...cats].sort()).toEqual(['food', 'material', 'tool']);
+  });
+
+  it('GET /zombies/catalog expose le bestiaire des rôdeurs spéciaux (public)', async () => {
+    const ctx = await bootstrapTown();
+    app = ctx.app;
+    const res = await ctx.app.inject({ method: 'GET', url: '/zombies/catalog' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { threats: Array<{ kind: string }> };
+    expect(body.threats.map((t) => t.kind).sort()).toEqual(['brute', 'sapper', 'screamer']);
   });
 
   it('rejette une action sur le citoyen d\'un autre joueur', async () => {

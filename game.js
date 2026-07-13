@@ -874,6 +874,67 @@
 
     // Catalogue de constructions
     renderBuildings(town);
+
+    // Stock d'objets + menace nocturne
+    renderStock(town);
+    renderThreats(town);
+  }
+
+  var ITEM_ICONS = {
+    toolbox: '🧰', rope: '🪢', 'duct-tape': '🩹',
+    'canned-food': '🥫', 'dried-meat': '🥩', 'energy-bar': '🍫',
+    'steel-beam': '🏗️', 'copper-wire': '🧵', electronics: '💾', 'car-battery': '🔋',
+  };
+  var ITEM_NAMES = {
+    toolbox: 'Boîte à outils', rope: 'Corde', 'duct-tape': 'Ruban adhésif',
+    'canned-food': 'Conserves', 'dried-meat': 'Viande séchée', 'energy-bar': 'Barre énergétique',
+    'steel-beam': "Poutre d'acier", 'copper-wire': 'Fil de cuivre',
+    electronics: 'Composants électroniques', 'car-battery': 'Batterie de voiture',
+  };
+  var THREAT_LABELS = { brute: 'Colosse', sapper: 'Sournois', screamer: 'Hurleur' };
+  var THREAT_ICONS = { brute: '🧟‍♂️', sapper: '🩸', screamer: '📢' };
+
+  function renderStock(town) {
+    var list = $('stock-list');
+    if (!list) return;
+    var items = (town && town.items) || {};
+    var ids = Object.keys(items).filter(function (id) { return Number(items[id]) > 0; });
+    if (!ids.length) {
+      list.innerHTML = '<li class="stock__empty">Aucun objet en stock.</li>';
+      return;
+    }
+    ids.sort();
+    list.innerHTML = ids.map(function (id) {
+      var icon = ITEM_ICONS[id] || '📦';
+      var name = ITEM_NAMES[id] || id;
+      return (
+        '<li class="stock__item" title="' + escapeHtml(name) + '">' +
+        '<span class="stock__icon" aria-hidden="true">' + icon + '</span>' +
+        '<span class="stock__name">' + escapeHtml(name) + '</span>' +
+        '<span class="stock__qty">×' + (Number(items[id]) || 0) + '</span>' +
+        '</li>'
+      );
+    }).join('');
+  }
+
+  function renderThreats(town) {
+    var row = $('defense-threats');
+    var value = $('threats-value');
+    if (!row || !value) return;
+    var threats = (town && town.threatsTonight) || {};
+    var parts = ['brute', 'sapper', 'screamer']
+      .filter(function (k) { return Number(threats[k]) > 0; })
+      .map(function (k) {
+        return (THREAT_ICONS[k] || '') + ' ' + Number(threats[k]) + ' ' + THREAT_LABELS[k] +
+          (Number(threats[k]) > 1 ? 's' : '');
+      });
+    if (!parts.length) {
+      row.hidden = true;
+      value.textContent = '';
+      return;
+    }
+    row.hidden = false;
+    value.innerHTML = parts.map(function (p) { return escapeHtml(p); }).join(' · ');
   }
 
   function updateBank(bank, animate) {
@@ -1422,6 +1483,7 @@
     var citizens = (town && town.citizens) || [];
     var self = citizens.find(function (c) { return c.id === state.yourCitizenId; });
     var bank = (town && town.bank) || {};
+    var stock = (town && town.items) || {};
     var canPlay = !!self && self.alive && town.phase === 'day' && !town.closed;
     var inTown = canPlay && self.location === 'town';
 
@@ -1431,7 +1493,13 @@
       var apOk = !!self && self.actionPoints >= def.actionPointCost;
       var woodMissing = (bank.wood || 0) < def.cost.wood;
       var metalMissing = (bank.metal || 0) < def.cost.metal;
-      var resourcesOk = !woodMissing && !metalMissing;
+      // Coût en objets du désert (matériaux rares / outils).
+      var itemCost = def.itemCost || {};
+      var itemIds = Object.keys(itemCost);
+      var itemsOk = itemIds.every(function (id) {
+        return (Number(stock[id]) || 0) >= Number(itemCost[id]);
+      });
+      var resourcesOk = !woodMissing && !metalMissing && itemsOk;
       var available = inTown && !maxed && apOk && resourcesOk;
       var blocked = !available && !maxed;
 
@@ -1439,6 +1507,8 @@
       if (def.wallDefense > 0) effects.push('Défense +' + def.wallDefense);
       if (def.watchBonusPerCitizen > 0) effects.push('+' + def.watchBonusPerCitizen + ' déf./guetteur');
       if (def.waterPerDawn > 0) effects.push('+' + def.waterPerDawn + ' eau / aube');
+      if (def.hordeDeterrence > 0) effects.push('−' + def.hordeDeterrence + ' horde (pièges)');
+      if (def.casualtyReduction > 0) effects.push('−' + def.casualtyReduction + ' victime / nuit');
       if (!effects.length) effects.push('Effet narratif');
 
       var classes = 'building';
@@ -1446,9 +1516,17 @@
       else if (available) classes += ' is-available';
       else if (blocked) classes += ' is-blocked';
 
+      var itemCostHtml = itemIds.map(function (id) {
+        var missing = (Number(stock[id]) || 0) < Number(itemCost[id]);
+        var icon = ITEM_ICONS[id] || '📦';
+        return '<span class="building__cost-item' + (missing ? ' is-missing' : '') +
+          '" title="' + escapeHtml(ITEM_NAMES[id] || id) + '">' + icon + ' ' + itemCost[id] + '</span>';
+      }).join('');
+
       var costHtml =
         '<span class="building__cost-item' + (woodMissing ? ' is-missing' : '') + '">🪵 ' + def.cost.wood + '</span>' +
         '<span class="building__cost-item' + (metalMissing ? ' is-missing' : '') + '">⚙ ' + def.cost.metal + '</span>' +
+        itemCostHtml +
         '<span class="building__cost-item">⏱ ' + def.actionPointCost + ' PA</span>';
 
       var disabled = !available;

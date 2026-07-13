@@ -15,11 +15,29 @@
  * `game.endDay()`) calcule la défense totale = baseDefense + townDefense
  * accumulée par `build()` + somme(count × wallDefense des bâtiments)
  * + watcherCount × (watchDefensePerCitizen + somme(count × watchBonus)).
+ *
+ * Effets avancés (Jalon 3, bâtiments de seconde génération) :
+ *   • `hordeDeterrence`  : puissance de horde retranchée AVANT l'assaut
+ *                          (pièges qui déciment la nuée en approche) ;
+ *   • `casualtyReduction`: nombre de victimes épargnées en cas de percée
+ *                          (infirmerie qui sauve des blessés) ;
+ *   • `itemCost`         : objets du désert exigés en plus du bois/métal
+ *                          (matériaux rares & outils, cf. `items.ts`).
  */
 import type { ResourceBank } from './types.js';
+import type { ItemCost } from './items.js';
 
 /** Identifiant stable d'un bâtiment du catalogue. */
-export type BuildingId = 'watchtower' | 'workshop' | 'well' | 'barricades';
+export type BuildingId =
+  | 'watchtower'
+  | 'workshop'
+  | 'well'
+  | 'barricades'
+  | 'rampart'
+  | 'trap-field'
+  | 'infirmary'
+  | 'pumping-station'
+  | 'bunker';
 
 /** Coût en ressources pour ériger un bâtiment. */
 export interface BuildingCost {
@@ -34,10 +52,16 @@ export interface BuildingDef {
   readonly description: string;
   readonly icon: string;
   readonly cost: BuildingCost;
+  /** Objets du désert exigés en plus du bois/métal (optionnel). */
+  readonly itemCost?: ItemCost;
   readonly actionPointCost: number;
   readonly wallDefense: number;
   readonly watchBonusPerCitizen: number;
   readonly waterPerDawn: number;
+  /** Puissance de horde retranchée avant l'assaut (pièges). */
+  readonly hordeDeterrence: number;
+  /** Victimes épargnées lors d'une percée (soin). */
+  readonly casualtyReduction: number;
   readonly maxCount: number;
 }
 
@@ -57,6 +81,8 @@ export const BUILDING_CATALOG: readonly BuildingDef[] = [
     wallDefense: 0,
     watchBonusPerCitizen: 2,
     waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
     maxCount: 5,
   },
   {
@@ -70,6 +96,8 @@ export const BUILDING_CATALOG: readonly BuildingDef[] = [
     wallDefense: 10,
     watchBonusPerCitizen: 0,
     waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
     maxCount: 1,
   },
   {
@@ -83,6 +111,8 @@ export const BUILDING_CATALOG: readonly BuildingDef[] = [
     wallDefense: 0,
     watchBonusPerCitizen: 0,
     waterPerDawn: 2,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
     maxCount: 2,
   },
   {
@@ -96,7 +126,90 @@ export const BUILDING_CATALOG: readonly BuildingDef[] = [
     wallDefense: 4,
     watchBonusPerCitizen: 0,
     waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
     maxCount: 20,
+  },
+  // ── Bâtiments de seconde génération (exigent des objets du désert) ─────────
+  {
+    id: 'rampart',
+    name: 'Rempart de béton',
+    description:
+      'Mur de béton coulé sur armature d\'acier. Le socle défensif le plus solide de la ville — unique et massif.',
+    icon: '🧱',
+    cost: { wood: 10, metal: 14 },
+    itemCost: { 'steel-beam': 2 },
+    actionPointCost: 3,
+    wallDefense: 25,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
+    maxCount: 1,
+  },
+  {
+    id: 'trap-field',
+    name: 'Champ de pièges',
+    description:
+      'Fosses hérissées, fils tendus et collets. Déciment la horde avant même qu\'elle n\'atteigne les murs.',
+    icon: '🕳️',
+    cost: { wood: 6, metal: 4 },
+    itemCost: { rope: 1, 'duct-tape': 1 },
+    actionPointCost: 2,
+    wallDefense: 0,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 0,
+    hordeDeterrence: 6,
+    casualtyReduction: 0,
+    maxCount: 5,
+  },
+  {
+    id: 'infirmary',
+    name: 'Infirmerie',
+    description:
+      'Poste de secours équipé. Stabilise les blessés d\'une percée : une victime de moins par nuit et par instance.',
+    icon: '⛑️',
+    cost: { wood: 8, metal: 6 },
+    itemCost: { toolbox: 1 },
+    actionPointCost: 3,
+    wallDefense: 0,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 1,
+    maxCount: 2,
+  },
+  {
+    id: 'pumping-station',
+    name: 'Station de pompage',
+    description:
+      'Pompe électrique alimentée par batterie. Remonte 4 unités d\'eau à chaque aube — bien plus qu\'un simple puits.',
+    icon: '🚰',
+    cost: { wood: 6, metal: 10 },
+    itemCost: { 'car-battery': 1, electronics: 1 },
+    actionPointCost: 3,
+    wallDefense: 0,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 4,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
+    maxCount: 1,
+  },
+  {
+    id: 'bunker',
+    name: 'Bunker blindé',
+    description:
+      'Casemate enterrée reliée aux remparts. Décuple l\'efficacité des guetteurs et abrite un blessé de plus.',
+    icon: '🛡️',
+    cost: { wood: 8, metal: 12 },
+    itemCost: { 'steel-beam': 1, 'copper-wire': 2 },
+    actionPointCost: 3,
+    wallDefense: 0,
+    watchBonusPerCitizen: 3,
+    waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 1,
+    maxCount: 1,
   },
 ];
 
@@ -141,6 +254,26 @@ export function totalWaterPerDawnFromBuildings(state: BuildingState): number {
   for (const def of BUILDING_CATALOG) {
     const count = state[def.id] ?? 0;
     total += count * def.waterPerDawn;
+  }
+  return total;
+}
+
+/** Puissance de horde retranchée avant l'assaut par les pièges. */
+export function totalHordeDeterrenceFromBuildings(state: BuildingState): number {
+  let total = 0;
+  for (const def of BUILDING_CATALOG) {
+    const count = state[def.id] ?? 0;
+    total += count * def.hordeDeterrence;
+  }
+  return total;
+}
+
+/** Victimes épargnées lors d'une percée par les infrastructures de soin. */
+export function totalCasualtyReductionFromBuildings(state: BuildingState): number {
+  let total = 0;
+  for (const def of BUILDING_CATALOG) {
+    const count = state[def.id] ?? 0;
+    total += count * def.casualtyReduction;
   }
   return total;
 }

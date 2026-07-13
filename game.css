@@ -1077,6 +1077,60 @@ body[data-phase='night'] .status-pill--phase {
 
 .defense__hint strong { color: var(--danger); font-weight: 700; text-shadow: 0 0 6px rgba(255, 90, 71, 0.6); }
 
+.defense__threats {
+  margin-top: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-soft);
+}
+
+.defense__threats span { color: var(--danger); font-weight: 700; }
+
+/* ── Stock d'objets du désert (skin terminal CRT) ── */
+.stock {
+  margin: 0.6rem 0 0.2rem;
+}
+
+.stock__title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--crt-soft);
+}
+
+.stock__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.stock__empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-faint);
+}
+
+.stock__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--crt-faint);
+  background: rgba(0, 255, 65, 0.06);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-bright);
+}
+
+.stock__icon { font-size: 14px; }
+.stock__name { max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stock__qty { color: var(--crt); font-weight: 700; }
+
 /* ── Constantes du citoyen (relevé CMD embarqué) ── */
 .citizen-card {
   background: #000;

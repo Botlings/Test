@@ -340,6 +340,14 @@
               </div>
             </dl>
 
+            <!-- Stock d'objets du désert (outils / vivres / matériaux rares) -->
+            <div class="stock" id="stock">
+              <h3 class="stock__title">Objets récupérés</h3>
+              <ul class="stock__list" id="stock-list">
+                <li class="stock__empty">Aucun objet en stock.</li>
+              </ul>
+            </div>
+
             <!-- Gouvernance de la banque commune (jalon 2) -->
             <div class="bank-gov" id="bank-gov" hidden>
               <p class="bank-gov__status">
@@ -377,6 +385,9 @@
               <p class="defense__hint">
                 Horde annoncée cette nuit :
                 <strong id="horde-value">—</strong>
+              </p>
+              <p class="defense__threats" id="defense-threats" hidden>
+                Rôdeurs spéciaux repérés : <span id="threats-value"></span>
               </p>
             </div>
           </article>

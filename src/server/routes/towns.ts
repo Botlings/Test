@@ -127,6 +127,8 @@ function fullTownState(
     survivalDays: status.survivalDays,
     nextNightAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
     buildings: status.buildings,
+    items: status.items,
+    threatsTonight: status.threatsTonight,
     desert: status.desert,
   };
 }

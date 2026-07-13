@@ -25,6 +25,8 @@ import {
   getBuildingDef,
   isKnownBuildingId,
 } from '../../domain/buildings.js';
+import { ITEM_CATALOG } from '../../domain/items.js';
+import { NIGHT_THREAT_CATALOG } from '../../domain/zombies.js';
 import type { Location } from '../../domain/types.js';
 import { StoreError, canSpendBank, type Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
@@ -56,11 +58,45 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
         description: b.description,
         icon: b.icon,
         cost: b.cost,
+        itemCost: b.itemCost ?? {},
         actionPointCost: b.actionPointCost,
         wallDefense: b.wallDefense,
         watchBonusPerCitizen: b.watchBonusPerCitizen,
         waterPerDawn: b.waterPerDawn,
+        hordeDeterrence: b.hordeDeterrence,
+        casualtyReduction: b.casualtyReduction,
         maxCount: b.maxCount,
+      })),
+    });
+  });
+
+  /* ------------------------- GET /items/catalog ---------------------------- */
+  // Public : la grille des objets récupérables du désert (outils, vivres,
+  // matériaux rares) alimente la page vitrine et l'aide en jeu.
+  app.get('/items/catalog', async (_request, reply) => {
+    return reply.code(200).send({
+      items: ITEM_CATALOG.map((it) => ({
+        id: it.id,
+        name: it.name,
+        description: it.description,
+        icon: it.icon,
+        category: it.category,
+        rarity: it.rarity,
+        minDistance: it.minDistance,
+        rations: it.rations,
+      })),
+    });
+  });
+
+  /* ------------------------ GET /zombies/catalog --------------------------- */
+  // Public : le bestiaire des zombies spéciaux de l'assaut nocturne.
+  app.get('/zombies/catalog', async (_request, reply) => {
+    return reply.code(200).send({
+      threats: NIGHT_THREAT_CATALOG.map((z) => ({
+        kind: z.kind,
+        name: z.name,
+        icon: z.icon,
+        description: z.description,
       })),
     });
   });
@@ -131,7 +167,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
         }
         case 'scavenge': {
           const bankBefore = { ...statusBefore.bank };
-          town.game.scavenge(citizenId);
+          const scav = town.game.scavenge(citizenId);
           await store.saveTown(town);
           publishTownSnapshot(hub, town);
           const bankAfter = town.game.status().bank;
@@ -140,12 +176,13 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             const delta = bankAfter[k] - (bankBefore[k] ?? 0);
             if (delta !== 0) gained[k] = delta;
           }
+          if (scav.foundItem) gained.item = 1;
           await publishActivity(store, hub, townId, {
             accountId,
             citizenId,
             citizenName,
             kind: 'citizen.scavenge',
-            details: gained,
+            details: { ...gained, foundItem: scav.foundItem ?? null },
           });
           break;
         }
@@ -254,7 +291,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             citizenId,
             citizenName,
             kind: 'citizen.scavenge-zone',
-            details: { picked },
+            details: { picked, foundItem: result.foundItem ?? null },
           });
           break;
         }
@@ -318,6 +355,8 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
       bank: status.bank,
       townDefense: status.townDefense,
       buildings: status.buildings,
+      items: status.items,
+      threatsTonight: status.threatsTonight,
       desert: status.desert,
       day: status.day,
       phase: status.phase,
