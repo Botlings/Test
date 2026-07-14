@@ -35,6 +35,7 @@ import type { NightScheduler } from '../night-scheduler.js';
 import { publishTownSnapshot, resolveNight } from '../night-resolver.js';
 import { publishActivity } from '../activity.js';
 import { awardBuildAchievements, awardScavengeAchievements } from '../achievements.js';
+import { getAchievementDef, type AchievementId } from '../../domain/achievements.js';
 
 interface ActionsDeps {
   readonly store: Store;
@@ -145,6 +146,9 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
     const statusBefore = town.game.status();
     const citizenBefore = statusBefore.citizens.find((c) => c.id === citizenId);
     const citizenName = citizenBefore?.name ?? citizenId;
+    // Badges effectivement débloqués par CETTE action (jamais un déjà acquis) :
+    // remontés dans la réponse pour que le front affiche un toast sans spam.
+    const newlyUnlocked: AchievementId[] = [];
     try {
       switch (actionType) {
         case 'move': {
@@ -185,10 +189,10 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             kind: 'citizen.scavenge',
             details: { ...gained, foundItem: scav.foundItem ?? null },
           });
-          await awardScavengeAchievements(store, accountId, {
+          newlyUnlocked.push(...await awardScavengeAchievements(store, accountId, {
             resource: Object.keys(gained).some((k) => k !== 'item'),
             item: !!scav.foundItem,
-          });
+          }));
           break;
         }
         case 'build': {
@@ -218,7 +222,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             kind: 'citizen.build',
             details: { defense },
           });
-          await awardBuildAchievements(store, accountId);
+          newlyUnlocked.push(...await awardBuildAchievements(store, accountId));
           break;
         }
         case 'construct': {
@@ -257,7 +261,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
               defense: result.townDefense,
             },
           });
-          await awardBuildAchievements(store, accountId);
+          newlyUnlocked.push(...await awardBuildAchievements(store, accountId));
           break;
         }
         case 'move-zone': {
@@ -300,10 +304,10 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
             kind: 'citizen.scavenge-zone',
             details: { picked, foundItem: result.foundItem ?? null },
           });
-          await awardScavengeAchievements(store, accountId, {
+          newlyUnlocked.push(...await awardScavengeAchievements(store, accountId, {
             resource: !!result.picked,
             item: !!result.foundItem,
-          });
+          }));
           break;
         }
         case 'fight': {
@@ -340,7 +344,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
               water: result.gained.water,
             },
           });
-          await awardScavengeAchievements(store, accountId, { event: true });
+          newlyUnlocked.push(...await awardScavengeAchievements(store, accountId, { event: true }));
           break;
         }
         default:
@@ -361,6 +365,12 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
     }
 
     const status = town.game.status();
+    // Enrichit les badges nouvellement acquis avec leur définition affichable
+    // (nom + icône) pour un toast prêt à l'emploi côté client.
+    const unlockedAchievements = newlyUnlocked
+      .map((id) => getAchievementDef(id))
+      .filter((def): def is NonNullable<typeof def> => def !== undefined)
+      .map((def) => ({ id: def.id, name: def.name, icon: def.icon, description: def.description }));
     return reply.code(200).send({
       ok: true,
       citizen: status.citizens.find((c) => c.id === citizenId),
@@ -372,6 +382,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
       desert: status.desert,
       day: status.day,
       phase: status.phase,
+      unlockedAchievements,
     });
   });
 

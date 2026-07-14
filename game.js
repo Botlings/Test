@@ -1674,10 +1674,23 @@
             logEvent('Vous avez chassé un zombie errant.', 'warning');
             break;
         }
+        announceAchievements(res.unlockedAchievements);
       })
       .catch(function (err) {
         toast(err.message || 'Action refusée', 'error');
       });
+  }
+
+  // Signale au joueur les hauts faits qu'il vient de débloquer (toast + journal).
+  // La liste ne contient QUE les badges nouveaux (le serveur est idempotent),
+  // donc aucun risque de spam à chaque action.
+  function announceAchievements(unlocked) {
+    if (!unlocked || !unlocked.length) return;
+    unlocked.forEach(function (a) {
+      var label = (a.icon ? a.icon + ' ' : '') + 'Haut fait débloqué : ' + a.name;
+      toast(label, 'success');
+      logEvent(label, 'success');
+    });
   }
 
   function triggerNight() {

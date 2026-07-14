@@ -292,6 +292,36 @@ describe('Déblocage via les actions de jeu', () => {
     await app.close();
   });
 
+  it('la réponse d\'action expose les badges NOUVELLEMENT débloqués (enrichis), une seule fois', async () => {
+    const { app } = await makeTestApp();
+    const reg = await register(app, 'nova@hordes.test', 'password!1');
+    const token = reg.body.accessToken!;
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/towns',
+      headers: bearer(token),
+      payload: { name: 'Fort-Cendre', difficulty: 'normal' },
+    });
+    const town = created.json() as { id: string; yourCitizenId: string };
+    const url = `/towns/${town.id}/citizens/${town.yourCitizenId}/action`;
+
+    // 1re construction : « Premier Bâtisseur » remonte dans la réponse, enrichi.
+    const first = await app.inject({ method: 'POST', url, headers: bearer(token), payload: { type: 'build' } });
+    expect(first.statusCode).toBe(200);
+    const firstBody = first.json() as { unlockedAchievements: Array<{ id: string; name: string; icon: string }> };
+    expect(firstBody.unlockedAchievements).toEqual([
+      { id: 'first-builder', name: 'Premier Bâtisseur', icon: '🔨', description: expect.any(String) },
+    ]);
+
+    // 2e construction : badge déjà acquis → la liste est vide (aucun spam).
+    const second = await app.inject({ method: 'POST', url, headers: bearer(token), payload: { type: 'build' } });
+    expect(second.statusCode).toBe(200);
+    const secondBody = second.json() as { unlockedAchievements: unknown[] };
+    expect(secondBody.unlockedAchievements).toEqual([]);
+    await app.close();
+  });
+
   it('awardNightAchievements débloque Sauveur/Survivant/Héros pour un survivant d\'une nuit de victoire', async () => {
     const store = new MemoryStore();
     const account = await store.createAccount('championne@hordes.test', 'hash');
