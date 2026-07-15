@@ -15,6 +15,7 @@ import { DEFAULT_CONFIG, type GameConfig } from '../src/domain/config.js';
 import {
   computeNightThreats,
   bruteWallPierce,
+  prowlerWatchNegation,
   screamerHordeBonus,
   DEFAULT_ZOMBIE_CONFIG,
 } from '../src/domain/zombies.js';
@@ -43,30 +44,38 @@ function gameAtDay(
 
 describe('computeNightThreats — composition déterministe', () => {
   it('aucune menace spéciale avant le jour 3', () => {
-    expect(computeNightThreats(1, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 0, sapper: 0, screamer: 0 });
-    expect(computeNightThreats(2, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 0, sapper: 0, screamer: 0 });
+    expect(computeNightThreats(1, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 0, prowler: 0, sapper: 0, screamer: 0 });
+    expect(computeNightThreats(2, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 0, prowler: 0, sapper: 0, screamer: 0 });
   });
 
   it('escalade attendue aux jours 3 à 7', () => {
-    expect(computeNightThreats(3, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 1, sapper: 0, screamer: 0 });
-    expect(computeNightThreats(4, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 1, sapper: 1, screamer: 0 });
-    expect(computeNightThreats(5, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 1, sapper: 1, screamer: 1 });
-    expect(computeNightThreats(6, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 2, sapper: 1, screamer: 1 });
-    expect(computeNightThreats(7, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 2, sapper: 2, screamer: 1 });
+    expect(computeNightThreats(3, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 1, prowler: 0, sapper: 0, screamer: 0 });
+    expect(computeNightThreats(4, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 1, prowler: 0, sapper: 1, screamer: 0 });
+    expect(computeNightThreats(5, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 1, prowler: 1, sapper: 1, screamer: 1 });
+    expect(computeNightThreats(6, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 2, prowler: 1, sapper: 1, screamer: 1 });
+    expect(computeNightThreats(7, DEFAULT_ZOMBIE_CONFIG)).toEqual({ brute: 2, prowler: 1, sapper: 2, screamer: 1 });
   });
 });
 
 describe('Fonctions d\'effet — bornes', () => {
   it('la perforation des colosses ne dépasse jamais la défense de mur', () => {
-    expect(bruteWallPierce({ brute: 1, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 100)).toBe(8);
-    expect(bruteWallPierce({ brute: 5, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 10)).toBe(10);
-    expect(bruteWallPierce({ brute: 0, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 10)).toBe(0);
+    expect(bruteWallPierce({ brute: 1, prowler: 0, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 100)).toBe(8);
+    expect(bruteWallPierce({ brute: 5, prowler: 0, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 10)).toBe(10);
+    expect(bruteWallPierce({ brute: 0, prowler: 0, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 10)).toBe(0);
+  });
+
+  it('l\'annulation de garde des rôdeurs ne dépasse jamais la défense de guetteurs', () => {
+    // watchNegationPerZombie = 4.
+    expect(prowlerWatchNegation({ brute: 0, prowler: 1, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 100)).toBe(4);
+    expect(prowlerWatchNegation({ brute: 0, prowler: 5, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 6)).toBe(6);
+    // Sans guetteur, aucun effet : les scénarios sans garde restent inchangés.
+    expect(prowlerWatchNegation({ brute: 0, prowler: 3, sapper: 0, screamer: 0 }, DEFAULT_ZOMBIE_CONFIG, 0)).toBe(0);
   });
 
   it('l\'amplification des hurleurs est nulle quand la horde de base est nulle', () => {
-    expect(screamerHordeBonus(0, { brute: 0, sapper: 0, screamer: 3 }, DEFAULT_ZOMBIE_CONFIG)).toBe(0);
+    expect(screamerHordeBonus(0, { brute: 0, prowler: 0, sapper: 0, screamer: 3 }, DEFAULT_ZOMBIE_CONFIG)).toBe(0);
     // 100 × 0.2 × 2 = 40
-    expect(screamerHordeBonus(100, { brute: 0, sapper: 0, screamer: 2 }, DEFAULT_ZOMBIE_CONFIG)).toBe(40);
+    expect(screamerHordeBonus(100, { brute: 0, prowler: 0, sapper: 0, screamer: 2 }, DEFAULT_ZOMBIE_CONFIG)).toBe(40);
   });
 });
 
@@ -87,6 +96,42 @@ describe('Colosse (brute) — perfore les murs la nuit', () => {
     expect(report.defense.wallsPenetrated).toBe(8);
     expect(report.defense.total).toBe(2);
     expect(report.breached).toBe(true);
+  });
+});
+
+describe('Rôdeur rapide (prowler) — annule une part de la garde', () => {
+  it('rogne la défense des guetteurs et fait percer une horde autrement absorbée', () => {
+    // Murs 0, chaque guetteur vaut 6 de défense, 2 guetteurs → 12. Horde 10 :
+    // sans rôdeur, 12 ≥ 10 → aucune percée. Au jour 5, 1 rôdeur annule 4 de
+    // garde → défense effective 8 < 10 → percée.
+    const config = makeConfig({
+      baseDefense: 0,
+      watchDefensePerCitizen: 6,
+      hordeBaseAttack: 10,
+      hordeGrowthPerDay: 0,
+      startingBank: { wood: 0, metal: 0, water: 0 },
+    });
+    const game = gameAtDay(config, 5, 2);
+    const report = game.endDay();
+    expect(report.threats.prowler).toBe(1);
+    expect(report.defense.watchers).toBe(12);
+    expect(report.defense.watchersNegated).toBe(4);
+    expect(report.defense.total).toBe(8);
+    expect(report.breached).toBe(true);
+  });
+
+  it('sans guetteur en faction, le rôdeur n\'a aucun effet', () => {
+    const config = makeConfig({
+      baseDefense: 5,
+      watchDefensePerCitizen: 0,
+      hordeBaseAttack: 0,
+      hordeGrowthPerDay: 0,
+      startingBank: { wood: 0, metal: 0, water: 0 },
+    });
+    const game = gameAtDay(config, 5, 1);
+    const report = game.endDay();
+    expect(report.threats.prowler).toBe(1);
+    expect(report.defense.watchersNegated).toBe(0);
   });
 });
 

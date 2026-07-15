@@ -38,7 +38,18 @@ export type ItemId =
   | 'steel-beam'
   | 'copper-wire'
   | 'electronics'
-  | 'car-battery';
+  | 'car-battery'
+  // ── Seconde vague de contenu désert (10 objets supplémentaires) ────────────
+  | 'medical-kit'
+  | 'fuel-can'
+  | 'cable'
+  | 'ration-tin'
+  | 'topo-map'
+  | 'rusty-shovel'
+  | 'fire-extinguisher'
+  | 'broken-radio'
+  | 'army-tarp'
+  | 'smoke-grenade';
 
 /** Définition statique d'un objet du catalogue (partagée par toutes les villes). */
 export interface ItemDef {
@@ -65,7 +76,7 @@ export type ItemStock = Readonly<Partial<Record<ItemId, number>>>;
 /** Coût en objets d'une construction avancée (cf. `buildings.ts`). */
 export type ItemCost = Readonly<Partial<Record<ItemId, number>>>;
 
-/** Catalogue immuable des 10 objets récupérables. */
+/** Catalogue immuable des objets récupérables (deux vagues de contenu). */
 export const ITEM_CATALOG: readonly ItemDef[] = [
   // ── Outils (tool) ─────────────────────────────────────────────────────────
   {
@@ -179,6 +190,130 @@ export const ITEM_CATALOG: readonly ItemDef[] = [
     rarity: 'uncommon',
     dropWeight: 3,
     minDistance: 2,
+    rations: 0,
+  },
+  // ══ Seconde vague de contenu (10 objets) ═════════════════════════════════
+  // ── Outils (tool) ─────────────────────────────────────────────────────────
+  {
+    id: 'medical-kit',
+    name: 'Kit de soin',
+    description:
+      'Trousse de premiers secours scellée : compresses, sutures et antiseptique. Le cœur d\'une infirmerie digne de ce nom.',
+    icon: '🩺',
+    category: 'tool',
+    rarity: 'uncommon',
+    dropWeight: 3,
+    minDistance: 2,
+    rations: 0,
+  },
+  {
+    id: 'topo-map',
+    name: 'Carte topographique',
+    description:
+      'Relevé militaire du secteur, plié dans une pochette étanche. Repère les hauteurs d\'où surveiller les abords.',
+    icon: '🗺️',
+    category: 'tool',
+    rarity: 'uncommon',
+    dropWeight: 3,
+    minDistance: 2,
+    rations: 0,
+  },
+  {
+    id: 'rusty-shovel',
+    name: 'Pelle rouillée',
+    description:
+      'Outil de terrassier mangé par la corrosion, mais encore bon pour creuser fondations et réservoirs.',
+    icon: '⛏️',
+    category: 'tool',
+    rarity: 'common',
+    dropWeight: 5,
+    minDistance: 1,
+    rations: 0,
+  },
+  {
+    id: 'fire-extinguisher',
+    name: 'Extincteur',
+    description:
+      'Bonbonne rouge sous pression. Indispensable pour installer une cuisine collective sans réduire la ville en cendres.',
+    icon: '🧯',
+    category: 'tool',
+    rarity: 'uncommon',
+    dropWeight: 3,
+    minDistance: 2,
+    rations: 0,
+  },
+  {
+    id: 'smoke-grenade',
+    name: 'Grenade fumigène',
+    description:
+      'Charge militaire qui crache un rideau de fumée. Masque les mouvements et sème le trouble dans la nuée.',
+    icon: '💣',
+    category: 'tool',
+    rarity: 'rare',
+    dropWeight: 2,
+    minDistance: 3,
+    rations: 0,
+  },
+  // ── Vivres (food) ─────────────────────────────────────────────────────────
+  {
+    id: 'ration-tin',
+    name: 'Boîte de conserve',
+    description:
+      'Grosse boîte de ravitaillement militaire, encore sous vide. De quoi tenir un citoyen à distance de la soif.',
+    icon: '🥫',
+    category: 'food',
+    rarity: 'common',
+    dropWeight: 6,
+    minDistance: 1,
+    rations: 2,
+  },
+  // ── Matériaux rares (material) ────────────────────────────────────────────
+  {
+    id: 'fuel-can',
+    name: 'Bidon d\'essence',
+    description:
+      'Jerrican d\'hydrocarbure siphonné d\'une épave. Alimente pompes, groupes électrogènes et postes radio.',
+    icon: '⛽',
+    category: 'material',
+    rarity: 'uncommon',
+    dropWeight: 3,
+    minDistance: 2,
+    rations: 0,
+  },
+  {
+    id: 'cable',
+    name: 'Câble',
+    description:
+      'Rouleau de câble gainé arraché à un poteau. Relie les installations électriques de la ville.',
+    icon: '🔌',
+    category: 'material',
+    rarity: 'common',
+    dropWeight: 5,
+    minDistance: 1,
+    rations: 0,
+  },
+  {
+    id: 'broken-radio',
+    name: 'Radio cassée',
+    description:
+      'Émetteur-récepteur au boîtier fêlé. Réparé et rebranché, il capte encore les fréquences des rôdeurs.',
+    icon: '📻',
+    category: 'material',
+    rarity: 'uncommon',
+    dropWeight: 3,
+    minDistance: 2,
+    rations: 0,
+  },
+  {
+    id: 'army-tarp',
+    name: 'Bâche militaire',
+    description:
+      'Toile imperméable kaki, robuste et démesurée. Étanchéifie un réservoir ou couvre un abri de fortune.',
+    icon: '⛺',
+    category: 'material',
+    rarity: 'common',
+    dropWeight: 4,
+    minDistance: 1,
     rations: 0,
   },
 ];

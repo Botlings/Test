@@ -31,8 +31,8 @@ function withItems(config: GameConfig, game: Game, items: ItemStock): Game {
 }
 
 describe('Catalogue d\'objets — invariants statiques', () => {
-  it('compte 10 objets aux ids uniques répartis en 3 familles', () => {
-    expect(ITEM_CATALOG).toHaveLength(10);
+  it('compte 20 objets aux ids uniques répartis en 3 familles', () => {
+    expect(ITEM_CATALOG).toHaveLength(20);
     const ids = new Set<string>();
     const categories = new Set<string>();
     for (const it of ITEM_CATALOG) {

@@ -23,6 +23,7 @@ import {
 } from './items.js';
 import {
   bruteWallPierce,
+  prowlerWatchNegation,
   computeNightThreats,
   screamerHordeBonus,
   type NightThreatCounts,
@@ -666,7 +667,9 @@ export class Game {
       watcherCount * (this.config.watchDefensePerCitizen + buildingsWatchBonus);
     // Colosses (`brute`) : perforent une part de la défense des murs.
     const wallsPenetrated = bruteWallPierce(threats, this.config.zombie, walls);
-    const defenseTotal = Math.max(0, walls - wallsPenetrated + watchers);
+    // Rôdeurs rapides (`prowler`) : annulent une part de la défense des guetteurs.
+    const watchersNegated = prowlerWatchNegation(threats, this.config.zombie, watchers);
+    const defenseTotal = Math.max(0, walls - wallsPenetrated + watchers - watchersNegated);
     const defense: DefenseBreakdown = {
       walls,
       watchers,
@@ -674,6 +677,7 @@ export class Game {
       buildingsWallBonus,
       buildingsWatchBonus,
       wallsPenetrated,
+      watchersNegated,
       total: defenseTotal,
     };
 

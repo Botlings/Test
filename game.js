@@ -924,15 +924,21 @@
     toolbox: '🧰', rope: '🪢', 'duct-tape': '🩹',
     'canned-food': '🥫', 'dried-meat': '🥩', 'energy-bar': '🍫',
     'steel-beam': '🏗️', 'copper-wire': '🧵', electronics: '💾', 'car-battery': '🔋',
+    'medical-kit': '🩺', 'topo-map': '🗺️', 'rusty-shovel': '⛏️',
+    'fire-extinguisher': '🧯', 'smoke-grenade': '💣', 'ration-tin': '🥫',
+    'fuel-can': '⛽', cable: '🔌', 'broken-radio': '📻', 'army-tarp': '⛺',
   };
   var ITEM_NAMES = {
     toolbox: 'Boîte à outils', rope: 'Corde', 'duct-tape': 'Ruban adhésif',
     'canned-food': 'Conserves', 'dried-meat': 'Viande séchée', 'energy-bar': 'Barre énergétique',
     'steel-beam': "Poutre d'acier", 'copper-wire': 'Fil de cuivre',
     electronics: 'Composants électroniques', 'car-battery': 'Batterie de voiture',
+    'medical-kit': 'Kit de soin', 'topo-map': 'Carte topographique', 'rusty-shovel': 'Pelle rouillée',
+    'fire-extinguisher': 'Extincteur', 'smoke-grenade': 'Grenade fumigène', 'ration-tin': 'Boîte de conserve',
+    'fuel-can': "Bidon d'essence", cable: 'Câble', 'broken-radio': 'Radio cassée', 'army-tarp': 'Bâche militaire',
   };
-  var THREAT_LABELS = { brute: 'Colosse', sapper: 'Sournois', screamer: 'Hurleur' };
-  var THREAT_ICONS = { brute: '🧟‍♂️', sapper: '🩸', screamer: '📢' };
+  var THREAT_LABELS = { brute: 'Colosse blindé', prowler: 'Rôdeur rapide', sapper: 'Sournois', screamer: 'Hurleur' };
+  var THREAT_ICONS = { brute: '🧟‍♂️', prowler: '🏃', sapper: '🩸', screamer: '📢' };
 
   function renderStock(town) {
     var list = $('stock-list');
@@ -962,7 +968,7 @@
     var value = $('threats-value');
     if (!row || !value) return;
     var threats = (town && town.threatsTonight) || {};
-    var parts = ['brute', 'sapper', 'screamer']
+    var parts = ['brute', 'prowler', 'sapper', 'screamer']
       .filter(function (k) { return Number(threats[k]) > 0; })
       .map(function (k) {
         return (THREAT_ICONS[k] || '') + ' ' + Number(threats[k]) + ' ' + THREAT_LABELS[k] +

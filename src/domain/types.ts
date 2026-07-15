@@ -83,7 +83,12 @@ export interface DefenseBreakdown {
    * `0` si aucun colosse dans la horde.
    */
   readonly wallsPenetrated: number;
-  /** Défense effective opposée à la horde : `walls - wallsPenetrated + watchers`. */
+  /**
+   * Défense de guetteurs annulée par les rôdeurs rapides (`prowler`) —
+   * soustraite du total. `0` si aucun rôdeur ou aucun guetteur en faction.
+   */
+  readonly watchersNegated: number;
+  /** Défense effective : `walls - wallsPenetrated + watchers - watchersNegated`. */
   readonly total: number;
 }
 

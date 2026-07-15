@@ -37,7 +37,13 @@ export type BuildingId =
   | 'trap-field'
   | 'infirmary'
   | 'pumping-station'
-  | 'bunker';
+  | 'bunker'
+  // ── Troisième génération (exige des objets de la seconde vague désert) ─────
+  | 'community-kitchen'
+  | 'repair-shop'
+  | 'radio-post'
+  | 'water-tank'
+  | 'mirador';
 
 /** Coût en ressources pour ériger un bâtiment. */
 export interface BuildingCost {
@@ -210,6 +216,87 @@ export const BUILDING_CATALOG: readonly BuildingDef[] = [
     hordeDeterrence: 0,
     casualtyReduction: 1,
     maxCount: 1,
+  },
+  // ── Bâtiments de troisième génération (objets de la seconde vague) ─────────
+  {
+    id: 'community-kitchen',
+    name: 'Cuisine collective',
+    description:
+      'Cantine communale où l\'on mitonne les conserves. Des défenseurs nourris tiennent le choc : une victime de moins par nuit.',
+    icon: '🍲',
+    cost: { wood: 8, metal: 4 },
+    itemCost: { 'ration-tin': 1, 'fire-extinguisher': 1 },
+    actionPointCost: 3,
+    wallDefense: 0,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 1,
+    maxCount: 1,
+  },
+  {
+    id: 'repair-shop',
+    name: 'Atelier de réparation',
+    description:
+      'Établi outillé qui remet d\'aplomb portails et parapets. Ajoute un solide renfort permanent aux murs.',
+    icon: '🔧',
+    cost: { wood: 10, metal: 8 },
+    itemCost: { 'medical-kit': 1, cable: 1 },
+    actionPointCost: 3,
+    wallDefense: 8,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
+    maxCount: 1,
+  },
+  {
+    id: 'radio-post',
+    name: 'Poste radio',
+    description:
+      'Émetteur de fortune branché sur un bidon d\'essence : capte l\'approche de la horde et permet de la harceler avant l\'assaut.',
+    icon: '📡',
+    cost: { wood: 6, metal: 8 },
+    itemCost: { 'broken-radio': 1, 'fuel-can': 1 },
+    actionPointCost: 3,
+    wallDefense: 0,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 0,
+    hordeDeterrence: 4,
+    casualtyReduction: 0,
+    maxCount: 1,
+  },
+  {
+    id: 'water-tank',
+    name: 'Réservoir d\'eau',
+    description:
+      'Cuve étanchéifiée d\'une bâche militaire qui collecte la moindre goutte. Ravitaille la banque en eau à chaque aube.',
+    icon: '🛢️',
+    cost: { wood: 8, metal: 6 },
+    itemCost: { 'army-tarp': 1 },
+    actionPointCost: 2,
+    wallDefense: 0,
+    watchBonusPerCitizen: 0,
+    waterPerDawn: 3,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
+    maxCount: 2,
+  },
+  {
+    id: 'mirador',
+    name: 'Mirador',
+    description:
+      'Poste d\'observation dominant guidé par carte topographique. Décuple l\'arc de tir de chaque guetteur en faction.',
+    icon: '🔭',
+    cost: { wood: 10, metal: 6 },
+    itemCost: { 'topo-map': 1 },
+    actionPointCost: 2,
+    wallDefense: 0,
+    watchBonusPerCitizen: 3,
+    waterPerDawn: 0,
+    hordeDeterrence: 0,
+    casualtyReduction: 0,
+    maxCount: 3,
   },
 ];
 

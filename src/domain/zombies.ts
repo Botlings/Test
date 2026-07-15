@@ -6,9 +6,13 @@
  * après jour. À partir de nuits avancées, des **zombies spéciaux** rejoignent la
  * horde, chacun avec un comportement distinct qui modifie la résolution :
  *
- *   - `brute`    (Colosse)  : blindé. Perce une part de la défense des MURS
- *                             (ignore le blindage des remparts). N'affecte pas
- *                             les guetteurs.
+ *   - `brute`    (Colosse blindé) : blindé. Perce une part de la défense des
+ *                             MURS (ignore le blindage des remparts). N'affecte
+ *                             pas les guetteurs.
+ *   - `prowler`  (Rôdeur rapide) : sprinteur. Frappe avant que les guetteurs
+ *                             n'aient pris position : annule une part de la
+ *                             défense des GUETTEURS (symétrique du colosse sur
+ *                             les murs). Sans effet si personne ne monte la garde.
  *   - `sapper`   (Sournois) : saboteur. Pille la banque de ressources ET érode
  *                             durablement la défense des murs (dégâts qui
  *                             persistent au-delà de la nuit — il faut réparer).
@@ -24,17 +28,23 @@
  */
 
 /** Nature d'un zombie spécial de la horde nocturne. */
-export type NightThreatKind = 'brute' | 'sapper' | 'screamer';
+export type NightThreatKind = 'brute' | 'prowler' | 'sapper' | 'screamer';
 
 /** Comptes de zombies spéciaux composant une horde d'une nuit. */
 export interface NightThreatCounts {
   readonly brute: number;
+  readonly prowler: number;
   readonly sapper: number;
   readonly screamer: number;
 }
 
 /** Horde vierge de tout zombie spécial (nuits calmes). */
-export const NO_THREATS: NightThreatCounts = { brute: 0, sapper: 0, screamer: 0 };
+export const NO_THREATS: NightThreatCounts = {
+  brute: 0,
+  prowler: 0,
+  sapper: 0,
+  screamer: 0,
+};
 
 /** Planning d'apparition d'un type de zombie spécial. */
 export interface ThreatSchedule {
@@ -44,10 +54,16 @@ export interface ThreatSchedule {
   readonly everyDays: number;
 }
 
-/** Paramètres d'un `brute` (Colosse) : blindage perforant. */
+/** Paramètres d'un `brute` (Colosse blindé) : blindage perforant. */
 export interface BruteConfig extends ThreatSchedule {
   /** Points de défense de MUR ignorés (perforés) par colosse. */
   readonly wallPiercePerZombie: number;
+}
+
+/** Paramètres d'un `prowler` (Rôdeur rapide) : vitesse qui prend les guetteurs de vitesse. */
+export interface ProwlerConfig extends ThreatSchedule {
+  /** Points de défense de GUETTEURS annulés par rôdeur (borné au total des guetteurs). */
+  readonly watchNegationPerZombie: number;
 }
 
 /** Paramètres d'un `sapper` (Sournois) : pillage + sabotage. */
@@ -67,6 +83,7 @@ export interface ScreamerConfig extends ThreatSchedule {
 /** Bloc de configuration des zombies spéciaux (intégré à `GameConfig`). */
 export interface ZombieConfig {
   readonly brute: BruteConfig;
+  readonly prowler: ProwlerConfig;
   readonly sapper: SapperConfig;
   readonly screamer: ScreamerConfig;
 }
@@ -74,6 +91,7 @@ export interface ZombieConfig {
 /** Configuration par défaut des zombies spéciaux — montée en pression douce. */
 export const DEFAULT_ZOMBIE_CONFIG: ZombieConfig = {
   brute: { startDay: 3, everyDays: 3, wallPiercePerZombie: 8 },
+  prowler: { startDay: 5, everyDays: 4, watchNegationPerZombie: 4 },
   sapper: { startDay: 4, everyDays: 3, bankLootPerZombie: 3, sabotagePerZombie: 3 },
   screamer: { startDay: 5, everyDays: 4, hordePctPerZombie: 0.2 },
 };
@@ -90,10 +108,17 @@ export interface NightThreatDef {
 export const NIGHT_THREAT_CATALOG: readonly NightThreatDef[] = [
   {
     kind: 'brute',
-    name: 'Colosse',
+    name: 'Colosse blindé',
     icon: '🧟‍♂️',
     description:
       'Masse de chair blindée qui enfonce les remparts : une part de la défense des murs ne compte plus contre lui.',
+  },
+  {
+    kind: 'prowler',
+    name: 'Rôdeur rapide',
+    icon: '🏃',
+    description:
+      'Zombie fraîchement tourné, encore vif et endurant. Il fond sur les remparts avant que les guetteurs ne se mettent en position : une part de leur défense s\'évapore.',
   },
   {
     kind: 'sapper',
@@ -125,6 +150,7 @@ function scheduledCount(day: number, schedule: ThreatSchedule): number {
 export function computeNightThreats(day: number, config: ZombieConfig): NightThreatCounts {
   return {
     brute: scheduledCount(day, config.brute),
+    prowler: scheduledCount(day, config.prowler),
     sapper: scheduledCount(day, config.sapper),
     screamer: scheduledCount(day, config.screamer),
   };
@@ -132,13 +158,32 @@ export function computeNightThreats(day: number, config: ZombieConfig): NightThr
 
 /** `true` si la horde de la nuit comporte au moins un zombie spécial. */
 export function hasThreats(counts: NightThreatCounts): boolean {
-  return counts.brute > 0 || counts.sapper > 0 || counts.screamer > 0;
+  return (
+    counts.brute > 0 ||
+    counts.prowler > 0 ||
+    counts.sapper > 0 ||
+    counts.screamer > 0
+  );
 }
 
 /** Perforation de mur totale infligée par les colosses (bornée au mur dispo). */
 export function bruteWallPierce(counts: NightThreatCounts, config: ZombieConfig, walls: number): number {
   const raw = counts.brute * config.brute.wallPiercePerZombie;
   return Math.max(0, Math.min(walls, raw));
+}
+
+/**
+ * Défense de guetteurs annulée par les rôdeurs rapides (bornée au total des
+ * guetteurs). Nul si aucun rôdeur ou aucun guetteur — garde les scénarios sans
+ * garde (`watchers = 0`) strictement inchangés.
+ */
+export function prowlerWatchNegation(
+  counts: NightThreatCounts,
+  config: ZombieConfig,
+  watchers: number,
+): number {
+  const raw = counts.prowler * config.prowler.watchNegationPerZombie;
+  return Math.max(0, Math.min(watchers, raw));
 }
 
 /**

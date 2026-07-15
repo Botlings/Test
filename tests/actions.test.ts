@@ -234,13 +234,13 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
     expect(rampart.itemCost['steel-beam']).toBe(2);
   });
 
-  it('GET /items/catalog expose les 10 objets récupérables (public)', async () => {
+  it('GET /items/catalog expose les 20 objets récupérables (public)', async () => {
     const ctx = await bootstrapTown();
     app = ctx.app;
     const res = await ctx.app.inject({ method: 'GET', url: '/items/catalog' });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { items: Array<{ id: string; category: string }> };
-    expect(body.items).toHaveLength(10);
+    expect(body.items).toHaveLength(20);
     const cats = new Set(body.items.map((i) => i.category));
     expect([...cats].sort()).toEqual(['food', 'material', 'tool']);
   });
@@ -251,7 +251,7 @@ describe('POST /towns/:townId/citizens/:citizenId/action', () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/zombies/catalog' });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { threats: Array<{ kind: string }> };
-    expect(body.threats.map((t) => t.kind).sort()).toEqual(['brute', 'sapper', 'screamer']);
+    expect(body.threats.map((t) => t.kind).sort()).toEqual(['brute', 'prowler', 'sapper', 'screamer']);
   });
 
   it('rejette une action sur le citoyen d\'un autre joueur', async () => {
