@@ -21,6 +21,7 @@ import type { RealtimeHub } from '../../realtime/hub.js';
 import type { PresenceRegistry } from '../../realtime/presence.js';
 import type { NightScheduler } from '../night-scheduler.js';
 import { publishActivity } from '../activity.js';
+import { buildEndgameCard } from '../../domain/endgame-card.js';
 
 interface TownsDeps {
   readonly store: Store;
@@ -291,6 +292,52 @@ export function registerTownRoutes(app: FastifyInstance, deps: TownsDeps): void 
       });
     }
     return reply.code(200).send(fullTownState(town, accountId, presence, scheduler));
+  });
+
+  /* ------------------------- GET /towns/:id/card ------------------------- */
+  // Synthèse partageable de la partie du joueur : jours survécus, rôle, objets,
+  // bâtiments, titre obtenu et texte de partage prêt pour X / Reddit. Le rendu
+  // PNG est produit côté client (canvas) à partir de ces données.
+  app.get('/towns/:townId/card', async (request, reply) => {
+    const accountId = requireAuth(request, reply, { jwtSecret });
+    if (!accountId) return;
+    const townId = (request.params as { townId?: string }).townId as Id | undefined;
+    if (!townId) {
+      return reply.code(400).send({
+        error: { code: 'town-id-missing', message: 'Identifiant de ville manquant' },
+      });
+    }
+    const town = await store.getTown(townId);
+    if (!town) {
+      return reply.code(404).send({
+        error: { code: 'town-not-found', message: 'Ville introuvable' },
+      });
+    }
+    const citizenId = town.membership.get(accountId);
+    if (!citizenId) {
+      return reply.code(403).send({
+        error: { code: 'not-a-citizen', message: 'Vous devez être citoyen de cette ville' },
+      });
+    }
+    const status = town.game.status();
+    const citizen = status.citizens.find((c) => c.id === citizenId);
+    const summary = buildEndgameCard({
+      townName: town.name,
+      difficulty: town.difficulty,
+      outcome: status.outcome,
+      gameOver: status.gameOver,
+      daysSurvived: status.day,
+      survivalDays: status.survivalDays,
+      survivors: status.aliveCount,
+      population: status.citizens.length,
+      role: roleFor(town, accountId),
+      citizenName: citizen?.name ?? 'Survivant',
+      citizenAlive: citizen?.alive ?? false,
+      causeOfDeath: citizen?.causeOfDeath ?? null,
+      buildings: status.buildings,
+      items: status.items,
+    });
+    return reply.code(200).send({ townId, card: summary });
   });
 
   /* -------------------- GET /towns/:id/night-reports --------------------- */

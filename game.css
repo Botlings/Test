@@ -2567,3 +2567,67 @@ html {
   gap: 0.5rem;
   align-items: center;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   CARTE DE FIN DE PARTIE PARTAGEABLE (PNG canvas + partage X/Reddit)
+   ════════════════════════════════════════════════════════════════ */
+
+/* Bouton d'ouverture injecté dans le rapport de nuit (fin de partie). */
+.report-share {
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: center;
+}
+
+.share-card__hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.share-card__canvas-wrap {
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  background: #000;
+  line-height: 0;
+}
+
+.share-card__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: auto;
+}
+
+.share-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.share-card__actions .btn { flex: 1 1 auto; }
+
+/* Variante « secondaire » pour les liens de partage (rouille sombre). */
+.btn--secondary {
+  background: var(--rust-deep, #7a3b1e);
+  border-color: var(--ink);
+  color: #fff;
+}
+.btn--secondary:hover { background: var(--rust-2); color: #fff; }
+
+.share-card__note {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.town-header__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}

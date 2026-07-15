@@ -781,6 +781,11 @@
     $('close-night-modal-btn').addEventListener('click', closeNightModal);
     $('night-modal-overlay').addEventListener('click', closeNightModal);
 
+    $('close-share-card-btn').addEventListener('click', closeShareCard);
+    $('share-card-overlay').addEventListener('click', closeShareCard);
+    $('share-card-download-btn').addEventListener('click', downloadShareCard);
+    $('town-share-card-btn').addEventListener('click', openShareCard);
+
     setupForumUI();
   }
 
@@ -886,6 +891,10 @@
     $('status-threat-value').textContent = String(town.hordePowerTonight);
     document.body.setAttribute('data-phase', town.phase);
     renderNextNightPill(town.nextNightAt || null);
+
+    // La carte de survie n'est proposée qu'une fois la partie terminée.
+    var shareBtn = $('town-share-card-btn');
+    if (shareBtn) shareBtn.hidden = !town.gameOver;
 
     // Inventaire
     updateBank(town.bank || {}, false);
@@ -1775,12 +1784,244 @@
       });
       deathsHtml += '</ul>';
     }
-    body.innerHTML = verdict + rows + defenseHtml + wavesHtml + deathsHtml;
+    var shareHtml = '';
+    if (report.gameOver) {
+      shareHtml =
+        '<div class="report-share"><button type="button" class="btn btn--primary" ' +
+        'id="open-share-card-btn">🎴 Ma carte de survie à partager</button></div>';
+    }
+    body.innerHTML = verdict + rows + defenseHtml + wavesHtml + deathsHtml + shareHtml;
+    if (report.gameOver) {
+      var openBtn = $('open-share-card-btn');
+      if (openBtn) openBtn.addEventListener('click', openShareCard);
+    }
     show(modal);
   }
 
   function closeNightModal() {
     hide($('night-modal'));
+  }
+
+  /* =========================================================================
+   *  Carte de fin de partie partageable (PNG généré côté client)
+   * =======================================================================*/
+
+  // Dernière carte rendue : conserve la synthèse serveur et l'URL de partage
+  // afin d'alimenter les boutons Télécharger / X / Reddit sans refetch.
+  var shareCardState = { summary: null, dataUrl: null };
+
+  // URL publique du jeu (racine du site) — cible des intentions de partage.
+  function gameShareUrl() {
+    try {
+      var base = window.location.origin + window.location.pathname;
+      return base.replace(/[^/]*$/, '');
+    } catch (err) {
+      return 'https://botlings.github.io/Test/';
+    }
+  }
+
+  function openShareCard() {
+    if (!state.currentTownId) {
+      toast('Aucune partie à résumer.', 'error');
+      return;
+    }
+    var modal = $('share-card-modal');
+    var status = $('share-card-status');
+    if (status) status.textContent = 'Génération de la carte…';
+    show(modal);
+    var path = '/towns/' + encodeURIComponent(state.currentTownId) + '/card';
+    apiCall(path)
+      .then(function (res) {
+        if (!res || !res.card) throw new Error('Réponse invalide');
+        shareCardState.summary = res.card;
+        renderShareCard(res.card);
+        wireShareButtons(res.card);
+        if (status) {
+          status.textContent =
+            'Ta carte est prête. Télécharge-la et partage ta partie !';
+        }
+      })
+      .catch(function (err) {
+        if (status) status.textContent = 'Impossible de générer la carte : ' + (err.message || 'erreur');
+      });
+  }
+
+  function closeShareCard() {
+    hide($('share-card-modal'));
+  }
+
+  // Palette selon l'issue : monde chaud (jour) pour victoire/en cours,
+  // rouge sang/cimetière (nuit) pour la défaite — conforme à la DA.
+  function shareCardTheme(outcome) {
+    if (outcome === 'defeat') {
+      return {
+        bg: '#160707', panel: '#280d0d', frame: '#7c1d16',
+        accent: '#e2503f', title: '#ff7a6a', text: '#f0d4d0', dim: '#b98a86',
+        verdict: '☠ VILLE PERDUE',
+      };
+    }
+    if (outcome === 'victory') {
+      return {
+        bg: '#241708', panel: '#38260f', frame: '#c9852f',
+        accent: '#f2b45a', title: '#ffd27f', text: '#f6e6c6', dim: '#c7a879',
+        verdict: '★ VILLE SAUVÉE',
+      };
+    }
+    return {
+      bg: '#1e1810', panel: '#2f2618', frame: '#8a6f3c',
+      accent: '#d7b471', title: '#f2dfa8', text: '#efe3c8', dim: '#b6a179',
+      verdict: '⚔ SIÈGE EN COURS',
+    };
+  }
+
+  function renderShareCard(card) {
+    var canvas = $('share-card-canvas');
+    if (!canvas || !canvas.getContext) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var t = shareCardTheme(card.outcome);
+
+    // Fond + cadre biseauté.
+    ctx.fillStyle = t.bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = t.frame;
+    ctx.fillRect(24, 24, W - 48, H - 48);
+    ctx.fillStyle = t.panel;
+    ctx.fillRect(34, 34, W - 68, H - 68);
+
+    var padX = 70;
+
+    // Bandeau supérieur : marque + difficulté.
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = t.dim;
+    ctx.font = '700 26px "Courier New", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('HORDES REVIVAL', padX, 92);
+    ctx.textAlign = 'right';
+    ctx.fillText('DIFFICULTÉ · ' + String(card.difficultyLabel).toUpperCase(), W - padX, 92);
+    ctx.strokeStyle = t.frame;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padX, 108); ctx.lineTo(W - padX, 108); ctx.stroke();
+
+    // Titre honorifique (Impact) + sous-titre.
+    ctx.textAlign = 'left';
+    ctx.fillStyle = t.title;
+    ctx.font = '800 74px Impact, "Arial Black", sans-serif';
+    ctx.fillText(fitText(ctx, card.title, W - padX * 2), padX, 190);
+    ctx.fillStyle = t.text;
+    ctx.font = '22px "Courier New", monospace';
+    ctx.fillText(fitText(ctx, card.subtitle, W - padX * 2), padX, 226);
+
+    // Bloc « JOURS SURVÉCUS » proéminent.
+    ctx.fillStyle = t.accent;
+    ctx.font = '800 120px Impact, "Arial Black", sans-serif';
+    ctx.fillText(String(card.daysSurvived), padX, 360);
+    var dw = ctx.measureText(String(card.daysSurvived)).width;
+    ctx.fillStyle = t.dim;
+    ctx.font = '700 26px "Courier New", monospace';
+    ctx.fillText('NUITS SURVÉCUES', padX + dw + 24, 330);
+    ctx.fillStyle = t.text;
+    ctx.font = '20px "Courier New", monospace';
+    ctx.fillText('sur ' + card.survivalDays + ' pour vaincre · ' +
+      card.survivors + ' survivant(s) / ' + card.population, padX + dw + 24, 360);
+
+    // Identité du joueur.
+    ctx.fillStyle = t.text;
+    ctx.font = '24px "Courier New", monospace';
+    ctx.fillText('👤 ' + card.citizenName + '  ·  ' + card.roleLabel +
+      (card.citizenAlive ? '  ·  en vie' : '  ·  disparu(e)'), padX, 410);
+
+    // Deux colonnes : bâtiments construits / objets récupérés.
+    var colY = 458;
+    drawCardList(ctx, t, padX, colY, 'BÂTIMENTS (' + card.totalBuildings + ')', card.buildings);
+    drawCardList(ctx, t, W / 2 + 20, colY, 'OBJETS (' + card.totalItems + ')', card.items);
+
+    // Pied : verdict + appel à jouer.
+    ctx.strokeStyle = t.frame;
+    ctx.beginPath();
+    ctx.moveTo(padX, H - 92); ctx.lineTo(W - padX, H - 92); ctx.stroke();
+    ctx.fillStyle = t.accent;
+    ctx.font = '800 30px Impact, "Arial Black", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(t.verdict, padX, H - 54);
+    ctx.fillStyle = t.dim;
+    ctx.font = '20px "Courier New", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('Survivras-tu aux hordes ?  botlings.github.io/Test', W - padX, H - 54);
+    ctx.fillStyle = t.text;
+    ctx.font = 'italic 18px "Courier New", monospace';
+    ctx.fillText(card.flavor, W - padX, H - 30);
+
+    shareCardState.dataUrl = canvas.toDataURL('image/png');
+  }
+
+  // Tronque un texte à la largeur dispo en ajoutant une ellipse si besoin.
+  function fitText(ctx, text, maxWidth) {
+    text = String(text == null ? '' : text);
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    var ell = '…';
+    while (text.length > 1 && ctx.measureText(text + ell).width > maxWidth) {
+      text = text.slice(0, -1);
+    }
+    return text + ell;
+  }
+
+  // Dessine une liste titrée d'entrées (icône + nom ×N), bornée à 5 lignes.
+  function drawCardList(ctx, t, x, y, heading, entries) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = t.accent;
+    ctx.font = '700 22px "Courier New", monospace';
+    ctx.fillText(heading, x, y);
+    ctx.font = '20px "Courier New", monospace';
+    var maxW = 500;
+    if (!entries || !entries.length) {
+      ctx.fillStyle = t.dim;
+      ctx.fillText('— aucun —', x, y + 32);
+      return;
+    }
+    var shown = entries.slice(0, 5);
+    shown.forEach(function (e, i) {
+      ctx.fillStyle = t.text;
+      var line = e.icon + ' ' + e.name + ' ×' + e.count;
+      ctx.fillText(fitText(ctx, line, maxW), x, y + 32 + i * 30);
+    });
+    if (entries.length > shown.length) {
+      ctx.fillStyle = t.dim;
+      ctx.fillText('+' + (entries.length - shown.length) + ' autres…', x, y + 32 + shown.length * 30);
+    }
+  }
+
+  function wireShareButtons(card) {
+    var url = gameShareUrl();
+    var text = card.shareText || 'Hordes Revival';
+    var xBtn = $('share-card-x-btn');
+    if (xBtn) {
+      xBtn.href = 'https://twitter.com/intent/tweet?text=' +
+        encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+    }
+    var redditBtn = $('share-card-reddit-btn');
+    if (redditBtn) {
+      redditBtn.href = 'https://www.reddit.com/submit?title=' +
+        encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+    }
+  }
+
+  function downloadShareCard() {
+    if (!shareCardState.dataUrl) {
+      toast('La carte n\'est pas encore prête.', 'error');
+      return;
+    }
+    var summary = shareCardState.summary || {};
+    var slug = String(summary.townName || 'ville').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ville';
+    var link = document.createElement('a');
+    link.href = shareCardState.dataUrl;
+    link.download = 'hordes-' + slug + '-jour' + (summary.daysSurvived || 0) + '.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast('Carte téléchargée — joins-la à ta publication !', 'success');
   }
 
   /* =========================================================================

@@ -53,6 +53,15 @@ export {
   type AchievementId,
   type AchievementDef,
 } from './achievements.js';
+export {
+  buildEndgameCard,
+  survivorTitle,
+  difficultyLabel,
+  type CardRole,
+  type EndgameCardEntry,
+  type EndgameCardInput,
+  type EndgameCardSummary,
+} from './endgame-card.js';
 export type {
   AttackWave,
   Citizen,
