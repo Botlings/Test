@@ -55,6 +55,10 @@ CREATE TABLE IF NOT EXISTS towns (
   -- gestionnaires uniquement pour les dépenses de construction).
   founder_account_id  uuid                   REFERENCES accounts(id) ON DELETE SET NULL,
   bank_policy         text          NOT NULL DEFAULT 'open' CHECK (bank_policy IN ('open','restricted')),
+  -- Gouvernance sociale (maire, élection, couvre-feu, votes d'exil) sérialisée
+  -- en JSONB. Forme : { mayor, election, curfew, exileMotions } — cf.
+  -- `src/domain/governance.ts`. Régénérée vide si absente/corrompue.
+  governance          jsonb         NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT towns_resources_nonneg CHECK (
     bank_wood >= 0 AND bank_metal >= 0 AND bank_water >= 0
   )
@@ -74,6 +78,9 @@ ALTER TABLE towns
   ADD COLUMN IF NOT EXISTS founder_account_id uuid REFERENCES accounts(id) ON DELETE SET NULL;
 ALTER TABLE towns
   ADD COLUMN IF NOT EXISTS bank_policy text NOT NULL DEFAULT 'open';
+-- Gouvernance sociale (maire, élection, couvre-feu, votes d'exil).
+ALTER TABLE towns
+  ADD COLUMN IF NOT EXISTS governance jsonb NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE TABLE IF NOT EXISTS citizens (
   town_id                  uuid     NOT NULL REFERENCES towns(id) ON DELETE CASCADE,

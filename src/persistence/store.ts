@@ -16,6 +16,7 @@
 import type { Game } from '../domain/game.js';
 import type { GameOutcome, NightReport, Phase } from '../domain/types.js';
 import type { AchievementId } from '../domain/achievements.js';
+import type { GovernanceState } from '../domain/governance.js';
 import type { Id } from './types.js';
 
 /** Issue finale enregistrée d'une partie (jamais `ongoing`). */
@@ -99,6 +100,12 @@ export interface TownRecord {
   bankPolicy: BankPolicy;
   readonly bankManagers: Set<Id>;
   readonly queue: Id[];
+  /**
+   * État de gouvernance sociale (maire, élection, couvre-feu, votes d'exil).
+   * Objet mutable et sérialisable (persisté en JSONB à côté du snapshot du
+   * moteur). Les transitions passent par le module `domain/governance`.
+   */
+  governance: GovernanceState;
 }
 
 /**
@@ -268,6 +275,12 @@ export type ActivityKind =
   | 'citizen.died'
   | 'night.resolved'
   | 'game.over'
+  | 'election.opened'
+  | 'mayor.elected'
+  | 'mayor.curfew'
+  | 'exile.opened'
+  | 'exile.passed'
+  | 'exile.rejected'
   | 'forum.thread.created'
   | 'forum.vote.created'
   | 'forum.vote.cast'

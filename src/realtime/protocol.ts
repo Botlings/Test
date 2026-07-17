@@ -174,6 +174,24 @@ export interface BankPolicyMessage {
   readonly by: string;
 }
 
+/**
+ * La gouvernance de la ville a changé (élection ouverte/close, nouveau maire,
+ * couvre-feu, motion d'exil ouverte/résolue). Signal léger et non
+ * personnalisé : le client rafraîchit sa vue via `GET /towns/:id/governance`
+ * (qui inclut ses propres votes). `reason` sert au feedback (toast/journal).
+ */
+export interface GovernanceUpdatedMessage {
+  readonly type: 'governance.updated';
+  readonly reason:
+    | 'election.opened'
+    | 'mayor.elected'
+    | 'curfew'
+    | 'exile.opened'
+    | 'exile.passed'
+    | 'exile.rejected'
+    | 'vote';
+}
+
 /** Erreur applicative renvoyée suite à une action invalide. */
 export interface ServerErrorMessage {
   readonly type: 'error';
@@ -199,6 +217,7 @@ export type ServerMessage =
   | PresenceSnapshotMessage
   | PresenceUpdateMessage
   | BankPolicyMessage
+  | GovernanceUpdatedMessage
   | ServerErrorMessage;
 
 /* -------------------------------------------------------------------------- */
@@ -246,6 +265,7 @@ const SERVER_TYPES = new Set<ServerMessage['type']>([
   'presence.snapshot',
   'presence.update',
   'bank.policy',
+  'governance.updated',
   'error',
 ]);
 

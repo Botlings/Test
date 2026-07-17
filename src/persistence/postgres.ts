@@ -23,6 +23,7 @@ import { Game } from '../domain/game.js';
 import type { AchievementId } from '../domain/achievements.js';
 import { sanitizeBuildingState } from '../domain/buildings.js';
 import { sanitizeDesertMap, seedFromString } from '../domain/desert.js';
+import { emptyGovernance, sanitizeGovernance } from '../domain/governance.js';
 import type { Citizen, Location, NightReport, Phase } from '../domain/types.js';
 import type { Id } from './types.js';
 import {
@@ -106,10 +107,12 @@ export class PgStore implements Store {
       desert_seed: string | number;
       founder_account_id: Id | null;
       bank_policy: BankPolicy;
+      governance: unknown;
     }>(
       `SELECT id, name, difficulty, created_at, closed, day, phase, town_defense,
               game_over, next_citizen_seq, bank_wood, bank_metal, bank_water,
-              buildings, desert, desert_seed, founder_account_id, bank_policy
+              buildings, desert, desert_seed, founder_account_id, bank_policy,
+              governance
          FROM towns`,
     );
     if (townsRes.rowCount === 0) return;
@@ -206,6 +209,7 @@ export class PgStore implements Store {
         bankPolicy: row.bank_policy === 'restricted' ? 'restricted' : 'open',
         bankManagers: new Set<Id>(),
         queue: [],
+        governance: sanitizeGovernance(row.governance),
       };
       this.towns.set(row.id, town);
     }
@@ -395,6 +399,7 @@ export class PgStore implements Store {
       bankPolicy: 'open',
       bankManagers: new Set<Id>(),
       queue: [],
+      governance: emptyGovernance(),
     };
     this.towns.set(id, town);
     return town;
@@ -749,7 +754,8 @@ export class PgStore implements Store {
                closed = $10,
                buildings = $11::jsonb,
                desert = $12::jsonb,
-               desert_seed = $13
+               desert_seed = $13,
+               governance = $14::jsonb
          WHERE id = $1`,
         [
           town.id,
@@ -765,6 +771,7 @@ export class PgStore implements Store {
           JSON.stringify(snapshot.buildings ?? {}),
           JSON.stringify(snapshot.desert ?? {}),
           snapshot.desertSeed ?? 0,
+          JSON.stringify(town.governance ?? emptyGovernance()),
         ],
       );
       const reverseMembership = new Map<string, Id>();

@@ -18,6 +18,7 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerTownRoutes } from './routes/towns.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerForumRoutes } from './routes/forum.js';
+import { registerGovernanceRoutes } from './routes/governance.js';
 import { registerPlayerRoutes } from './routes/players.js';
 import type { NightScheduler } from './night-scheduler.js';
 import type { Store } from '../persistence/store.js';
@@ -140,6 +141,7 @@ export async function buildApp(deps: AppDeps): Promise<BuiltApp> {
   registerTownRoutes(app, { store, jwtSecret, hub, scheduler, presence });
   registerActionRoutes(app, { store, jwtSecret, hub, scheduler });
   registerForumRoutes(app, { store, jwtSecret, hub });
+  registerGovernanceRoutes(app, { store, jwtSecret, hub, presence });
   registerPlayerRoutes(app, { store });
 
   app.get('/ws', { websocket: true }, (socket: WebSocket, request) => {

@@ -59,6 +59,7 @@
       openThreadDetail: null,
       createKind: 'discussion',
     },
+    governance: null,
   };
 
   /* =========================================================================
@@ -787,6 +788,7 @@
     $('town-share-card-btn').addEventListener('click', openShareCard);
 
     setupForumUI();
+    setupGovernanceUI();
   }
 
   function enterTown(townId, payload) {
@@ -801,6 +803,8 @@
     resetForumState();
     loadForumThreads();
     loadActivity();
+    state.governance = null;
+    loadGovernance();
   }
 
   function leaveTown() {
@@ -819,6 +823,8 @@
     closeThreadCreate();
     renderForumThreads();
     renderActivityFeed();
+    state.governance = null;
+    renderGovernance();
     enterLobby();
   }
 
@@ -1479,6 +1485,231 @@
       });
   }
 
+  /* =========================================================================
+   *  GOUVERNANCE (maire, couvre-feu, votes d'exil) — mécaniques Hordes
+   * =======================================================================*/
+
+  function govPath(suffix) {
+    return '/towns/' + encodeURIComponent(state.currentTownId) + '/governance' + (suffix || '');
+  }
+
+  function loadGovernance() {
+    var townId = state.currentTownId;
+    if (!townId) return;
+    apiCall(govPath(''))
+      .then(function (r) {
+        if (state.currentTownId !== townId) return;
+        state.governance = (r && r.governance) || null;
+        renderGovernance();
+      })
+      .catch(function () { /* transitoire : ignore */ });
+  }
+
+  function applyGovResp(r) {
+    if (r && r.governance) {
+      state.governance = r.governance;
+      renderGovernance();
+    }
+  }
+
+  function govErr(err) {
+    toast((err && err.message) || 'Action de gouvernance refusée', 'error');
+  }
+
+  function govPost(suffix, body) {
+    return apiCall(govPath(suffix), { method: 'POST', body: body || {} });
+  }
+
+  function govOpenElection() {
+    govPost('/election').then(applyGovResp).catch(govErr);
+  }
+  function govVoteMayor(id) {
+    if (!id) return;
+    govPost('/election/vote', { candidateCitizenId: id }).then(applyGovResp).catch(govErr);
+  }
+  function govCloseElection() {
+    govPost('/election/close').then(function (r) {
+      applyGovResp(r);
+      if (r && r.elected) toast('Nouveau maire : ' + r.elected.name, 'success');
+      else toast('Scrutin clos (aucune voix).', 'info');
+    }).catch(govErr);
+  }
+  function govCurfew() {
+    govPost('/curfew').then(function (r) {
+      applyGovResp(r);
+      toast('Couvre-feu décrété.', 'success');
+    }).catch(govErr);
+  }
+  function govBank(policy) {
+    govPost('/bank', { policy: policy }).then(function () {
+      toast(policy === 'restricted' ? 'Banque fermée par le maire.' : 'Banque rouverte.', 'success');
+      refreshTownState();
+      loadGovernance();
+    }).catch(govErr);
+  }
+  function govOpenExile(id) {
+    if (!id) return;
+    govPost('/exile', { targetCitizenId: id }).then(function (r) {
+      applyGovResp(r);
+      toast("Motion d'exil ouverte.", 'info');
+    }).catch(govErr);
+  }
+  function govExileVote(id, support) {
+    govPost('/exile/vote', { motionId: id, support: support }).then(function (r) {
+      applyGovResp(r);
+      if (r && r.outcome === 'passed') toast('Habitant exilé.', 'success');
+      else if (r && r.outcome === 'rejected') toast("Motion d'exil rejetée.", 'info');
+    }).catch(govErr);
+  }
+
+  function onGovernanceUpdated(msg) {
+    loadGovernance();
+    var reason = msg && msg.reason;
+    if (reason === 'mayor.elected') logEvent('🎖 Un nouveau maire a été élu.', 'info');
+    else if (reason === 'exile.passed') logEvent("🚪 Un habitant vient d'être exilé.", 'warning');
+    else if (reason === 'exile.rejected') logEvent("🤝 Une motion d'exil a été rejetée.", 'info');
+    else if (reason === 'curfew') logEvent('🌙 Un couvre-feu a été décrété.', 'warning');
+    else if (reason === 'election.opened') logEvent('🗳 Une élection municipale est ouverte.', 'info');
+  }
+
+  function govTallyFor(tally, id) {
+    for (var i = 0; i < (tally || []).length; i += 1) {
+      if (tally[i].candidateCitizenId === id) return tally[i].votes;
+    }
+    return 0;
+  }
+
+  function setupGovernanceUI() {
+    var body = $('gov-body');
+    if (!body) return;
+    body.addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest('[data-gov]') : null;
+      if (!btn) return;
+      var action = btn.getAttribute('data-gov');
+      if (action === 'open-election') govOpenElection();
+      else if (action === 'vote-mayor') govVoteMayor(btn.getAttribute('data-id'));
+      else if (action === 'close-election') govCloseElection();
+      else if (action === 'curfew') govCurfew();
+      else if (action === 'bank') govBank(btn.getAttribute('data-policy'));
+      else if (action === 'exile-vote') govExileVote(btn.getAttribute('data-id'), btn.getAttribute('data-support') === '1');
+      else if (action === 'open-exile') {
+        var sel = $('gov-exile-target');
+        if (sel && sel.value) govOpenExile(sel.value);
+      }
+    });
+  }
+
+  function renderGovernance() {
+    var card = $('governance-card');
+    var body = $('gov-body');
+    if (!card || !body) return;
+    var gov = state.governance;
+    if (!gov) { card.hidden = true; body.innerHTML = ''; return; }
+    card.hidden = false;
+
+    var html = '';
+
+    /* --- Mairie & élection --- */
+    html += '<section class="gov__section">';
+    html += '<h3 class="gov__title">🎖 Mairie</h3>';
+    if (gov.mayor) {
+      html += '<p class="gov__mayor">Maire : <strong>' + escapeHtml(gov.mayor.citizenName) +
+        '</strong> <span class="gov__muted">(élu jour ' + gov.mayor.electedDay + ')</span></p>';
+    } else {
+      html += '<p class="gov__muted">Aucun maire en fonction.</p>';
+    }
+
+    if (gov.election) {
+      html += '<div class="gov__election">';
+      html += '<p class="gov__sub">Scrutin ouvert par ' + escapeHtml(gov.election.openedByName) +
+        ' — ' + gov.election.totalVotes + ' voix</p>';
+      html += '<ul class="gov__ballot">';
+      (gov.candidates || []).forEach(function (c) {
+        var mine = gov.election.myVote === c.citizenId;
+        html += '<li class="gov__candidate' + (mine ? ' is-mine' : '') + '">' +
+          '<button type="button" class="gov__btn gov__btn--vote" data-gov="vote-mayor" data-id="' +
+          escapeHtml(c.citizenId) + '"' + (mine ? ' disabled' : '') + '>' +
+          (mine ? '✔ ' : '') + escapeHtml(c.name) + '</button>' +
+          '<span class="gov__count">' + govTallyFor(gov.election.tally, c.citizenId) + '</span></li>';
+      });
+      html += '</ul>';
+      html += '<button type="button" class="gov__btn gov__btn--primary" data-gov="close-election">Clôturer le scrutin</button>';
+      html += '</div>';
+    } else if (gov.canOpenElection) {
+      html += '<button type="button" class="gov__btn gov__btn--primary" data-gov="open-election">Ouvrir une élection</button>';
+    } else if (gov.mayor) {
+      html += '<p class="gov__muted">Réélection possible après ' + gov.electionIntervalDays + ' jours de mandat.</p>';
+    }
+    html += '</section>';
+
+    /* --- Pouvoirs du maire --- */
+    if (gov.isMayor) {
+      var bankClosed = !!(state.town && state.town.bankPolicy === 'restricted');
+      html += '<section class="gov__section gov__section--powers">';
+      html += '<h3 class="gov__title">Pouvoirs du maire</h3>';
+      html += '<div class="gov__powers">';
+      html += '<button type="button" class="gov__btn" data-gov="curfew"' + (gov.curfew.active ? ' disabled' : '') +
+        '>' + (gov.curfew.active ? '🌙 Couvre-feu actif' : '🌙 Décréter le couvre-feu') + '</button>';
+      html += '<button type="button" class="gov__btn" data-gov="bank" data-policy="' +
+        (bankClosed ? 'open' : 'restricted') + '">' +
+        (bankClosed ? '🔓 Rouvrir la banque' : '🔒 Fermer la banque') + '</button>';
+      html += '</div></section>';
+    } else if (gov.curfew.active) {
+      html += '<p class="gov__curfew">🌙 Couvre-feu décrété par ' +
+        escapeHtml(gov.curfew.by || 'le maire') + " — exils suspendus.</p>";
+    }
+
+    /* --- Votes d'exil --- */
+    html += '<section class="gov__section">';
+    html += '<h3 class="gov__title">⚖ Votes d\'exil</h3>';
+    var motions = gov.exileMotions || [];
+    if (motions.length) {
+      html += '<ul class="gov__motions">';
+      motions.forEach(function (m) {
+        html += '<li class="gov__motion">';
+        html += '<p class="gov__motion-head">Exil de <strong>' + escapeHtml(m.targetName) +
+          '</strong> <span class="gov__muted">(par ' + escapeHtml(m.openedByName) + ')</span></p>';
+        html += '<p class="gov__tally"><span class="gov__for">Pour ' + m.for +
+          '</span> · <span class="gov__against">Contre ' + m.against + '</span></p>';
+        if (m.isSelf) {
+          html += '<p class="gov__muted">Vous êtes visé : vous ne votez pas.</p>';
+        } else {
+          html += '<div class="gov__motion-actions">' +
+            '<button type="button" class="gov__btn gov__btn--danger" data-gov="exile-vote" data-id="' +
+            escapeHtml(m.id) + '" data-support="1"' + (m.myVote === true ? ' disabled' : '') + '>' +
+            (m.myVote === true ? '✔ Pour' : "Pour l'exil") + '</button>' +
+            '<button type="button" class="gov__btn" data-gov="exile-vote" data-id="' +
+            escapeHtml(m.id) + '" data-support="0"' + (m.myVote === false ? ' disabled' : '') + '>' +
+            (m.myVote === false ? '✔ Contre' : 'Contre') + '</button>' +
+            '</div>';
+        }
+        html += '</li>';
+      });
+      html += '</ul>';
+    } else {
+      html += '<p class="gov__muted">Aucune motion d\'exil en cours.</p>';
+    }
+
+    if (!gov.curfew.active) {
+      var options = '';
+      (gov.candidates || []).forEach(function (c) {
+        if (c.citizenId === gov.yourCitizenId) return;
+        var already = motions.some(function (m) { return m.targetCitizenId === c.citizenId; });
+        if (already) return;
+        options += '<option value="' + escapeHtml(c.citizenId) + '">' + escapeHtml(c.name) + '</option>';
+      });
+      if (options) {
+        html += '<div class="gov__exile-open">' +
+          '<select class="gov__select" id="gov-exile-target">' + options + '</select>' +
+          '<button type="button" class="gov__btn gov__btn--danger" data-gov="open-exile">Demander l\'exil</button>' +
+          '</div>';
+      }
+    }
+    html += '</section>';
+
+    body.innerHTML = html;
+  }
+
   /** Recharge l'état complet de la ville via REST puis rafraîchit l'UI. */
   function refreshTownState() {
     if (!state.currentTownId) return;
@@ -1486,6 +1717,7 @@
       .then(function (town) {
         state.yourCitizenId = town.yourCitizenId;
         renderTown(town);
+        renderGovernance();
       })
       .catch(function () { /* transitoire : ignore */ });
   }
@@ -2151,6 +2383,9 @@
       case 'bank.policy':
         applyBankPolicy(msg);
         break;
+      case 'governance.updated':
+        onGovernanceUpdated(msg);
+        break;
       case 'error':
         toast(msg.message || 'Erreur serveur', 'error');
         break;
@@ -2285,6 +2520,12 @@
     'citizen.loot-event':    { icon: '🎁', label: 'a récupéré un butin' },
     'citizen.died':          { icon: '☠', label: 'est mort' },
     'night.resolved':        { icon: '☾', label: 'Nuit résolue' },
+    'election.opened':       { icon: '🗳', label: 'a ouvert une élection municipale' },
+    'mayor.elected':         { icon: '🎖', label: 'a été élu maire' },
+    'mayor.curfew':          { icon: '🌙', label: 'a décrété un couvre-feu' },
+    'exile.opened':          { icon: '⚖', label: "a demandé l'exil d'un habitant" },
+    'exile.passed':          { icon: '🚪', label: 'a été banni de la ville' },
+    'exile.rejected':        { icon: '🤝', label: "a vu sa motion d'exil rejetée" },
     'forum.thread.created':  { icon: '💬', label: 'a ouvert une discussion' },
     'forum.vote.created':    { icon: '☑', label: 'a lancé un vote' },
     'forum.vote.cast':       { icon: '✔', label: 'a voté' },

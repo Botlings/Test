@@ -1424,6 +1424,119 @@ body[data-phase='night'] .status-pill--phase {
 .bank-gov .btn { align-self: flex-start; }
 
 /* ════════════════════════════════════════════════════════════════
+   GOUVERNANCE (mairie, couvre-feu, votes d'exil)
+   ════════════════════════════════════════════════════════════════ */
+.gov {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.4rem 0.1rem 0.2rem;
+}
+
+.gov__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--drop);
+}
+.gov__section:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.gov__title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--rust-deep, #7a3b1e);
+}
+
+.gov__mayor { margin: 0; font-family: var(--font-ui); font-size: 13px; color: var(--ink); }
+.gov__mayor strong { color: var(--blood); }
+.gov__sub { margin: 0; font-family: var(--font-ui); font-size: 11px; color: var(--ink-soft); }
+.gov__muted { margin: 0; font-family: var(--font-ui); font-size: 11px; color: var(--ink-soft); font-style: italic; }
+
+.gov__curfew {
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: #fff;
+  background: var(--blood-deep, #5a1414);
+  box-shadow: var(--bevel-out-thin);
+}
+
+/* Boutons de gouvernance — biseau W98 sur fond sable/rouille. */
+.gov__btn {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.32rem 0.7rem;
+  min-height: 26px;
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--face);
+  border: 0;
+  box-shadow: var(--bevel-out-thin);
+}
+.gov__btn:hover { background: var(--face-light); }
+.gov__btn:active { box-shadow: var(--bevel-in-thin); }
+.gov__btn:disabled { cursor: not-allowed; opacity: 0.55; }
+
+.gov__btn--primary { background: var(--gold, #c8a032); color: #241a00; }
+.gov__btn--primary:hover { filter: brightness(1.06); background: var(--gold, #c8a032); }
+.gov__btn--danger { background: var(--blood); color: #fff; }
+.gov__btn--danger:hover { background: #c02020; }
+
+.gov__powers { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.gov__ballot { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.gov__candidate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.gov__candidate .gov__btn--vote { flex: 1 1 auto; text-align: left; }
+.gov__candidate.is-mine .gov__btn--vote { outline: 2px solid var(--gold, #c8a032); }
+.gov__count {
+  min-width: 1.6rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.gov__motions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.gov__motion {
+  padding: 0.45rem 0.55rem;
+  background: var(--well, #d8c7a8);
+  box-shadow: var(--bevel-in-thin);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.gov__motion-head { margin: 0; font-family: var(--font-ui); font-size: 12px; color: var(--ink); }
+.gov__motion-head strong { color: var(--blood); }
+.gov__tally { margin: 0; font-family: var(--font-mono); font-size: 12px; }
+.gov__for { color: #197a2e; font-weight: 700; }
+.gov__against { color: var(--blood); font-weight: 700; }
+.gov__motion-actions { display: flex; gap: 0.4rem; }
+
+.gov__exile-open { display: flex; gap: 0.4rem; align-items: stretch; flex-wrap: wrap; margin-top: 0.2rem; }
+.gov__select {
+  flex: 1 1 8rem;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 0.25rem 0.4rem;
+  color: var(--ink);
+  background: #fff;
+  border: 0;
+  box-shadow: var(--bevel-in-thin);
+}
+
+/* ════════════════════════════════════════════════════════════════
    JOURNAL DE LA VILLE (fenêtre CMD — flux temps réel)
    ════════════════════════════════════════════════════════════════ */
 .log {

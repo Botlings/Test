@@ -15,6 +15,7 @@ import type { AchievementId } from '../domain/achievements.js';
 import type { GameConfig } from '../domain/config.js';
 import { DEFAULT_CONFIG } from '../domain/config.js';
 import { seedFromString } from '../domain/desert.js';
+import { emptyGovernance } from '../domain/governance.js';
 import type { NightReport } from '../domain/types.js';
 import type { Id } from './types.js';
 import {
@@ -244,6 +245,7 @@ export class MemoryStore implements Store {
       bankPolicy: 'open',
       bankManagers: new Set<Id>(),
       queue: [],
+      governance: emptyGovernance(),
     };
     this.towns.set(town.id, town);
     return town;
