@@ -10,7 +10,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../auth-guard.js';
 import type { Store } from '../../persistence/store.js';
 import type { Id } from '../../persistence/types.js';
-import { buildAchievements as buildProfileAchievements } from '../profile.js';
+import { buildAchievements as buildProfileAchievements, mapHistory } from '../profile.js';
 import {
   fingerprintToken,
   generateRefreshToken,
@@ -223,19 +223,8 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     const accountId = requireAuth(request, reply, { jwtSecret });
     if (!accountId) return;
     const history = await store.listAccountTowns(accountId);
-    return reply.code(200).send({
-      history: history.map((h) => ({
-        townId: h.townId,
-        townName: h.townName,
-        difficulty: h.difficulty,
-        joinedAt: h.joinedAt.toISOString(),
-        currentDay: h.currentDay,
-        phase: h.phase,
-        outcome: h.outcome,
-        gameOver: h.gameOver,
-        closed: h.closed,
-        citizen: h.citizen,
-      })),
-    });
+    // Mise en forme mutualisée avec le profil public (inclut l'épitaphe du
+    // citoyen tombé — permadeath).
+    return reply.code(200).send({ history: mapHistory(history) });
   });
 }

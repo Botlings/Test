@@ -644,6 +644,8 @@ export class Game {
     this._phase = 'night';
 
     const deaths: Death[] = [];
+    // Eau léguée à la banque par les défunts tombés dans les murs cette nuit.
+    let salvagedWater = 0;
     const baseHordePower = this.hordePower(this._day);
     // Composition en zombies spéciaux de la nuit (déterministe selon le jour).
     const threats = computeNightThreats(this._day, this.config.zombie);
@@ -651,7 +653,7 @@ export class Game {
     // 1. Désert : carnage immédiat.
     for (const citizen of this._citizens) {
       if (citizen.alive && citizen.location === 'desert') {
-        this.kill(citizen, 'dévoré dans le désert');
+        salvagedWater += this.kill(citizen, 'dévoré dans le désert');
         deaths.push(this.toDeath(citizen, 'desert'));
       }
     }
@@ -716,10 +718,10 @@ export class Game {
       for (let i = 0; i < victimsCount && i < sheltered.length; i++) {
         const victim = sheltered[i]!;
         if (i < maxWatchDeaths) {
-          this.kill(victim, 'tombé en faction sur les remparts');
+          salvagedWater += this.kill(victim, 'tombé en faction sur les remparts');
           deaths.push(this.toDeath(victim, 'watch'));
         } else {
-          this.kill(victim, 'tué lors de la percée de la horde');
+          salvagedWater += this.kill(victim, 'tué lors de la percée de la horde');
           deaths.push(this.toDeath(victim, 'breach'));
         }
       }
@@ -748,6 +750,7 @@ export class Game {
         overflow,
         breached,
         deaths,
+        salvagedWater,
         survivors: 0,
         gameOver: true,
         outcome: 'defeat',
@@ -772,6 +775,7 @@ export class Game {
         overflow,
         breached,
         deaths,
+        salvagedWater,
         survivors: survivorsAfterNight,
         gameOver: true,
         outcome: 'victory',
@@ -780,7 +784,10 @@ export class Game {
     }
 
     // 5. L'aube se lève : nouveau jour, soif et recharge des points d'action.
-    this.dawn(deaths);
+    //    La déshydratation qui s'y produit peut aussi léguer de l'eau (nulle
+    //    en pratique : un déshydraté a la gourde vide) — on l'agrège pour être
+    //    exhaustif.
+    salvagedWater += this.dawn(deaths);
 
     const survivors = this.aliveCount;
     if (survivors === 0) {
@@ -800,6 +807,7 @@ export class Game {
       overflow,
       breached,
       deaths,
+      salvagedWater,
       survivors,
       gameOver: this._gameOver,
       outcome: this._outcome,
@@ -846,6 +854,7 @@ export class Game {
     overflow: number;
     breached: boolean;
     deaths: Death[];
+    salvagedWater: number;
     survivors: number;
     gameOver: boolean;
     outcome: GameOutcome;
@@ -875,6 +884,7 @@ export class Game {
       breached: input.breached,
       deaths: input.deaths,
       deathsBySource,
+      salvagedWater: input.salvagedWater,
       survivors: input.survivors,
       gameOver: input.gameOver,
       outcome: input.outcome,
@@ -1014,8 +1024,13 @@ export class Game {
     return this._citizens.filter((c) => c.alive).length;
   }
 
-  /** Fait lever le jour suivant : soif, déshydratation et recharge des PA. */
-  private dawn(deaths: Death[]): void {
+  /**
+   * Fait lever le jour suivant : soif, déshydratation et recharge des PA.
+   * Renvoie l'eau léguée à la banque par d'éventuels morts de soif (0 en
+   * pratique, un déshydraté ayant la gourde vide).
+   */
+  private dawn(deaths: Death[]): number {
+    let salvaged = 0;
     this._day += 1;
     this._phase = 'day';
     // Production passive d'eau par les puits : ravitaillement matinal de la
@@ -1045,7 +1060,7 @@ export class Game {
       } else {
         citizen.consecutiveThirstDays += 1;
         if (citizen.consecutiveThirstDays >= 2) {
-          this.kill(citizen, 'mort de déshydratation');
+          salvaged += this.kill(citizen, 'mort de déshydratation');
           deaths.push(this.toDeath(citizen, 'dehydration'));
         } else {
           // Un citoyen assoiffé n'a la force que de la moitié de ses actions.
@@ -1061,6 +1076,7 @@ export class Game {
     }
     // La carte du désert respire : nouveaux zombies, repop ponctuel de loot.
     dawnTickDesert(this._desert, this._day);
+    return salvaged;
   }
 
   /**
@@ -1081,10 +1097,23 @@ export class Game {
     return 0;
   }
 
-  private kill(citizen: Citizen, cause: string): void {
+  /**
+   * Tue un citoyen (permadeath : irréversible) et reverse ses ressources
+   * personnelles à la banque commune s'il tombe à l'abri, dans les murs — le
+   * legs du défunt profite aux survivants. Un corps abandonné dans le désert
+   * emporte son eau. Renvoie la quantité d'eau ainsi léguée (0 si aucune).
+   */
+  private kill(citizen: Citizen, cause: string): number {
     citizen.alive = false;
     citizen.actionPoints = 0;
     citizen.causeOfDeath = cause;
+    let salvaged = 0;
+    if (citizen.location === 'town' && citizen.waterCanteen > 0) {
+      salvaged = citizen.waterCanteen;
+      this._bank.water += salvaged;
+      citizen.waterCanteen = 0;
+    }
+    return salvaged;
   }
 
   private toDeath(citizen: Citizen, source: DeathSource): Death {

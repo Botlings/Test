@@ -1219,6 +1219,47 @@ body[data-phase='night'] .status-pill--phase {
 .stat--warning .stat__value { color: var(--gold); text-shadow: 0 0 6px rgba(255, 200, 58, 0.55); }
 .stat--danger  .stat__value { color: var(--danger); text-shadow: 0 0 6px rgba(255, 90, 71, 0.55); }
 
+/* ── Mode fantôme (permadeath) ─────────────────────────────────── */
+.ghost-banner {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(120, 30, 40, 0.28);
+  border: 1px solid var(--danger);
+  box-shadow: inset 0 0 12px rgba(255, 90, 71, 0.25);
+}
+
+.ghost-banner__icon { font-size: 20px; line-height: 1.1; filter: grayscale(0.4); }
+
+.ghost-banner__body { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.ghost-banner__title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 6px rgba(255, 90, 71, 0.5);
+}
+
+.ghost-banner__text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--crt-dim);
+  line-height: 1.35;
+}
+
+.ghost-banner__epitaph {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--crt);
+  opacity: 0.85;
+}
+
 /* ════════════════════════════════════════════════════════════════
    ACTIONS DU JOUR — contrôles W98
    ════════════════════════════════════════════════════════════════ */
@@ -1758,6 +1799,13 @@ body[data-phase='night'] .status-pill--phase {
 .modal__body .report-breach { color: var(--danger); font-weight: 700; text-shadow: 0 0 6px rgba(255, 90, 71, 0.6); }
 .modal__body .report-safe { color: var(--crt-bright); font-weight: 700; text-shadow: var(--glow-strong); }
 .modal__body .report-victory { color: var(--gold); font-weight: 700; font-size: 15px; text-shadow: 0 0 10px rgba(255, 200, 58, 0.7); }
+.modal__body .report-salvage {
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--crt-dim);
+}
+.modal__body .report-salvage strong { color: var(--crt-bright); }
 
 /* ════════════════════════════════════════════════════════════════
    PROFIL JOUEUR (fenêtre CMD — relevé de stats + historique)
@@ -2003,6 +2051,19 @@ body[data-phase='night'] .status-pill--phase {
   border-color: var(--crt);
   color: var(--crt-bright);
   box-shadow: var(--glow-soft);
+}
+
+/* Épitaphe (permadeath) : pierre tombale narrative d'une partie perdue. */
+.history-entry__epitaph {
+  display: block;
+  background: rgba(120, 30, 40, 0.18);
+  border-left: 3px solid var(--danger);
+  color: var(--crt-soft);
+  padding: 0.3rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.35;
 }
 
 /* ── Phase nuit (assaut) : on durcit l'ambiance de la carte ── */

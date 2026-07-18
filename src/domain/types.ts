@@ -155,6 +155,12 @@ export interface NightReport {
   readonly deaths: readonly Death[];
   /** Décès groupés par cause (pour l'affichage). */
   readonly deathsBySource: DeathsBySource;
+  /**
+   * Eau récupérée sur les gourdes des citoyens tombés à l'abri (dans les murs)
+   * et reversée à la banque commune cette nuit. Les corps abandonnés au désert
+   * emportent leur eau : seuls les morts en ville alimentent ce total.
+   */
+  readonly salvagedWater: number;
   /** Nombre de citoyens encore en vie après la nuit et l'aube. */
   readonly survivors: number;
   /** `true` si la partie est terminée (ville tombée OU survie complète). */

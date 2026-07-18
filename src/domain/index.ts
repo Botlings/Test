@@ -53,6 +53,7 @@ export {
   type AchievementId,
   type AchievementDef,
 } from './achievements.js';
+export { buildEpitaph, type EpitaphInput } from './epitaph.js';
 export {
   buildEndgameCard,
   survivorTitle,

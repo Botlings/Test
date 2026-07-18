@@ -589,9 +589,11 @@
         '  <span>Jour atteint <strong>' + entry.currentDay + '</strong> (' + phaseLabel + ')</span>' +
         '  <span>Rejointe le <strong>' + escapeHtml(joinedLabel) + '</strong></span>' +
         '</div>' +
-        (entry.citizen.causeOfDeath
-          ? '<div class="history-entry__cause">☠ ' + escapeHtml(entry.citizen.causeOfDeath) + '</div>'
-          : '');
+        (entry.epitaph
+          ? '<div class="history-entry__epitaph">🪦 ' + escapeHtml(entry.epitaph) + '</div>'
+          : (entry.citizen.causeOfDeath
+            ? '<div class="history-entry__cause">☠ ' + escapeHtml(entry.citizen.causeOfDeath) + '</div>'
+            : ''));
       var btn = li.querySelector('button[data-town-id]');
       if (btn) {
         btn.addEventListener('click', function () {
@@ -1318,6 +1320,25 @@
       ? (self.location === 'desert' ? 'Dans le désert' : 'En ville')
       : 'Mort — ' + (self.causeOfDeath || 'cause inconnue');
 
+    // Permadeath : citoyen tombé → mode fantôme. On coiffe la carte d'un
+    // bandeau explicite (observation sans interaction) et d'une épitaphe.
+    var ghostHtml = '';
+    if (!self.alive) {
+      var epitaph = state.town && state.town.yourEpitaph
+        ? state.town.yourEpitaph
+        : 'Ci-gît ' + self.name + ', ' + (self.causeOfDeath || 'emporté par la horde') + '.';
+      ghostHtml =
+        '<div class="ghost-banner" role="status">' +
+        '  <span class="ghost-banner__icon" aria-hidden="true">👻</span>' +
+        '  <div class="ghost-banner__body">' +
+        '    <strong class="ghost-banner__title">Mode fantôme</strong>' +
+        '    <span class="ghost-banner__text">Vous êtes mort. Vous observez la ville sans pouvoir agir. ' +
+        'Vos ressources ont été reversées à la banque commune.</span>' +
+        '    <span class="ghost-banner__epitaph">« ' + escapeHtml(epitaph) + ' »</span>' +
+        '  </div>' +
+        '</div>';
+    }
+
     var thirstCls = self.consecutiveThirstDays >= 1 ? ' stat--warning' : '';
     if (self.consecutiveThirstDays >= 2) thirstCls = ' stat--danger';
     var apCls = self.actionPoints <= 0 ? ' stat--danger' : '';
@@ -1331,6 +1352,7 @@
     var canteenCls = canteen === 0 ? ' is-empty' : '';
 
     card.innerHTML =
+      ghostHtml +
       '<div class="citizen-card__head">' +
       '  <span class="citizen-card__avatar">' + escapeHtml(initials(self.name)) + '</span>' +
       '  <div>' +
@@ -2015,6 +2037,10 @@
         deathsHtml += '<li><strong>' + escapeHtml(d.name) + '</strong> — ' + escapeHtml(d.cause) + '</li>';
       });
       deathsHtml += '</ul>';
+      if (Number(report.salvagedWater) > 0) {
+        deathsHtml += '<p class="report-salvage">🩸 Gourdes des défunts reversées à la banque : ' +
+          '<strong>+' + Number(report.salvagedWater) + ' eau</strong></p>';
+      }
     }
     var shareHtml = '';
     if (report.gameOver) {

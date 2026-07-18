@@ -167,13 +167,17 @@
         }
         var diffLabel = DIFFICULTY_LABELS[entry.difficulty] || entry.difficulty;
         var citizenName = entry.citizen ? entry.citizen.name : '—';
+        // Permadeath : épitaphe du citoyen tombé (sinon un tiret discret).
+        var epitaph = entry.epitaph
+          ? '<span class="history-entry__epitaph" title="Épitaphe">🪦 ' + escapeHtml(entry.epitaph) + '</span>'
+          : '<span class="history-entry__resume" aria-hidden="true">—</span>';
         return '<li class="history-entry">' +
           '<div class="history-entry__name">' +
           '<span>' + escapeHtml(entry.townName) + '</span>' +
           '<span class="badge badge--' + escapeHtml(entry.difficulty) + '">' + escapeHtml(diffLabel) + '</span>' +
           '<span class="history-entry__status ' + statusClass + '">' + escapeHtml(statusLabel) + '</span>' +
           '</div>' +
-          '<span class="history-entry__resume" aria-hidden="true">—</span>' +
+          epitaph +
           '<div class="history-entry__meta">' +
           '<span>Citoyen <strong>' + escapeHtml(citizenName) + '</strong></span>' +
           '<span>Jour atteint <strong>' + (entry.currentDay || 0) + '</strong></span>' +

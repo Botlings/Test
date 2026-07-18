@@ -22,6 +22,7 @@ import type { PresenceRegistry } from '../../realtime/presence.js';
 import type { NightScheduler } from '../night-scheduler.js';
 import { publishActivity } from '../activity.js';
 import { buildEndgameCard } from '../../domain/endgame-card.js';
+import { buildEpitaph } from '../../domain/epitaph.js';
 
 interface TownsDeps {
   readonly store: Store;
@@ -77,6 +78,9 @@ function fullTownState(
 ) {
   const status = town.game.status();
   const yourCitizenId = town.membership.get(accountId);
+  const yourCitizen = yourCitizenId
+    ? status.citizens.find((c) => c.id === yourCitizenId)
+    : undefined;
   const scheduledAt = scheduler?.getScheduledFor(town.id) ?? null;
   const onlineAccounts = new Set(presence.online(town.id));
   const queueIndex = town.queue.indexOf(accountId);
@@ -115,6 +119,19 @@ function fullTownState(
       };
     }),
     yourCitizenId: yourCitizenId ?? null,
+    // Permadeath : un membre dont le citoyen est mort passe en « mode fantôme »
+    // (il observe la ville sans pouvoir agir). `null` s'il n'est pas citoyen.
+    yourCitizenAlive: yourCitizen ? yourCitizen.alive : null,
+    youAreGhost: yourCitizen ? !yourCitizen.alive : false,
+    yourEpitaph: yourCitizen && !yourCitizen.alive
+      ? buildEpitaph({
+          name: yourCitizen.name,
+          alive: false,
+          causeOfDeath: yourCitizen.causeOfDeath ?? null,
+          daysSurvived: status.day,
+          outcome: status.outcome,
+        })
+      : null,
     yourRole: roleFor(town, accountId),
     bankManagers: bankManagersView(town),
     capacity: MAX_CITIZENS_PER_TOWN,

@@ -11,6 +11,8 @@
  */
 import type { Store, AccountRecord, AccountTownEntry } from '../persistence/store.js';
 import { ACHIEVEMENT_CATALOG } from '../domain/achievements.js';
+import { buildEpitaph } from '../domain/epitaph.js';
+import type { GameOutcome } from '../domain/types.js';
 
 /** Statistiques globales de survie d'un compte. */
 export interface ProfileStats {
@@ -49,6 +51,11 @@ export interface ProfileHistoryEntry {
     readonly alive: boolean;
     readonly causeOfDeath: string | null;
   };
+  /**
+   * Épitaphe du citoyen s'il est tombé (permadeath), sinon `null`. Phrase
+   * mémorielle prête à afficher sur la pierre tombale du profil.
+   */
+  readonly epitaph: string | null;
 }
 
 /** Nom d'affichage public : partie locale de l'email (jamais le domaine). */
@@ -110,6 +117,13 @@ export function mapHistory(history: readonly AccountTownEntry[]): ProfileHistory
     gameOver: h.gameOver,
     closed: h.closed,
     citizen: h.citizen,
+    epitaph: buildEpitaph({
+      name: h.citizen.name,
+      alive: h.citizen.alive,
+      causeOfDeath: h.citizen.causeOfDeath,
+      daysSurvived: h.currentDay,
+      outcome: h.outcome as GameOutcome,
+    }),
   }));
 }
 
