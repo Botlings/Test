@@ -55,6 +55,21 @@ export {
 } from './achievements.js';
 export { buildEpitaph, type EpitaphInput } from './epitaph.js';
 export {
+  RECIPE_CATALOG,
+  CRAFTING_BUILDING,
+  getRecipeDef,
+  isKnownRecipeId,
+  recipeBlocker,
+  totalRations,
+  type RecipeId,
+  type RecipeDef,
+  type RecipeGroup,
+  type CraftInputs,
+  type CraftOutputs,
+  type CraftResources,
+  type CraftBlocker,
+} from './crafting.js';
+export {
   buildEndgameCard,
   survivorTitle,
   difficultyLabel,

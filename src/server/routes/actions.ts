@@ -25,7 +25,8 @@ import {
   getBuildingDef,
   isKnownBuildingId,
 } from '../../domain/buildings.js';
-import { ITEM_CATALOG } from '../../domain/items.js';
+import { ITEM_CATALOG, getItemDef } from '../../domain/items.js';
+import { RECIPE_CATALOG, isKnownRecipeId } from '../../domain/crafting.js';
 import { NIGHT_THREAT_CATALOG } from '../../domain/zombies.js';
 import type { Location } from '../../domain/types.js';
 import { StoreError, canSpendBank, type Store } from '../../persistence/store.js';
@@ -90,6 +91,26 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
     });
   });
 
+  /* ------------------------ GET /crafting/catalog -------------------------- */
+  // Public : les 15 recettes de l'établi (transformation d'objets à la forge).
+  // Le client affiche la grille et calcule la faisabilité à partir de l'état de
+  // ville (banque + stock + bâtiments) qu'il possède déjà.
+  app.get('/crafting/catalog', async (_request, reply) => {
+    return reply.code(200).send({
+      recipes: RECIPE_CATALOG.map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        icon: r.icon,
+        group: r.group,
+        actionPointCost: r.actionPointCost,
+        requiresBuilding: r.requiresBuilding,
+        inputs: { resources: r.inputs.resources, items: r.inputs.items },
+        outputs: { items: r.outputs.items },
+      })),
+    });
+  });
+
   /* ------------------------ GET /zombies/catalog --------------------------- */
   // Public : le bestiaire des zombies spéciaux de l'assaut nocturne.
   app.get('/zombies/catalog', async (_request, reply) => {
@@ -138,6 +159,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           type?: unknown;
           to?: unknown;
           buildingId?: unknown;
+          recipeId?: unknown;
           x?: unknown;
           y?: unknown;
         }
@@ -264,6 +286,44 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           newlyUnlocked.push(...await awardBuildAchievements(store, accountId));
           break;
         }
+        case 'craft': {
+          const recipeId = body?.recipeId;
+          if (typeof recipeId !== 'string' || !isKnownRecipeId(recipeId)) {
+            return reply.code(400).send({
+              error: { code: 'recipe-unknown', message: 'Recette inconnue' },
+            });
+          }
+          // L'établi puise dans la banque commune (ressources) et le stock
+          // partagé : soumis au même régime d'accès que la construction.
+          if (!canSpendBank(town, accountId)) {
+            return reply.code(403).send({
+              error: {
+                code: 'bank-restricted',
+                message: 'La banque est en accès restreint : seuls le fondateur et les gestionnaires peuvent fabriquer',
+              },
+            });
+          }
+          const crafted = town.game.craft(citizenId, recipeId);
+          await store.saveTown(town);
+          publishTownSnapshot(hub, town);
+          // Résumé lisible des objets produits (« 2× Barre énergétique ») : le
+          // journal d'activité n'accepte que des scalaires.
+          const producedLabel = (Object.keys(crafted.produced) as Array<keyof typeof crafted.produced>)
+            .map((id) => `${crafted.produced[id] ?? 0}× ${getItemDef(id as string)?.name ?? id}`)
+            .join(', ');
+          await publishActivity(store, hub, townId, {
+            accountId,
+            citizenId,
+            citizenName,
+            kind: 'citizen.craft',
+            details: {
+              recipeId,
+              recipeName: crafted.recipe.name,
+              produced: producedLabel,
+            },
+          });
+          break;
+        }
         case 'move-zone': {
           const x = body?.x;
           const y = body?.y;
@@ -351,7 +411,7 @@ export function registerActionRoutes(app: FastifyInstance, deps: ActionsDeps): v
           return reply.code(400).send({
             error: {
               code: 'action-unknown',
-              message: 'Type d\'action inconnu (move, move-zone, scavenge, scavenge-zone, fight, loot-event, build, construct)',
+              message: 'Type d\'action inconnu (move, move-zone, scavenge, scavenge-zone, fight, loot-event, build, construct, craft)',
             },
           });
       }

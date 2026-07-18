@@ -22,6 +22,13 @@ import {
   type ItemStock,
 } from './items.js';
 import {
+  getRecipeDef,
+  isKnownRecipeId,
+  recipeBlocker,
+  type CraftBlocker,
+  type RecipeDef,
+} from './crafting.js';
+import {
   bruteWallPierce,
   prowlerWatchNegation,
   computeNightThreats,
@@ -414,6 +421,81 @@ export class Game {
     const nextCount = currentCount + 1;
     this._buildings[def.id] = nextCount;
     return { count: nextCount, townDefense: this.totalWallDefense() };
+  }
+
+  /**
+   * Fabrique un objet à l'établi (`crafting.ts`) : transforme des ressources de
+   * la banque et/ou des objets du stock en d'autres objets. Exige que la forge
+   * (`workshop`) soit érigée et que le citoyen soit présent en ville. Coûte des
+   * points d'action. Échec atomique : rien n'est entamé si un contrôle échoue.
+   *
+   * Renvoie la recette réalisée, les objets produits, et l'état résultant de la
+   * banque et du stock (pour la réponse API et le journal d'activité).
+   */
+  craft(citizenId: string, recipeId: string): {
+    recipe: RecipeDef;
+    produced: Readonly<Partial<Record<ItemId, number>>>;
+    bank: ResourceBank;
+    items: ItemStock;
+  } {
+    this.assertPlayable();
+    const recipe = getRecipeDef(recipeId);
+    if (!recipe || !isKnownRecipeId(recipeId)) {
+      throw new GameRuleError(`Recette inconnue : ${recipeId}.`);
+    }
+    const citizen = this.requireAliveCitizen(citizenId);
+    if (citizen.location !== 'town') {
+      throw new GameRuleError('Seul un citoyen présent en ville peut utiliser l\'établi.');
+    }
+    const forgeCount = this._buildings[recipe.requiresBuilding] ?? 0;
+    const blocker = recipeBlocker(recipe, this._bank, this._items, forgeCount);
+    if (blocker) {
+      throw new GameRuleError(this.describeCraftBlocker(recipe, blocker));
+    }
+    // Tous les contrôles passent : on engage les coûts de façon atomique.
+    this.spendActionPoints(citizen, recipe.actionPointCost);
+    const res = recipe.inputs.resources;
+    this._bank.wood -= res.wood ?? 0;
+    this._bank.metal -= res.metal ?? 0;
+    this._bank.water -= res.water ?? 0;
+    for (const id of Object.keys(recipe.inputs.items) as ItemId[]) {
+      const need = recipe.inputs.items[id] ?? 0;
+      const next = Math.max(0, (this._items[id] ?? 0) - need);
+      if (next === 0) delete this._items[id];
+      else this._items[id] = next;
+    }
+    for (const id of Object.keys(recipe.outputs.items) as ItemId[]) {
+      const gain = recipe.outputs.items[id] ?? 0;
+      this._items[id] = (this._items[id] ?? 0) + gain;
+    }
+    return {
+      recipe,
+      produced: { ...recipe.outputs.items },
+      bank: { ...this._bank },
+      items: { ...this._items },
+    };
+  }
+
+  /** Message d'erreur lisible pour un obstacle de fabrication. */
+  private describeCraftBlocker(recipe: RecipeDef, blocker: CraftBlocker): string {
+    switch (blocker.kind) {
+      case 'no-forge': {
+        const forge = getBuildingDef(recipe.requiresBuilding);
+        return `Il faut d'abord ériger « ${forge?.name ?? recipe.requiresBuilding} » (la forge) pour fabriquer.`;
+      }
+      case 'resources': {
+        const labels = { wood: 'bois', metal: 'métal', water: 'eau' } as const;
+        const need = recipe.inputs.resources[blocker.resource] ?? 0;
+        const have = this._bank[blocker.resource];
+        return `Ressources insuffisantes pour « ${recipe.name} » : ${need} ${labels[blocker.resource]} requis (${have} en banque).`;
+      }
+      case 'items': {
+        const need = recipe.inputs.items[blocker.item] ?? 0;
+        const have = this._items[blocker.item] ?? 0;
+        const name = getItemDef(blocker.item)?.name ?? blocker.item;
+        return `Objets manquants pour « ${recipe.name} » : ${need}× ${name} (${have} en stock).`;
+      }
+    }
   }
 
   /**

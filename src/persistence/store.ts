@@ -268,6 +268,7 @@ export type ActivityKind =
   | 'citizen.scavenge'
   | 'citizen.build'
   | 'citizen.construct'
+  | 'citizen.craft'
   | 'citizen.explore'
   | 'citizen.scavenge-zone'
   | 'citizen.fight'

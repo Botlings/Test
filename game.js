@@ -932,6 +932,9 @@
     // Catalogue de constructions
     renderBuildings(town);
 
+    // Établi (crafting)
+    renderCrafting(town);
+
     // Stock d'objets + menace nocturne
     renderStock(town);
     renderThreats(town);
@@ -1875,6 +1878,142 @@
   }
 
   /* =========================================================================
+   *  Établi (crafting / transformation d'objets)
+   * =======================================================================*/
+
+  var CRAFTING_FORGE_ID = 'workshop';
+  var RES_ICONS = { wood: '🪵', metal: '⚙', water: '💧' };
+
+  function ensureCraftingCatalog() {
+    if (state.craftingCatalog) return Promise.resolve(state.craftingCatalog);
+    if (state.craftingCatalogLoading) return state.craftingCatalogLoading;
+    state.craftingCatalogLoading = apiCall('/crafting/catalog', { method: 'GET' })
+      .then(function (data) {
+        var list = (data && data.recipes) || [];
+        state.craftingCatalog = list;
+        state.craftingCatalogLoading = null;
+        return list;
+      })
+      .catch(function (err) {
+        state.craftingCatalogLoading = null;
+        throw err;
+      });
+    return state.craftingCatalogLoading;
+  }
+
+  /** Fragment HTML listant les composants (ressources + objets) d'un coût. */
+  function craftCostFragment(resources, items, bank, stock) {
+    var parts = [];
+    ['wood', 'metal', 'water'].forEach(function (kind) {
+      var need = Number((resources || {})[kind]) || 0;
+      if (need <= 0) return;
+      var missing = (Number(bank[kind]) || 0) < need;
+      parts.push('<span class="craft__chip' + (missing ? ' is-missing' : '') + '">' +
+        RES_ICONS[kind] + ' ' + need + '</span>');
+    });
+    Object.keys(items || {}).forEach(function (id) {
+      var need = Number(items[id]) || 0;
+      if (need <= 0) return;
+      var missing = (Number((stock || {})[id]) || 0) < need;
+      var icon = ITEM_ICONS[id] || '📦';
+      parts.push('<span class="craft__chip' + (missing ? ' is-missing' : '') +
+        '" title="' + escapeHtml(ITEM_NAMES[id] || id) + '">' + icon + ' ' + need + '</span>');
+    });
+    return parts.join('');
+  }
+
+  /** Fragment HTML des objets produits par une recette. */
+  function craftYieldFragment(items) {
+    return Object.keys(items || {}).map(function (id) {
+      var qty = Number(items[id]) || 0;
+      var icon = ITEM_ICONS[id] || '📦';
+      return '<span class="craft__chip craft__chip--out" title="' +
+        escapeHtml(ITEM_NAMES[id] || id) + '">' + icon + ' ' + qty + '</span>';
+    }).join('');
+  }
+
+  function renderCrafting(town) {
+    var list = $('crafting-list');
+    var count = $('crafting-count');
+    if (!list) return;
+
+    if (!state.craftingCatalog) {
+      ensureCraftingCatalog()
+        .then(function () { renderCrafting(state.town); })
+        .catch(function () {
+          list.innerHTML = '<li class="crafting__empty">Recettes indisponibles.</li>';
+        });
+      return;
+    }
+
+    var catalog = state.craftingCatalog;
+    if (count) count.textContent = String(catalog.length);
+    if (!catalog.length) {
+      list.innerHTML = '<li class="crafting__empty">Aucune recette disponible.</li>';
+      return;
+    }
+
+    var citizens = (town && town.citizens) || [];
+    var self = citizens.find(function (c) { return c.id === state.yourCitizenId; });
+    var bank = (town && town.bank) || {};
+    var stock = (town && town.items) || {};
+    var buildings = (town && town.buildings) || {};
+    var forgeBuilt = (Number(buildings[CRAFTING_FORGE_ID]) || 0) > 0;
+    var canPlay = !!self && self.alive && town.phase === 'day' && !town.closed;
+    var inTown = canPlay && self.location === 'town';
+
+    var lockNotice = forgeBuilt ? '' :
+      '<li class="crafting__locked">🔒 Érigez d\'abord l\'<strong>Atelier de fortification</strong> ' +
+      '(la forge) dans les Constructions pour débloquer l\'établi.</li>';
+
+    var fragments = catalog.map(function (def) {
+      var res = (def.inputs && def.inputs.resources) || {};
+      var items = (def.inputs && def.inputs.items) || {};
+      var apOk = !!self && self.actionPoints >= def.actionPointCost;
+      var resOk = ['wood', 'metal', 'water'].every(function (k) {
+        return (Number(bank[k]) || 0) >= (Number(res[k]) || 0);
+      });
+      var itemsOk = Object.keys(items).every(function (id) {
+        return (Number(stock[id]) || 0) >= Number(items[id]);
+      });
+      var available = inTown && forgeBuilt && apOk && resOk && itemsOk;
+
+      var classes = 'craft' + (available ? ' is-available' : ' is-blocked');
+      var costHtml = craftCostFragment(res, items, bank, stock) +
+        '<span class="craft__chip">⏱ ' + def.actionPointCost + ' PA</span>';
+      var yieldHtml = craftYieldFragment((def.outputs && def.outputs.items) || {});
+
+      return (
+        '<li class="' + classes + '" data-recipe="' + escapeHtml(def.id) + '">' +
+        '  <div class="craft__head">' +
+        '    <span class="craft__icon" aria-hidden="true">' + escapeHtml(def.icon || '🛠') + '</span>' +
+        '    <span class="craft__name">' + escapeHtml(def.name) + '</span>' +
+        '  </div>' +
+        '  <p class="craft__desc">' + escapeHtml(def.description) + '</p>' +
+        '  <div class="craft__flow">' +
+        '    <span class="craft__cost">' + costHtml + '</span>' +
+        '    <span class="craft__arrow" aria-hidden="true">→</span>' +
+        '    <span class="craft__yield">' + yieldHtml + '</span>' +
+        '  </div>' +
+        '  <button type="button" class="craft__action" data-action="craft"' +
+             (available ? '' : ' disabled') + '>Fabriquer</button>' +
+        '</li>'
+      );
+    });
+
+    list.innerHTML = lockNotice + fragments.join('');
+    Array.prototype.forEach.call(list.querySelectorAll('.craft__action'), function (btn) {
+      btn.addEventListener('click', function () {
+        var li = btn.closest('.craft');
+        if (!li) return;
+        var id = li.getAttribute('data-recipe');
+        if (!id) return;
+        sendAction({ type: 'craft', recipeId: id });
+      });
+    });
+  }
+
+  /* =========================================================================
    *  Actions de jeu
    * =======================================================================*/
 
@@ -1909,6 +2048,7 @@
           state.town.bank = res.bank || state.town.bank;
           state.town.townDefense = res.townDefense || state.town.townDefense;
           if (res.buildings) state.town.buildings = res.buildings;
+          if (res.items) state.town.items = res.items;
           if (res.desert) state.town.desert = res.desert;
           state.town.citizens = state.town.citizens.map(function (c) {
             return c.id === res.citizen.id ? Object.assign({}, c, res.citizen) : c;
@@ -1928,6 +2068,10 @@
           case 'construct':
             var def = (state.buildingsCatalog || []).find(function (b) { return b.id === body.buildingId; });
             logEvent('Vous avez érigé ' + (def ? def.name : body.buildingId) + '.', 'success');
+            break;
+          case 'craft':
+            var recipe = (state.craftingCatalog || []).find(function (r) { return r.id === body.recipeId; });
+            logEvent('Vous avez fabriqué ' + (recipe ? recipe.name : body.recipeId) + ' à l\'établi.', 'success');
             break;
           case 'move-zone':
             if (body.x === 0 && body.y === 0) {
@@ -2540,6 +2684,7 @@
     'citizen.scavenge':      { icon: '🔎', label: 'a fouillé' },
     'citizen.build':         { icon: '🛠', label: 'a construit' },
     'citizen.construct':     { icon: '🏗', label: 'a érigé un bâtiment' },
+    'citizen.craft':         { icon: '🛠', label: 'a fabriqué à l\'établi' },
     'citizen.explore':       { icon: '🧭', label: 'a exploré une zone' },
     'citizen.scavenge-zone': { icon: '🔎', label: 'a fouillé une zone' },
     'citizen.fight':         { icon: '⚔', label: 'a chassé un zombie' },

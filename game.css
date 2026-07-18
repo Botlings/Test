@@ -2550,6 +2550,146 @@ body[data-phase='night'] .desert-grid { filter: saturate(0.85) brightness(0.92);
 }
 
 /* ════════════════════════════════════════════════════════════════
+   ÉTABLI — crafting / transformation d'objets à la forge
+   ════════════════════════════════════════════════════════════════ */
+.crafting {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+@media (min-width: 540px) {
+  .crafting { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1100px) {
+  .crafting { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.crafting__empty,
+.crafting__locked {
+  grid-column: 1 / -1;
+  padding: 0.9rem;
+  box-shadow: var(--bevel-in-thin);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.crafting__locked {
+  color: var(--ink);
+  background: var(--face-light);
+  line-height: 1.5;
+}
+
+.craft {
+  position: relative;
+  background: var(--face);
+  box-shadow: var(--bevel-out);
+  padding: 0.7rem 0.75rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.craft.is-available:hover { background: var(--face-light); }
+.craft.is-blocked { opacity: 0.8; }
+
+.craft__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #cdbf9f;
+}
+
+.craft__icon { font-size: 20px; }
+
+.craft__name {
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rust-deep);
+}
+
+.craft__desc {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.craft__flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+}
+
+.craft__cost,
+.craft__yield {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.craft__arrow {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  color: var(--blood);
+}
+
+.craft__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft);
+  box-shadow: var(--bevel-out-thin);
+  background: var(--face-light);
+}
+
+.craft__chip.is-missing { color: #fff; background: var(--blood); }
+
+.craft__chip--out {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--ochre);
+}
+
+.craft__action {
+  appearance: none;
+  border: none;
+  background: var(--rust);
+  color: #fff;
+  box-shadow: var(--bevel-out);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.craft__action:hover:not(:disabled) { background: var(--rust-bright); }
+.craft__action:active:not(:disabled) { box-shadow: var(--bevel-in); }
+.craft__action:focus-visible { outline: 1px dotted #fff; outline-offset: -4px; }
+
+.craft__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: var(--face);
+  color: var(--ink-soft);
+}
+
+/* ════════════════════════════════════════════════════════════════
    SCROLLBARS — épaisses, style Windows 98
    ════════════════════════════════════════════════════════════════ */
 .roster,
